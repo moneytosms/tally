@@ -1,0 +1,239 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tally — design system</title>
+<style>
+:root{
+  /* paper */
+  --paper:#f7f4ec; --paper-2:#fffdf7; --paper-sunk:#efeade;
+  --line:#e0d9c8; --line-2:#cfc6b1;
+  --ink:#23241d; --ink-2:#5c5f52; --ink-3:#8b8d7e;
+  /* earth */
+  --moss:#5c7355; --moss-2:#485c43; --moss-wash:#e6ece0;
+  --clay:#a85f42; --clay-wash:#f2e4dd;
+  --ochre:#b08344;
+  --r:7px;
+  --grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
+}
+.dark{
+  --paper:#191a15; --paper-2:#20221b; --paper-sunk:#131410;
+  --line:#2e3128; --line-2:#3d4134;
+  --ink:#e8e6da; --ink-2:#a3a595; --ink-3:#6f7264;
+  --moss:#8fa885; --moss-2:#a7bd9d; --moss-wash:#242a20;
+  --clay:#c9836a; --clay-wash:#2c211c;
+  --ochre:#c99f63;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#2a2822;font:15px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  display:flex;flex-wrap:wrap;gap:30px;padding:34px;justify-content:center;color:var(--ink)}
+
+.phone{width:334px;height:690px;border-radius:22px;overflow:hidden;position:relative;
+  background:var(--paper);color:var(--ink);display:flex;flex-direction:column;
+  box-shadow:0 18px 50px rgba(0,0,0,.45)}
+/* grainy paper: warm radial wash + noise */
+.phone::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(120% 75% at 12% 0%,rgba(146,168,133,.20),transparent 62%),
+             radial-gradient(95% 60% at 100% 100%,rgba(176,131,68,.14),transparent 66%)}
+.phone::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  background-image:var(--grain);background-size:140px;opacity:.055;mix-blend-mode:multiply}
+.dark.phone::after{opacity:.10;mix-blend-mode:screen}
+.phone>*{position:relative;z-index:2}
+.cap{position:absolute;top:-21px;left:2px;font-size:11px;color:#9c9887;letter-spacing:.13em;text-transform:uppercase}
+.wrap{position:relative;margin-top:25px}
+
+header{padding:17px 17px 12px;display:flex;align-items:flex-end;gap:10px;border-bottom:1px solid var(--line)}
+h1{font:500 21px/1.15 ui-serif,Georgia,"Times New Roman",serif;letter-spacing:-.01em}
+.sub{font-size:12px;color:var(--ink-3);margin-top:3px}
+main{flex:1;overflow:auto;padding:13px 14px 16px}
+
+.card{background:var(--paper-2);border:1px solid var(--line);border-radius:var(--r);padding:12px 13px;margin-bottom:8px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.t{font-size:10.5px;color:var(--ink-3);letter-spacing:.13em;text-transform:uppercase;margin:17px 3px 8px}
+.t:first-child{margin-top:4px}
+.nm{font-weight:500;font-size:14.5px}
+.amt{font-variant-numeric:tabular-nums;font-feature-settings:"tnum";font-size:14.5px}
+.pos{color:var(--moss)}.neg{color:var(--clay)}.dim{color:var(--ink-3)}
+small{font-size:11.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+
+.hero{font:500 30px/1 ui-serif,Georgia,serif;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.rule{height:1px;background:var(--line);margin:11px 0}
+.bar{height:4px;background:var(--paper-sunk);border-radius:99px;overflow:hidden;margin-top:9px;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--moss);opacity:.75}
+
+.chip{display:inline-block;font-size:11.5px;padding:3px 9px;border:1px solid var(--line-2);border-radius:5px;color:var(--ink-2);margin:0 5px 5px 0}
+.chip.on{background:var(--moss-wash);border-color:var(--moss);color:var(--moss-2)}
+.av{width:29px;height:29px;border-radius:6px;display:grid;place-items:center;font-size:11.5px;font-weight:600;flex:none;
+  background:var(--moss-wash);color:var(--moss-2);border:1px solid var(--line)}
+.av.b{background:var(--clay-wash);color:var(--clay)}
+.av.c{background:#efe6d4;color:var(--ochre)}
+.dark .av.c{background:#2a2419}
+
+.btn{background:var(--moss);color:#f7f4ec;text-align:center;padding:10px;border-radius:6px;font-weight:500;font-size:14px}
+.dark .btn{color:#161811}
+.btn.g{background:transparent;border:1px solid var(--line-2);color:var(--ink);font-weight:400}
+.fld{background:var(--paper-sunk);border:1px solid var(--line);border-radius:6px;padding:10px;margin-bottom:8px;color:var(--ink-2);font-size:14px}
+.fld.on{border-color:var(--moss);background:var(--moss-wash);color:var(--ink)}
+
+nav{display:flex;border-top:1px solid var(--line);background:var(--paper-2)}
+nav div{flex:1;text-align:center;padding:10px 0 11px;font-size:10px;color:var(--ink-3);letter-spacing:.04em}
+nav div.on{color:var(--moss-2)}
+nav div b{display:block;font-size:15px;font-weight:400;margin-bottom:2px}
+.fab{position:absolute;right:15px;bottom:66px;width:49px;height:49px;border-radius:13px;background:var(--moss);
+  color:#f7f4ec;display:grid;place-items:center;font-size:25px;font-weight:300;z-index:3;box-shadow:0 4px 14px rgba(60,72,54,.28)}
+.dark .fab{color:#161811}
+
+.note{width:334px;font-size:13px;color:#b8b4a3;line-height:1.6}
+.note b{color:#f0ece0;display:block;margin:15px 0 5px}
+.note b:first-child{margin-top:0}
+.sw{display:flex;gap:5px;margin:7px 0 3px;flex-wrap:wrap}
+.sw i{width:34px;height:34px;border-radius:5px;border:1px solid rgba(255,255,255,.14)}
+</style>
+
+<!-- 1 HOME -->
+<div class="wrap"><div class="cap">1 · Home</div><div class="phone">
+  <header><div style="flex:1"><h1>tally</h1><div class="sub">Wednesday, 11 August</div></div>
+    <div class="av">S</div></header>
+  <main>
+    <div class="card" style="padding:15px">
+      <small>Overall you're owed</small>
+      <div class="hero pos">+₹1,240</div>
+      <div class="rule"></div>
+      <div class="row"><small>across 4 ledgers · 6 people</small><small class="dim">Settle →</small></div>
+    </div>
+    <div class="t">Ledgers</div>
+    <div class="card"><div class="row"><div><div class="nm">College canteen</div><small>7 members · standing</small></div>
+      <div class="amt pos">+₹430</div></div></div>
+    <div class="card"><div class="row"><div><div class="nm">Movie night</div><small>4 members · ends today</small></div>
+      <div class="amt neg">−₹340</div></div></div>
+    <div class="card"><div class="row"><div><div class="nm">Goa trip</div><small>6 members · 3 days left</small></div>
+      <div class="amt pos">+₹2,150</div></div>
+      <div class="bar"><i style="width:72%"></i></div>
+      <small>₹43,200 of ₹60,000</small></div>
+    <div class="card"><div class="row"><div class="row" style="gap:10px"><div class="av b">R</div>
+      <div><div class="nm">Rahul</div><small>direct</small></div></div>
+      <div class="amt neg">−₹1,000</div></div></div>
+    <div class="t">Recent</div>
+    <div class="card"><small><b style="color:var(--ink-2)">Anu</b> added Chai ×4 · ₹80 · 20m ago</small></div>
+  </main>
+  <div class="fab">+</div>
+  <nav><div class="on"><b>▤</b>LEDGERS</div><div><b>⇄</b>BALANCES</div><div><b>◴</b>INSIGHTS</div><div><b>◌</b>YOU</div></nav>
+</div></div>
+
+<!-- 2 LEDGER -->
+<div class="wrap"><div class="cap">2 · Ledger</div><div class="phone">
+  <header><div style="flex:1"><h1>Goa trip</h1><div class="sub">6 members · 3 days left</div></div><div class="dim">⋯</div></header>
+  <main>
+    <div class="card" style="padding:15px">
+      <div class="row"><div><small>Your position</small><div class="hero pos">+₹2,150</div></div>
+        <div class="btn" style="padding:9px 16px">Settle up</div></div>
+      <div class="bar"><i style="width:72%"></i></div>
+      <small>₹43,200 of ₹60,000 · ₹5,600 a day left</small></div>
+    <div style="margin:14px 2px 3px"><span class="chip on">All</span><span class="chip">Food</span><span class="chip">Stay</span><span class="chip">Travel</span></div>
+    <div class="t">Yesterday</div>
+    <div class="card"><div class="row"><div class="row" style="gap:10px"><div class="av b">A</div>
+      <div><div class="nm">Beach shack dinner</div><small>Anu paid · split 6 ways</small></div></div>
+      <div style="text-align:right"><div class="amt">₹4,800</div><small class="neg">you owe ₹800</small></div></div></div>
+    <div class="card"><div class="row"><div class="row" style="gap:10px"><div class="av">S</div>
+      <div><div class="nm">Scooter rental</div><small>You paid · shares 2:1:1:1:1:1</small></div></div>
+      <div style="text-align:right"><div class="amt">₹2,100</div><small class="pos">you get ₹1,500</small></div></div></div>
+    <div class="card" style="border-left:2px solid var(--moss)">
+      <div class="row"><div class="row" style="gap:10px"><div class="av c">R</div>
+      <div><div class="nm">Tour refund</div><small>Rahul · refund</small></div></div>
+      <div class="amt pos">−₹3,000</div></div></div>
+  </main>
+  <div class="fab">+</div>
+  <nav><div class="on"><b>▤</b>LEDGERS</div><div><b>⇄</b>BALANCES</div><div><b>◴</b>INSIGHTS</div><div><b>◌</b>YOU</div></nav>
+</div></div>
+
+<!-- 3 ADD -->
+<div class="wrap"><div class="cap">3 · Add expense</div><div class="phone">
+  <header><div class="dim" style="font-size:18px">✕</div><div style="flex:1"><h1 style="font-size:19px">Add expense</h1></div>
+    <div style="color:var(--moss-2);font-weight:500;font-size:14px">Save</div></header>
+  <main>
+    <div class="fld on">dinner 1200 split rahul anu<span style="color:var(--moss)">▌</span></div>
+    <small>₹1,200 · you, Rahul, Anu · equal</small>
+    <div class="t">or fill it in</div>
+    <div class="fld"><span class="amt" style="color:var(--ink)">₹ 1,200.00</span></div>
+    <div class="fld">Beach shack dinner</div>
+    <div class="row" style="gap:8px"><div class="fld" style="flex:1;margin:0">Goa trip</div><div class="fld" style="flex:1;margin:0">Food</div></div>
+    <div class="t">Paid by</div>
+    <div class="fld">You</div>
+    <div class="t">Split</div>
+    <div><span class="chip on">Equal</span><span class="chip">Exact</span><span class="chip">Shares</span><span class="chip">Percent</span></div>
+    <div class="card" style="margin-top:6px">
+      <div class="row" style="margin-bottom:9px"><div class="row" style="gap:9px"><div class="av">S</div><span class="nm">You</span></div><span class="amt">₹400.00</span></div>
+      <div class="row" style="margin-bottom:9px"><div class="row" style="gap:9px"><div class="av b">R</div><span class="nm">Rahul</span></div><span class="amt">₹400.00</span></div>
+      <div class="row"><div class="row" style="gap:9px"><div class="av c">A</div><span class="nm">Anu</span></div><span class="amt">₹400.00</span></div>
+    </div>
+    <small>Odd paise go to the payer.</small>
+  </main>
+</div></div>
+
+<!-- 4 SETTLE - DARK -->
+<div class="wrap"><div class="cap">4 · Settle up — dark</div><div class="phone dark">
+  <header><div class="dim" style="font-size:17px">←</div><div style="flex:1"><h1 style="font-size:19px">Settle up</h1>
+    <div class="sub">Goa trip · fewest transfers</div></div></header>
+  <main>
+    <div class="card"><div class="row"><div class="row" style="gap:10px"><div class="av b">R</div>
+      <div><div class="nm">Rahul pays you</div><div class="amt pos">₹1,500</div></div></div>
+      <span class="chip" style="margin:0">why?</span></div></div>
+    <div class="card"><div class="row"><div class="row" style="gap:10px"><div class="av c">A</div>
+      <div><div class="nm">You pay Anu</div><div class="amt neg">₹640</div></div></div>
+      <span class="chip" style="margin:0">why?</span></div>
+      <div class="btn" style="margin-top:11px">Pay ₹640 with UPI</div>
+      <div class="btn g" style="margin-top:7px">Record manually</div></div>
+    <div class="card" style="background:var(--moss-wash);border-color:var(--line-2)">
+      <small style="color:var(--ink-2)"><b style="color:var(--ink)">Why Anu?</b><br>
+      You owe her nothing directly. She paid ₹4,800 for a dinner you were in; you paid ₹2,100 for scooters she was in.
+      Netted across the trip, this one payment clears three debts. <span style="color:var(--moss-2)">See the trail →</span></small></div>
+    <div class="t">Guests</div>
+    <div class="card"><div class="row"><div><div class="nm">Vikram</div><small>guest · no UPI</small></div>
+      <div class="amt neg">−₹520</div></div>
+      <div class="btn g" style="margin-top:10px">Record on their behalf</div></div>
+  </main>
+</div></div>
+
+<!-- 5 INSIGHTS -->
+<div class="wrap"><div class="cap">5 · Insights</div><div class="phone">
+  <header><div style="flex:1"><h1>Insights</h1><div class="sub">All ledgers · 2026</div></div></header>
+  <main>
+    <div class="card" style="padding:15px">
+      <small>Spent this year</small><div class="hero">₹84,300</div>
+      <div style="display:flex;gap:4px;align-items:flex-end;height:66px;margin-top:14px">
+        <i style="flex:1;height:30%;background:var(--moss);opacity:.34;border-radius:2px"></i>
+        <i style="flex:1;height:55%;background:var(--moss);opacity:.42;border-radius:2px"></i>
+        <i style="flex:1;height:40%;background:var(--moss);opacity:.38;border-radius:2px"></i>
+        <i style="flex:1;height:80%;background:var(--moss);opacity:.62;border-radius:2px"></i>
+        <i style="flex:1;height:45%;background:var(--moss);opacity:.40;border-radius:2px"></i>
+        <i style="flex:1;height:100%;background:var(--moss);opacity:.85;border-radius:2px"></i>
+        <i style="flex:1;height:35%;background:var(--moss);opacity:.36;border-radius:2px"></i>
+        <i style="flex:1;height:60%;background:var(--moss);opacity:.46;border-radius:2px"></i></div>
+      <div class="row" style="margin-top:7px"><small>Jan</small><small>Aug</small></div></div>
+    <div class="t">By category</div>
+    <div class="card"><div class="row"><span class="nm">Food</span><span class="amt">₹31,200</span></div>
+      <div class="bar"><i style="width:100%"></i></div></div>
+    <div class="card"><div class="row"><span class="nm">Travel</span><span class="amt">₹22,400</span></div>
+      <div class="bar"><i style="width:72%;background:var(--ochre)"></i></div></div>
+    <div class="card"><div class="row"><span class="nm">Stay</span><span class="amt">₹18,900</span></div>
+      <div class="bar"><i style="width:61%;background:var(--clay)"></i></div></div>
+    <div class="t">Most spent with</div>
+    <div class="card"><div class="row"><div class="row" style="gap:10px"><div class="av b">R</div><span class="nm">Rahul</span></div>
+      <span class="amt">₹28,100</span></div></div>
+  </main>
+  <nav><div><b>▤</b>LEDGERS</div><div><b>⇄</b>BALANCES</div><div class="on"><b>◴</b>INSIGHTS</div><div><b>◌</b>YOU</div></nav>
+</div></div>
+
+<div class="note">
+<b>The paper</b>Background is a warm off-white with two soft radial washes — moss from the top-left, ochre from the bottom-right — under a fractal-noise grain at 5.5% opacity, multiply-blended. That's the whole texture: no images, one inline SVG, negligible weight. Dark mode flips the grain to screen blend over warm ink, so it reads as toned paper rather than a grey slab.
+
+<b>Green as the ground, not the accent</b>Moss carries structure — the FAB, the primary button, active nav, chart fills — instead of being sprinkled on. Ochre and clay are the earth counterweights. Nothing here is a stock indigo.
+
+<b>Owed vs owe</b>Moss and clay, both muted, both earthy — and they differ in lightness, not just hue, so they survive colourblindness and greyscale. Sign always present.
+
+<b>Type</b>Serif for screen titles and hero amounts — that's most of the paper feeling, and it's Georgia, so zero webfont weight. Sans with tabular numerals for everything in a list, so columns don't jitter.
+
+<b>Not shadcn</b>7px radius rather than the default 8. Squircle avatars, not circles. Uppercase micro-labels with wide tracking instead of grey sentence case. Bordered cards with no shadow at all, except the FAB. Sunken fields rather than raised ones.
+
+<b>Swatches</b>
+<span class="sw"><i style="background:#f7f4ec"></i><i style="background:#efeade"></i><i style="background:#e0d9c8"></i><i style="background:#5c7355"></i><i style="background:#a85f42"></i><i style="background:#b08344"></i><i style="background:#23241d"></i></span>
+</div>
