@@ -1,0 +1,11 @@
+{
+  // TODO: fill in once the Cloudflare account exists.
+  // The resulting host is the PERMANENT WebAuthn RP ID — see docs/adr/0002.
+  "name": "tally",
+  "main": "src/server/index.ts",
+  "compatibility_date": "2026-08-11",
+  "assets": { "directory": "./dist/client" },
+  "d1_databases": [],
+  "durable_objects": { "bindings": [] },
+  "r2_buckets": []
+}
