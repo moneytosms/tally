@@ -1,0 +1,141 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>tally — UI shell prototype</title>
+<style>
+  :root{--bg:#0f1115;--card:#181b22;--line:#262b35;--fg:#e8eaed;--dim:#9aa3b2;--pos:#4ade80;--neg:#f87171;--acc:#7c9cff}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#07080b;color:var(--fg);font:15px/1.45 system-ui,sans-serif;display:flex;flex-wrap:wrap;gap:28px;padding:28px;justify-content:center}
+  .phone{width:330px;height:680px;background:var(--bg);border:1px solid var(--line);border-radius:26px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+  .cap{position:absolute;top:-22px;left:0;font-size:12px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase}
+  .wrap{position:relative;margin-top:26px}
+  header{padding:16px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+  h1{font-size:19px;font-weight:600}
+  .sub{font-size:12px;color:var(--dim)}
+  main{flex:1;overflow:auto;padding:12px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:9px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .pos{color:var(--pos)}.neg{color:var(--neg)}.dim{color:var(--dim)}
+  .t{font-size:12px;color:var(--dim);margin:14px 0 7px;letter-spacing:.05em;text-transform:uppercase}
+  nav{display:flex;border-top:1px solid var(--line);background:var(--card)}
+  nav div{flex:1;text-align:center;padding:11px 0;font-size:11px;color:var(--dim)}
+  nav div.on{color:var(--acc)}
+  nav div b{display:block;font-size:17px;font-weight:400}
+  .fab{position:absolute;right:16px;bottom:70px;width:52px;height:52px;border-radius:50%;background:var(--acc);color:#0b1020;display:grid;place-items:center;font-size:27px;font-weight:300}
+  .chip{display:inline-block;font-size:11px;padding:2px 8px;border:1px solid var(--line);border-radius:99px;color:var(--dim);margin-right:5px}
+  .chip.on{border-color:var(--acc);color:var(--acc)}
+  .bar{height:5px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:7px}
+  .bar i{display:block;height:100%;background:var(--acc)}
+  input,.fake{width:100%;background:#0d1016;border:1px solid var(--line);color:var(--fg);border-radius:9px;padding:10px;font:inherit;margin-bottom:9px}
+  .btn{background:var(--acc);color:#0b1020;text-align:center;padding:11px;border-radius:10px;font-weight:600}
+  .btn.ghost{background:none;border:1px solid var(--line);color:var(--fg);font-weight:400}
+  .av{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;color:#0b1020;flex:none}
+  small{font-size:11.5px}
+  .note{width:330px;font-size:13px;color:var(--dim);line-height:1.5}
+  .note b{color:var(--fg);display:block;margin-bottom:5px}
+</style>
+
+<div class="wrap"><div class="cap">1 · Home</div><div class="phone">
+  <header><div style="flex:1"><h1>tally</h1><div class="sub">Overall you're owed ₹1,240</div></div>
+    <div class="av" style="background:#7c9cff">S</div></header>
+  <main>
+    <div class="t">Ledgers</div>
+    <div class="card"><div class="row"><div><b>College canteen</b><div class="sub">7 members · standing</div></div><div class="pos">+₹430</div></div></div>
+    <div class="card"><div class="row"><div><b>Movie night</b><div class="sub">4 members · ends today</div></div><div class="neg">−₹340</div></div></div>
+    <div class="card"><div class="row"><div><b>Goa trip</b><div class="sub">6 members · 3 days left</div></div><div class="pos">+₹2,150</div></div>
+      <div class="bar"><i style="width:72%"></i></div><small class="dim">₹43,200 of ₹60,000 budget</small></div>
+    <div class="card"><div class="row"><div><b>Rahul</b><div class="sub">direct</div></div><div class="neg">−₹1,000</div></div></div>
+    <div class="t">Recent</div>
+    <div class="card"><small><b>Anu</b> added <b>Chai ×4</b> · ₹80 <span class="dim">· 20m ago</span></small></div>
+    <div class="card"><small><b>Rahul</b> settled ₹640 with you <span class="dim">· 2h ago</span></small></div>
+  </main>
+  <div class="fab">+</div>
+  <nav><div class="on"><b>◫</b>Ledgers</div><div><b>⇄</b>Balances</div><div><b>◔</b>Insights</div><div><b>○</b>You</div></nav>
+</div></div>
+
+<div class="wrap"><div class="cap">2 · Ledger</div><div class="phone">
+  <header><div style="flex:1"><h1>Goa trip</h1><div class="sub">6 members · 3 days left</div></div><div class="dim">⋯</div></header>
+  <main>
+    <div class="card"><div class="row"><div><small class="dim">Your position</small><div style="font-size:22px" class="pos">+₹2,150</div></div>
+      <div class="btn" style="padding:9px 15px">Settle up</div></div>
+      <div class="bar"><i style="width:72%"></i></div><small class="dim">₹43,200 spent of ₹60,000 · ₹5,600/day left</small></div>
+    <div style="margin:12px 0 4px"><span class="chip on">All</span><span class="chip">Food</span><span class="chip">Stay</span><span class="chip">Travel</span></div>
+    <div class="t">Yesterday</div>
+    <div class="card"><div class="row"><div class="row" style="gap:9px"><div class="av" style="background:#f0a">A</div>
+      <div><b>Beach shack dinner</b><div class="sub">Anu paid · split 6 ways</div></div></div>
+      <div style="text-align:right"><div>₹4,800</div><small class="neg">you owe ₹800</small></div></div></div>
+    <div class="card"><div class="row"><div class="row" style="gap:9px"><div class="av" style="background:#7c9cff">S</div>
+      <div><b>Scooter rental</b><div class="sub">You paid · shares 2:1:1:1:1:1</div></div></div>
+      <div style="text-align:right"><div>₹2,100</div><small class="pos">you get ₹1,500</small></div></div></div>
+    <div class="card" style="border-color:#4a3">
+      <div class="row"><div class="row" style="gap:9px"><div class="av" style="background:#4ade80">R</div>
+      <div><b>Cancelled tour refund</b><div class="sub">Rahul · refund</div></div></div>
+      <div style="text-align:right"><div class="pos">−₹3,000</div></div></div></div>
+  </main>
+  <div class="fab">+</div>
+  <nav><div class="on"><b>◫</b>Ledgers</div><div><b>⇄</b>Balances</div><div><b>◔</b>Insights</div><div><b>○</b>You</div></nav>
+</div></div>
+
+<div class="wrap"><div class="cap">3 · Add expense</div><div class="phone">
+  <header><div class="dim">✕</div><div style="flex:1"><h1>Add expense</h1></div><div style="color:var(--acc)">Save</div></header>
+  <main>
+    <div class="fake" style="border-color:var(--acc);color:var(--dim)">dinner 1200 split rahul anu<span style="color:var(--acc)">▌</span></div>
+    <small class="dim">Parsed → ₹1,200 · you, Rahul, Anu · equal</small>
+    <div class="t">or fill it in</div>
+    <div class="fake">₹ 1,200.00</div>
+    <div class="fake">Beach shack dinner</div>
+    <div class="row" style="gap:8px"><div class="fake" style="margin:0">Goa trip</div><div class="fake" style="margin:0">Food</div></div>
+    <div class="t">Paid by</div>
+    <div class="fake">You</div>
+    <div class="t">Split</div>
+    <div><span class="chip on">Equal</span><span class="chip">Exact</span><span class="chip">Shares</span><span class="chip">%</span></div>
+    <div class="card" style="margin-top:9px">
+      <div class="row" style="margin-bottom:8px"><div class="row" style="gap:8px"><div class="av" style="background:#7c9cff">S</div>You</div><div>₹400.00</div></div>
+      <div class="row" style="margin-bottom:8px"><div class="row" style="gap:8px"><div class="av" style="background:#fa5">R</div>Rahul</div><div>₹400.00</div></div>
+      <div class="row"><div class="row" style="gap:8px"><div class="av" style="background:#f0a">A</div>Anu</div><div>₹400.00</div></div>
+    </div>
+    <small class="dim">Odd paise go to the payer.</small>
+  </main>
+</div></div>
+
+<div class="wrap"><div class="cap">4 · Settle up</div><div class="phone">
+  <header><div class="dim">←</div><div style="flex:1"><h1>Settle up</h1><div class="sub">Goa trip · fewest transfers</div></div></header>
+  <main>
+    <div class="card"><div class="row"><div class="row" style="gap:9px"><div class="av" style="background:#fa5">R</div>
+      <div><b>Rahul → you</b><div class="sub">₹1,500</div></div></div><div class="chip">why?</div></div></div>
+    <div class="card"><div class="row"><div class="row" style="gap:9px"><div class="av" style="background:#f0a">A</div>
+      <div><b>You → Anu</b><div class="sub">₹640</div></div></div><div class="chip">why?</div></div>
+      <div class="btn" style="margin-top:10px">Pay ₹640 with UPI</div>
+      <div class="btn ghost" style="margin-top:7px">Record payment manually</div></div>
+    <div class="card" style="border-style:dashed"><small class="dim"><b>why?</b> You owe Anu nothing directly. She paid ₹4,800 for dinner you were in; you paid ₹2,100 for scooters she was in. Netting the trip, this one payment clears three debts. <u>See the trail</u></small></div>
+    <div class="t">Guests</div>
+    <div class="card"><div class="row"><div><b>Vikram</b><div class="sub">guest · no UPI</div></div><div class="neg">−₹520</div></div>
+      <div class="btn ghost" style="margin-top:9px">Record on their behalf</div></div>
+  </main>
+</div></div>
+
+<div class="wrap"><div class="cap">5 · Insights</div><div class="phone">
+  <header><div style="flex:1"><h1>Insights</h1><div class="sub">All ledgers · 2026</div></div></header>
+  <main>
+    <div class="card"><small class="dim">Spent this year</small><div style="font-size:24px">₹84,300</div>
+      <div style="display:flex;gap:3px;align-items:flex-end;height:64px;margin-top:12px">
+        <i style="flex:1;height:30%;background:var(--acc);border-radius:2px"></i><i style="flex:1;height:55%;background:var(--acc);border-radius:2px"></i>
+        <i style="flex:1;height:40%;background:var(--acc);border-radius:2px"></i><i style="flex:1;height:80%;background:var(--acc);border-radius:2px"></i>
+        <i style="flex:1;height:45%;background:var(--acc);border-radius:2px"></i><i style="flex:1;height:100%;background:var(--acc);border-radius:2px"></i>
+        <i style="flex:1;height:35%;background:var(--acc);border-radius:2px"></i><i style="flex:1;height:60%;background:var(--acc);border-radius:2px"></i></div></div>
+    <div class="t">By category</div>
+    <div class="card"><div class="row"><span>Food</span><span>₹31,200</span></div><div class="bar"><i style="width:100%"></i></div></div>
+    <div class="card"><div class="row"><span>Travel</span><span>₹22,400</span></div><div class="bar"><i style="width:72%"></i></div></div>
+    <div class="card"><div class="row"><span>Stay</span><span>₹18,900</span></div><div class="bar"><i style="width:61%"></i></div></div>
+    <div class="t">Most spent with</div>
+    <div class="card"><div class="row"><div class="row" style="gap:9px"><div class="av" style="background:#fa5">R</div>Rahul</div><div>₹28,100</div></div></div>
+  </main>
+  <nav><div><b>◫</b>Ledgers</div><div><b>⇄</b>Balances</div><div class="on"><b>◔</b>Insights</div><div><b>○</b>You</div></nav>
+</div></div>
+
+<div class="note"><b>Navigation model</b>
+Four bottom tabs — Ledgers, Balances, Insights, You — plus a persistent FAB for add-expense, which is the only action frequent enough to deserve permanent screen space.<br><br>
+<b>Balances tab</b> holds cross-ledger net positions per friend and bulk settle. It is deliberately separate from Ledgers, because "what do I owe Rahul overall" is a different question from "what happened on the Goa trip".<br><br>
+<b>You</b> holds profile, UPI VPA, devices, notifications, archived ledgers, export, and — for the instance owner only — the admin panel. Everything infrequent lives here so the other three tabs stay clean.<br><br>
+<b>Add expense is three taps from cold:</b> FAB → type or fill → Save. The natural-language line is offered first and the structured form sits directly beneath it, so neither path is hidden behind the other.<br><br>
+<b>Why? affordance</b> on every suggested transfer, because simplified debts are always on and this is the answer to the one complaint that model reliably generates.</div>
