@@ -75,6 +75,9 @@ importers:
       vitest:
         specifier: ^4.1.10
         version: 4.1.10(vite@8.2.1(esbuild@0.28.2)(jiti@2.7.0)(terser@5.49.2)(tsx@4.23.11))
+      workbox-window:
+        specifier: ^7.4.1
+        version: 7.4.1
       wrangler:
         specifier: ^4.120.1
         version: 4.120.1(@cloudflare/workers-types@5.20260810.1)

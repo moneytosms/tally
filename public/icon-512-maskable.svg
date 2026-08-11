@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Warm paper background (bleeds to edges for maskable) -->
+  <rect width="512" height="512" fill="#f7f4ec"/>
+
+  <!-- Tally mark: centered and constrained to safe zone (80% = ~409px) -->
+  <!-- Safe zone is (256-204.5, 256-204.5) to (256+204.5, 256+204.5) -->
+  <g transform="translate(256, 256)">
+    <!-- Four vertical strokes, scaled down to fit safe zone -->
+    <rect x="-100" y="-120" width="20" height="240" fill="#5c7355" rx="3"/>
+    <rect x="-33" y="-120" width="20" height="240" fill="#5c7355" rx="3"/>
+    <rect x="33" y="-120" width="20" height="240" fill="#5c7355" rx="3"/>
+    <rect x="100" y="-120" width="20" height="240" fill="#5c7355" rx="3"/>
+
+    <!-- Diagonal stroke through the middle (rotated 45 degrees) -->
+    <rect x="-17" y="-17" width="34" height="170" fill="#5c7355" rx="3" transform="rotate(45)"/>
+  </g>
+</svg>
