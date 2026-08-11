@@ -1,9 +1,52 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { Button, EmptyState, Field, Input } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import { useLedgers, useMe, useUpdateProfile } from "~/client/lib/queries";
+import { currentPushState, disablePush, enablePush, type PushState } from "~/client/lib/push";
 import { t } from "~/client/i18n";
+
+const pushMessage: Record<PushState["status"], string> = {
+  on: "notifications.enabled",
+  off: "notifications.body",
+  unsupported: "notifications.unsupported",
+  denied: "notifications.denied",
+  "needs-install": "notifications.iosHint",
+  unavailable: "notifications.unavailable",
+};
+
+function NotificationsSection() {
+  const [state, setState] = useState<PushState | null>(null);
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    currentPushState().then(setState);
+  }, []);
+
+  if (!state) return null;
+
+  const toggle = async () => {
+    setPending(true);
+    try {
+      setState(state.status === "on" ? await disablePush() : await enablePush());
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return (
+    <div className="rounded-[7px] border px-3.5 py-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <p role="status" className="mb-2.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
+        {t(pushMessage[state.status])}
+      </p>
+      {(state.status === "on" || state.status === "off") && (
+        <Button variant={state.status === "on" ? "ghost" : "primary"} size="sm" disabled={pending} onClick={toggle}>
+          {t(state.status === "on" ? "notifications.disable" : "notifications.enable")}
+        </Button>
+      )}
+    </div>
+  );
+}
 
 const Section = ({ title }: { title: string }) => (
   <div className="mx-0.5 mt-5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
@@ -93,10 +136,36 @@ export function YouTab() {
         ))
       )}
 
+      <Section title={t("notifications.title")} />
+      <NotificationsSection />
+
       <Section title={t("profile.export")} />
-      <p className="mx-0.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
-        {t("profile.exportSoon")}
-      </p>
+      <div className="rounded-[7px] border px-3.5 py-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+        <p className="mb-2.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
+          {t("export.body")}
+        </p>
+        <a
+          href="/api/export.csv"
+          download
+          className={`inline-flex min-h-11 items-center text-[14px] ${focusRing}`}
+          style={{ color: "var(--moss-2)" }}
+        >
+          {t("export.allCsv")} →
+        </a>
+      </div>
+
+      {me.data.isOwner && (
+        <>
+          <Section title={t("admin.title")} />
+          <Link
+            to="/you/admin"
+            className={`mb-2 block rounded-[7px] border px-3.5 py-3 text-[14.5px] ${focusRing}`}
+            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+          >
+            {t("admin.open")} →
+          </Link>
+        </>
+      )}
     </>
   );
 }

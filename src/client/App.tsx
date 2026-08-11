@@ -10,14 +10,20 @@ import { ApiError } from "./lib/api";
 import { t } from "./i18n";
 import { LedgersTab } from "./routes/LedgersTab";
 import { LedgerDetail } from "./routes/LedgerDetail";
-import { InsightsTab } from "./routes/InsightsTab";
 import { YouTab } from "./routes/YouTab";
 import { Onboarding } from "./routes/Onboarding";
+import { UpdatePrompt } from "./components/UpdatePrompt";
 
-// Owned by Agent G. Lazy so the shell doesn't wait on them.
+// Lazy so the shell doesn't wait on them. InsightsTab is lazy specifically
+// because it pulls in Recharts, which is the largest thing in the bundle
+// (SPEC §11 hazard 6) — do not make it a static import.
 const BalancesTab = lazy(() => import("./routes/BalancesTab"));
 const SettleUp = lazy(() => import("./routes/SettleUp"));
 const ExpenseForm = lazy(() => import("./routes/ExpenseForm"));
+const InsightsTab = lazy(() => import("./routes/InsightsTab"));
+const AdminPanel = lazy(() => import("./routes/AdminPanel"));
+const RecurringTab = lazy(() => import("./routes/RecurringTab"));
+const ActivityTab = lazy(() => import("./routes/ActivityTab"));
 
 /** Explicit, and a live region — offline is never inferred from a missing number. */
 function OfflineBanner() {
@@ -45,6 +51,7 @@ function Shell() {
     <div className="paper-ground relative flex h-dvh flex-col overflow-hidden">
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
         <OfflineBanner />
+        <UpdatePrompt />
         <main className="min-h-0 flex-1 overflow-auto px-3.5 pt-3 pb-5">
           <Suspense fallback={null}>
             <Outlet />
@@ -71,9 +78,12 @@ export function App() {
           <Route index element={<LedgersTab />} />
           <Route path="ledgers/:ledgerId" element={<LedgerDetail />} />
           <Route path="ledgers/:ledgerId/settle" element={<SettleUp />} />
+          <Route path="ledgers/:ledgerId/recurring" element={<RecurringTab />} />
+          <Route path="ledgers/:ledgerId/activity" element={<ActivityTab />} />
           <Route path="balances" element={<BalancesTab />} />
           <Route path="insights" element={<InsightsTab />} />
           <Route path="you" element={<YouTab />} />
+          <Route path="you/admin" element={<AdminPanel />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

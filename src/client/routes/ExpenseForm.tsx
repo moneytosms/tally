@@ -7,10 +7,18 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
 import { Button, Field, Input } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
-import { SplitEditor, preview, rupeesToPaise, splitValues, type SplitParticipant } from "~/client/components/SplitEditor";
-import { useCreateExpense, useLedgers, useMe, useMembers } from "~/client/lib/queries";
+import {
+  SplitEditor,
+  paiseToRupeeString,
+  preview,
+  rupeesToPaise,
+  splitValues,
+  type SplitParticipant,
+} from "~/client/components/SplitEditor";
+import { useCategories, useCreateExpense, useLedgers, useMe, useMembers } from "~/client/lib/queries";
 import { ApiError } from "~/client/lib/api";
 import { t } from "~/client/i18n";
+import { parseExpenseLine } from "~/shared/nl";
 import type { SplitMode } from "~/shared/money";
 
 const selectClass = `min-h-11 w-full rounded-[6px] border px-3 text-[14px] ${focusRing}`;
@@ -28,6 +36,7 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
   const ledgerId = pickedLedger || params.ledgerId || ledgers.data?.[0]?.id || "";
 
   const members = useMembers(ledgerId);
+  const categories = useCategories();
   const create = useCreateExpense(ledgerId);
 
   const [description, setDescription] = useState("");
@@ -36,9 +45,12 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
   const [notes, setNotes] = useState("");
   const [payerId, setPayerId] = useState("");
   const [participantIds, setParticipantIds] = useState<string[]>([]);
+  const [categoryId, setCategoryId] = useState<string | null>(null);
   const [mode, setMode] = useState<SplitMode>("equal");
   const [raw, setRaw] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState("");
+  const [nlText, setNlText] = useState("");
+  const [nlUnmatched, setNlUnmatched] = useState<string[]>([]);
 
   const roster = useMemo(() => (members.data ?? []).filter((m) => m.leftAt === null), [members.data]);
   const rosterKey = roster.map((m) => m.id).join(",");
@@ -49,6 +61,23 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
     setRaw({});
     setPayerId(roster.find((m) => m.userId === me.data?.id)?.id ?? roster[0]?.id ?? "");
   }, [rosterKey, me.data?.id]);
+
+  // Parses as the user types; applies only the fields the parser actually
+  // resolved so it assists hand-typed input instead of clobbering it.
+  function handleNlChange(text: string) {
+    setNlText(text);
+    const parse = parseExpenseLine(
+      text,
+      roster.map((m) => ({ id: m.id, name: m.nickname })),
+    );
+    setNlUnmatched(parse.unmatched);
+    if (parse.total !== null) setAmountRaw(paiseToRupeeString(parse.total));
+    if (parse.description !== "") setDescription(parse.description);
+    if (parse.payerId !== null) setPayerId(parse.payerId);
+    if (parse.participantIds.length > 0) {
+      setParticipantIds((ids) => [...ids, ...parse.participantIds.filter((id) => !ids.includes(id))]);
+    }
+  }
 
   const byId = new Map(roster.map((m) => [m.id, m]));
   const participants: SplitParticipant[] = participantIds.flatMap((id) => {
@@ -72,7 +101,7 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
         description: description.trim(),
         total,
         paidAtEpochMs: new Date(`${date}T00:00`).getTime(),
-        categoryId: null,
+        categoryId,
         notes: notes.trim() || null,
         payerMemberId: payerId,
         mode,
@@ -88,10 +117,18 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
   return (
     <form onSubmit={submit} noValidate>
       <Field label={t("expense.naturalLanguage")}>
-        <Input disabled placeholder={t("expense.naturalLanguagePlaceholder")} />
+        <Input
+          value={nlText}
+          onChange={(e) => handleNlChange(e.target.value)}
+          placeholder={t("expense.naturalLanguagePlaceholder")}
+          autoComplete="off"
+        />
         <span className="mt-1.5 block text-[11px]" style={{ color: "var(--ink-3)" }}>
-          {t("expense.naturalLanguageSoon")}
+          {t("nl.hint")}
         </span>
+        <p role="status" aria-live="polite" className="mt-1.5 block text-[11px]" style={{ color: "var(--clay)" }}>
+          {nlUnmatched.length > 0 ? t("nl.unmatched", { names: nlUnmatched.join(", ") }) : ""}
+        </p>
       </Field>
 
       <Field label={t("expense.ledger")}>
@@ -132,10 +169,20 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
         </select>
       </Field>
 
-      {/* ponytail: the default category set is undecided (SPEC §13), same status as
-          the parser. Disabled rather than inventing a list that charts then inherit. */}
       <Field label={t("expense.category")}>
-        <Input disabled placeholder={t("expense.categorySoon")} />
+        <select
+          className={selectClass}
+          style={selectStyle}
+          value={categoryId ?? ""}
+          onChange={(e) => setCategoryId(e.target.value || null)}
+        >
+          <option value="">{t("expense.categoryNone")}</option>
+          {(categories.data ?? []).map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.icon} {c.name}
+            </option>
+          ))}
+        </select>
       </Field>
 
       <Field label={t("expense.notes")}>

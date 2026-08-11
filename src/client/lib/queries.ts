@@ -9,7 +9,14 @@ import { useSyncExternalStore } from "react";
 import { api } from "./api";
 import { uuidv7 } from "~/shared/id";
 import type { Paise, SplitMode } from "~/shared/money";
-import type { CreateExpense, CreateLedger, CreateSettlement, UpdateProfile } from "~/shared/schemas";
+import type {
+  CreateCategory,
+  CreateExpense,
+  CreateLedger,
+  CreateSeries,
+  CreateSettlement,
+  UpdateProfile,
+} from "~/shared/schemas";
 
 /* ---------- wire types (server DTOs) ---------- */
 
@@ -67,6 +74,96 @@ export type CrossLedgerBalance = {
   net: Paise;
 };
 
+export type Category = { id: string; name: string; icon: string; isDefault: boolean };
+
+export type Comment = {
+  id: string;
+  body: string;
+  authorUserId: string;
+  authorName: string;
+  createdAt: number;
+};
+
+export type Revision = {
+  id: string;
+  revisedBy: string;
+  revisedByName: string;
+  revisedAt: number;
+  snapshot: Expense;
+};
+
+export type Insights = {
+  totals: { spent: Paise; paid: Paise; expenseCount: number; ledgerCount: number };
+  byCategory: Array<{ categoryId: string | null; name: string; icon: string | null; spent: Paise; count: number }>;
+  byMonth: Array<{ month: string; spent: Paise }>;
+  mostSpentWith: Array<{ userId: string; displayName: string; sharedExpenseCount: number; sharedTotal: Paise }>;
+};
+
+export type Series = {
+  id: string;
+  ledgerId: string;
+  description: string;
+  total: Paise;
+  payerMemberId: string;
+  categoryId: string | null;
+  notes: string | null;
+  mode: SplitMode;
+  participants: Array<{ memberId: string; value?: number }>;
+  intervalUnit: "day" | "week" | "month";
+  intervalCount: number;
+  startAt: number;
+  endAt: number | null;
+  nextOccurrenceAt: number;
+  pausedAt: number | null;
+};
+
+/** One derived feed event. `kind` maps to a locale key under `activity.*` —
+ *  the phrasing is the client's job, so no English crosses the wire. */
+export type ActivityEvent = {
+  id: string;
+  kind: "added" | "edited" | "deleted" | "settled" | "forgave" | "commented" | "joined" | "left";
+  at: number;
+  actorName: string | null;
+  description: string | null;
+  amount: Paise | null;
+  fromName: string | null;
+  toName: string | null;
+  expenseId: string | null;
+};
+
+export type AdminUser = {
+  id: string;
+  displayName: string;
+  isOwner: boolean;
+  createdAt: number;
+  credentials: Array<{ id: string; createdAt: number; lastUsedAt: number | null }>;
+};
+
+export type AdminInvite = {
+  id: string;
+  ledgerId: string;
+  ledgerName: string;
+  createdAt: number;
+  expiresAt: number;
+};
+
+export type AdminInstance = {
+  rpId: string;
+  userCount: number;
+  ledgerCount: number;
+  pushConfigured: boolean;
+  recurringConfigured: boolean;
+};
+
+/** Every field optional — an empty filter is the plain expense list. */
+export type ExpenseFilters = {
+  q?: string;
+  categoryId?: string;
+  memberId?: string;
+  from?: number;
+  to?: number;
+};
+
 /* ---------- keys ---------- */
 
 export const qk = {
@@ -77,7 +174,33 @@ export const qk = {
   expenses: (ledgerId: string) => ["ledgers", ledgerId, "expenses"] as const,
   balances: (ledgerId: string) => ["ledgers", ledgerId, "balances"] as const,
   crossLedger: ["balances"] as const,
+  categories: ["categories"] as const,
+  insights: (from: number | null) => ["insights", from] as const,
+  comments: (expenseId: string) => ["expenses", expenseId, "comments"] as const,
+  revisions: (expenseId: string) => ["expenses", expenseId, "revisions"] as const,
+  series: (ledgerId: string) => ["ledgers", ledgerId, "recurring"] as const,
+  activity: (ledgerId: string) => ["ledgers", ledgerId, "activity"] as const,
+  pushKey: ["push", "key"] as const,
+  adminUsers: ["admin", "users"] as const,
+  adminInvites: ["admin", "invites"] as const,
+  adminInstance: ["admin", "instance"] as const,
 };
+
+/** Nested under the ledger's expense key so any expense mutation invalidates a
+ *  filtered view too — a filtered list is still the expense list. */
+const expenseSearchKey = (ledgerId: string, f: ExpenseFilters) =>
+  [...qk.expenses(ledgerId), "search", f] as const;
+
+function filterQuery(f: ExpenseFilters): string {
+  const p = new URLSearchParams();
+  if (f.q?.trim()) p.set("q", f.q.trim());
+  if (f.categoryId) p.set("categoryId", f.categoryId);
+  if (f.memberId) p.set("memberId", f.memberId);
+  if (f.from !== undefined) p.set("from", String(f.from));
+  if (f.to !== undefined) p.set("to", String(f.to));
+  const s = p.toString();
+  return s ? `?${s}` : "";
+}
 
 export function createQueryClient() {
   return new QueryClient({
@@ -109,6 +232,54 @@ export const useBalances = (ledgerId: string) =>
 
 export const useCrossLedgerBalances = () =>
   useQuery({ queryKey: qk.crossLedger, queryFn: () => api<CrossLedgerBalance[]>("/api/balances") });
+
+/** The filtered expense list. With an empty filter this is `useExpenses`. */
+export const useExpenseSearch = (ledgerId: string, filters: ExpenseFilters) =>
+  useQuery({
+    queryKey: expenseSearchKey(ledgerId, filters),
+    queryFn: () => api<Expense[]>(`/api/ledgers/${ledgerId}/expenses${filterQuery(filters)}`),
+  });
+
+/** Categories change about once a year — the one place a longer staleTime is
+ *  honest, because none of this is money. */
+export const useCategories = () =>
+  useQuery({ queryKey: qk.categories, queryFn: () => api<Category[]>("/api/categories"), staleTime: 5 * 60_000 });
+
+export const useInsights = (from: number | null) =>
+  useQuery({
+    queryKey: qk.insights(from),
+    queryFn: () => api<Insights>(`/api/insights${from === null ? "" : `?from=${from}`}`),
+  });
+
+export const useComments = (ledgerId: string, expenseId: string) =>
+  useQuery({
+    queryKey: qk.comments(expenseId),
+    queryFn: () => api<Comment[]>(`/api/ledgers/${ledgerId}/expenses/${expenseId}/comments`),
+  });
+
+export const useRevisions = (ledgerId: string, expenseId: string) =>
+  useQuery({
+    queryKey: qk.revisions(expenseId),
+    queryFn: () => api<Revision[]>(`/api/ledgers/${ledgerId}/expenses/${expenseId}/revisions`),
+  });
+
+export const useSeries = (ledgerId: string) =>
+  useQuery({ queryKey: qk.series(ledgerId), queryFn: () => api<Series[]>(`/api/ledgers/${ledgerId}/recurring`) });
+
+export const useActivity = (ledgerId: string) =>
+  useQuery({
+    queryKey: qk.activity(ledgerId),
+    queryFn: () => api<ActivityEvent[]>(`/api/ledgers/${ledgerId}/activity`),
+  });
+
+export const useAdminUsers = () =>
+  useQuery({ queryKey: qk.adminUsers, queryFn: () => api<AdminUser[]>("/api/admin/users") });
+
+export const useAdminInvites = () =>
+  useQuery({ queryKey: qk.adminInvites, queryFn: () => api<AdminInvite[]>("/api/admin/invites") });
+
+export const useAdminInstance = () =>
+  useQuery({ queryKey: qk.adminInstance, queryFn: () => api<AdminInstance>("/api/admin/instance") });
 
 /* ---------- mutations ---------- */
 
@@ -176,6 +347,140 @@ export function useCreateSettlement(ledgerId: string) {
       qc.invalidateQueries({ queryKey: qk.ledgers });
       qc.invalidateQueries({ queryKey: qk.crossLedger });
     },
+  });
+}
+
+/** Everything a write to one ledger can invalidate. Balances are DERIVED, so
+ *  they are always refetched and never patched client-side. */
+function invalidateLedger(qc: ReturnType<typeof useQueryClient>, ledgerId: string) {
+  qc.invalidateQueries({ queryKey: qk.expenses(ledgerId) });
+  qc.invalidateQueries({ queryKey: qk.balances(ledgerId) });
+  qc.invalidateQueries({ queryKey: qk.ledgers });
+  qc.invalidateQueries({ queryKey: qk.crossLedger });
+}
+
+export function useUpdateExpense(ledgerId: string, expenseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateExpense) =>
+      api<Expense>(`/api/ledgers/${ledgerId}/expenses/${expenseId}`, {
+        method: "PATCH",
+        body: JSON.stringify(body),
+      }),
+    onSettled: () => {
+      invalidateLedger(qc, ledgerId);
+      qc.invalidateQueries({ queryKey: qk.revisions(expenseId) });
+    },
+  });
+}
+
+export function useDeleteExpense(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (expenseId: string) =>
+      api<{ id: string }>(`/api/ledgers/${ledgerId}/expenses/${expenseId}`, { method: "DELETE" }),
+    onSettled: (_d, _e, expenseId) => {
+      invalidateLedger(qc, ledgerId);
+      qc.invalidateQueries({ queryKey: qk.revisions(expenseId) });
+    },
+  });
+}
+
+export function useUndoExpense(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (expenseId: string) =>
+      api<Expense>(`/api/ledgers/${ledgerId}/expenses/${expenseId}/undo`, { method: "POST" }),
+    onSettled: (_d, _e, expenseId) => {
+      invalidateLedger(qc, ledgerId);
+      qc.invalidateQueries({ queryKey: qk.revisions(expenseId) });
+    },
+  });
+}
+
+export function useAddComment(ledgerId: string, expenseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: string) =>
+      api<Comment>(`/api/ledgers/${ledgerId}/expenses/${expenseId}/comments`, {
+        method: "POST",
+        body: JSON.stringify({ body }),
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.comments(expenseId) }),
+  });
+}
+
+export function useDeleteComment(ledgerId: string, expenseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (commentId: string) =>
+      api<{ id: string }>(`/api/ledgers/${ledgerId}/comments/${commentId}`, { method: "DELETE" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.comments(expenseId) }),
+  });
+}
+
+export function useSaveSeries(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: CreateSeries & { id?: string }) =>
+      api<Series>(`/api/ledgers/${ledgerId}/recurring${id ? `/${id}` : ""}`, {
+        method: id ? "PATCH" : "POST",
+        body: JSON.stringify(body),
+      }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.series(ledgerId) }),
+  });
+}
+
+export function useSeriesAction(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action }: { id: string; action: "pause" | "delete" }) =>
+      api<Series | { id: string }>(
+        `/api/ledgers/${ledgerId}/recurring/${id}${action === "pause" ? "/pause" : ""}`,
+        { method: action === "pause" ? "POST" : "DELETE" },
+      ),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.series(ledgerId) }),
+  });
+}
+
+export function useRevokeCredential() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, credentialId }: { userId: string; credentialId: string }) =>
+      api<{ id: string }>(`/api/admin/users/${userId}/credentials/${credentialId}`, { method: "DELETE" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.adminUsers }),
+  });
+}
+
+export function useRevokeInvite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (inviteId: string) => api<{ id: string }>(`/api/admin/invites/${inviteId}`, { method: "DELETE" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.adminInvites }),
+  });
+}
+
+export function useSaveCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateCategory) =>
+      api<Category>("/api/categories", { method: "POST", body: JSON.stringify(body) }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.categories }),
+  });
+}
+
+export function useDeleteCategory() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api<{ id: string }>(`/api/categories/${id}`, { method: "DELETE" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.categories }),
+  });
+}
+
+export function useNudge() {
+  return useMutation({
+    mutationFn: (body: { ledgerId: string; toUserId: string }) =>
+      api<{ ok: true }>("/api/push/nudge", { method: "POST", body: JSON.stringify(body) }),
   });
 }
 
