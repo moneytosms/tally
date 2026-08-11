@@ -8,7 +8,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "wrangler d1 migrations apply tally",
+    "db:migrate": "wrangler d1 migrations apply tally --local",
+    "db:migrate:remote": "wrangler d1 migrations apply tally --remote",
     "deploy": "pnpm build && wrangler deploy"
   },
   "dependencies": {

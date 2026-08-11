@@ -4,6 +4,10 @@ One instance, ~20 people, $0/month on Cloudflare's free tier.
 
 ---
 
+> **First deploy?** [DEPLOYMENT.md](DEPLOYMENT.md) is the exact step-by-step
+> runbook with the full secret checklist. This document is day-2: backups,
+> limits, recovery.
+
 ## First-time provisioning
 
 `scripts/setup-cloudflare.sh` walks the whole thing. It is interactive and it
@@ -82,9 +86,10 @@ pnpm dev            # vite + wrangler dev
 pnpm build          # build client + worker
 pnpm typecheck      # tsc --noEmit
 pnpm test           # vitest
-pnpm db:generate    # drizzle-kit generate — after any schema change
-pnpm db:migrate     # apply migrations to D1
-pnpm deploy         # wrangler deploy
+pnpm db:generate       # drizzle-kit generate — after any schema change
+pnpm db:migrate        # apply migrations to LOCAL D1 (pnpm dev)
+pnpm db:migrate:remote # apply migrations to PRODUCTION D1
+pnpm deploy            # wrangler deploy
 ```
 
 ### Deploying a schema change
@@ -93,7 +98,7 @@ pnpm deploy         # wrangler deploy
 pnpm db:generate     # writes migrations/NNNN_*.sql
 # READ the generated SQL before applying it — see the warning below
 pnpm test            # the test harness applies every migration; failures show up here
-pnpm db:migrate
+pnpm db:migrate:remote
 pnpm deploy
 ```
 

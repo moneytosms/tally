@@ -1,0 +1,10 @@
+# Local dev secrets. Copy to .dev.vars (gitignored) and fill in.
+# The provisioning wizard writes .dev.vars for you — this file is the manual path.
+#
+# Generate:
+#   npx web-push generate-vapid-keys   -> VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
+#   openssl rand -base64 32            -> BOOTSTRAP_SECRET
+
+VAPID_PUBLIC_KEY=<VAPID_PUBLIC_KEY>
+VAPID_PRIVATE_KEY=<VAPID_PRIVATE_KEY>
+BOOTSTRAP_SECRET=<BOOTSTRAP_SECRET>

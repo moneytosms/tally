@@ -50,7 +50,7 @@ pnpm test           # 300+ tests, real SQLite behind the D1 interface
 pnpm dev            # vite + wrangler dev
 ```
 
-To deploy your own instance, see **[docs/OPERATIONS.md](docs/OPERATIONS.md)**.
+To deploy your own instance, see **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 The provisioning wizard walks the whole thing:
 
 ```bash
@@ -68,7 +68,8 @@ The provisioning wizard walks the whole thing:
 |---|---|
 | **[CONTEXT.md](CONTEXT.md)** | Domain language. Use these terms; don't invent synonyms. |
 | **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | How it's built and why |
-| **[docs/OPERATIONS.md](docs/OPERATIONS.md)** | Provisioning, deploys, backups, recovery |
+| **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** | First deploy, step by step, with the secret checklist |
+| **[docs/OPERATIONS.md](docs/OPERATIONS.md)** | Running it: backups, limits, recovery |
 | **[docs/SPEC.md](docs/SPEC.md)** | The buildable v1 spec |
 | **[docs/adr/](docs/adr/)** | Irreversible decisions and their reasoning |
 | **[docs/research/](docs/research/)** | Hosting, UPI deep links, passkeys |
