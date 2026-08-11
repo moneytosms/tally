@@ -1,0 +1,68 @@
+import { useEffect, useId, useRef, type ReactNode } from "react";
+import { focusRing } from "./focus";
+import { t } from "~/client/i18n";
+
+/** Bottom sheet / modal. Escape and backdrop close it; focus moves in and returns
+ *  to whatever opened it. The slide-up transition is killed by the global
+ *  prefers-reduced-motion rule in tokens.css. */
+export function Sheet({
+  open,
+  onOpenChange,
+  title,
+  children,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  children: ReactNode;
+}) {
+  const titleId = useId();
+  const panel = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    panel.current?.focus();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onOpenChange(false);
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+      opener?.focus();
+    };
+  }, [open, onOpenChange]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+      <div className="absolute inset-0" style={{ background: "rgb(0 0 0 / 38%)" }} onClick={() => onOpenChange(false)} />
+      <div
+        ref={panel}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        tabIndex={-1}
+        className="paper-ground relative max-h-[90vh] overflow-auto rounded-t-[14px] border-t"
+        style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+      >
+        <div className="sticky top-0 flex items-center gap-3 border-b px-4 py-3" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+          <h2 id={titleId} className="serif flex-1 text-[19px]">
+            {title}
+          </h2>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            aria-label={t("action.close")}
+            className={`min-h-11 min-w-11 rounded-[6px] text-[18px] ${focusRing}`}
+            style={{ color: "var(--ink-3)" }}
+          >
+            ✕
+          </button>
+        </div>
+        <div className="px-4 py-4">{children}</div>
+      </div>
+    </div>
+  );
+}

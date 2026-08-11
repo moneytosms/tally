@@ -1,6 +1,70 @@
 // Zod schemas shared by client and server. The SERVER parse is the trust boundary;
 // the client parse is a UX convenience and is assumed bypassable.
-// TODO: expense create/edit, settlement, invite, profile, ledger.
-// Money rules: integer paise only, splits must sum exactly to total, percentages to 100,
-// reject absurd magnitudes.
-export {};
+// Money is integer paise. Split sums are enforced by resolveSplits at save time.
+import { z } from "zod";
+import { MAX_PAISE } from "~/shared/money";
+
+const id = z.string().min(1).max(64);
+const paise = z.int().min(-MAX_PAISE).max(MAX_PAISE);
+const epochMs = z.int().min(0);
+const name = z.string().trim().min(1).max(80);
+const text = z.string().trim().max(2000);
+
+export const createLedgerSchema = z.object({
+  name,
+  endDate: epochMs.nullable().default(null),
+  budget: paise.positive().nullable().default(null),
+});
+
+export const updateLedgerSchema = createLedgerSchema.partial();
+
+export const createExpenseSchema = z.object({
+  description: name,
+  total: paise.refine((v) => v !== 0, "an expense cannot be zero"),
+  paidAtEpochMs: epochMs,
+  categoryId: id.nullable().default(null),
+  notes: text.nullable().default(null),
+  payerMemberId: id,
+  mode: z.enum(["equal", "exact", "shares", "percent"]),
+  // Stable order (order of addition). `value` is per mode: exact paise, share
+  // weight, or percent. Absent for equal.
+  participants: z.array(z.object({ memberId: id, value: z.int().optional() })).min(1),
+});
+
+export const updateExpenseSchema = createExpenseSchema;
+
+export const createSettlementSchema = z.object({
+  fromMemberId: id,
+  toMemberId: id,
+  amount: paise.positive(),
+  method: z.enum(["upi", "manual", "forgiven"]),
+  note: text.nullable().default(null),
+});
+
+// The ledger comes from the path param and the token is server-generated, so an
+// invite has no client-supplied body. `invites` has no nickname column; don't add
+// a field here that nothing can store.
+export const createInviteSchema = z.object({});
+
+export const updateProfileSchema = z.object({
+  displayName: name.optional(),
+  vpa: z
+    .string()
+    .trim()
+    .regex(/^[\w.\-]{2,60}@[a-zA-Z]{2,30}$/, "a VPA looks like name@bank")
+    .nullable()
+    .optional(),
+});
+
+export const addGuestSchema = z.object({
+  guestName: name,
+});
+
+export type CreateLedger = z.infer<typeof createLedgerSchema>;
+export type UpdateLedger = z.infer<typeof updateLedgerSchema>;
+export type CreateExpense = z.infer<typeof createExpenseSchema>;
+export type UpdateExpense = z.infer<typeof updateExpenseSchema>;
+export type CreateSettlement = z.infer<typeof createSettlementSchema>;
+export type CreateInvite = z.infer<typeof createInviteSchema>;
+export type UpdateProfile = z.infer<typeof updateProfileSchema>;
+export type AddGuest = z.infer<typeof addGuestSchema>;

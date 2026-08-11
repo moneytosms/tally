@@ -4,8 +4,9 @@
   "name": "tally",
   "main": "src/server/index.ts",
   "compatibility_date": "2026-08-11",
-  "assets": { "directory": "./dist/client" },
-  "d1_databases": [],
-  "durable_objects": { "bindings": [] },
-  "r2_buckets": []
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": { "directory": "./dist/client", "not_found_handling": "single-page-application" },
+  // database_id is filled in by scripts/setup-cloudflare.sh once the account exists.
+  "d1_databases": [{ "binding": "DB", "database_name": "tally", "database_id": "", "migrations_dir": "migrations" }]
+  // Durable Objects and R2 land with recurring expenses and backup — deferred.
 }

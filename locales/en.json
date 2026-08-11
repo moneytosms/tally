@@ -1,1 +1,200 @@
-{}
+{
+  "app": {
+    "name": "tally"
+  },
+  "tabs": {
+    "ledgers": "Ledgers",
+    "balances": "Balances",
+    "insights": "Insights",
+    "you": "You"
+  },
+  "nav": {
+    "current": "current tab"
+  },
+  "action": {
+    "save": "Save",
+    "skip": "Skip for now",
+    "continue": "Continue",
+    "close": "Close",
+    "back": "Back"
+  },
+  "amount": {
+    "positive": "owed to you,",
+    "negative": "you owe,",
+    "zero": "settled,"
+  },
+  "offline": {
+    "title": "You're offline.",
+    "body": "Amounts are hidden until tally can check them, and nothing can be saved.",
+    "noAmount": "—"
+  },
+  "ledger": {
+    "yourPosition": "your position",
+    "spent": "spent",
+    "budget": "budget",
+    "perDayLeft": "a day left",
+    "standing": "standing",
+    "ended": "ended",
+    "daysLeft": {
+      "one": "{count} day left",
+      "other": "{count} days left"
+    },
+    "expenses": "Expenses",
+    "members": "Members",
+    "netPosition": "net position"
+  },
+  "member": {
+    "guest": "guest",
+    "unknown": "Unknown member"
+  },
+  "expense": {
+    "add": "Add expense",
+    "description": "Description",
+    "amount": "Amount",
+    "paidBy": "Paid by",
+    "paidByName": "{name} paid",
+    "refundedBy": "{name} · refund",
+    "refund": "Refund",
+    "total": "total",
+    "yourShare": "your share",
+    "split": "Split",
+    "splitWays": {
+      "one": "split 1 way",
+      "other": "split {count} ways"
+    },
+    "ledger": "Ledger",
+    "category": "Category",
+    "save": "Save",
+    "remainderNote": "Odd paise go to the payer.",
+    "splitMode": {
+      "equal": "Equal",
+      "exact": "Exact",
+      "shares": "Shares",
+      "percent": "Percent"
+    },
+    "member": {
+      "one": "{count} member",
+      "other": "{count} members"
+    },
+    "naturalLanguage": "Quick add",
+    "naturalLanguagePlaceholder": "dinner 1200 split with rahul and mira",
+    "naturalLanguageSoon": "Typing it in plain English lands soon. Use the form below.",
+    "amountHint": "In rupees, e.g. 1234.56",
+    "date": "Date",
+    "notes": "Notes",
+    "categorySoon": "Categories land soon.",
+    "addParticipant": "Add participant",
+    "addParticipantHint": "Leaving someone out is how you exclude them. There is no zero share.",
+    "participants": "Split between",
+    "remove": "Remove {name}",
+    "payerMark": "paid",
+    "shareLabel": "share",
+    "sharePending": "share pending",
+    "refundNote": "This is a refund. It moves balances back toward zero.",
+    "saveFailed": "Could not save that expense.",
+    "value": {
+      "equal": "Equal share",
+      "exact": "Amount in rupees",
+      "shares": "Shares",
+      "percent": "Percent"
+    },
+    "error": {
+      "amount": "Enter an amount, like 1234.56.",
+      "exactSum": "The amounts must add up to the total.",
+      "percentSum": "The percentages must add up to 100.",
+      "numbers": "Enter whole numbers.",
+      "positiveValue": "Every share must be greater than zero.",
+      "noParticipants": "Pick at least one person to split between.",
+      "tooLarge": "That amount is too large.",
+      "split": "That split doesn't work out."
+    }
+  },
+  "balances": {
+    "overall": "overall",
+    "settleAcross": "Settle across ledgers",
+    "emptyBody": "Once you share an expense with someone, their overall position shows up here.",
+    "guestsSkipped": "Guests have no UPI VPA, so they're settled by hand and left out of this.",
+    "perLedger": "Per ledger",
+    "transferPlan": "Suggested transfers",
+    "contributing": "Contributing ledgers",
+    "bulkTotal": "Settle everything with {name}",
+    "recordAll": "Record all",
+    "recordedAll": "Recorded in all {total} ledgers.",
+    "recordedSome": "Recorded in {done} of {total} ledgers.",
+    "nothingToSettle": "Nothing to settle."
+  },
+  "settle": {
+    "title": "Settle up",
+    "payUpi": "Pay {amount} with UPI",
+    "recordManually": "Record manually",
+    "recordOnBehalf": "Record on their behalf",
+    "why": "why?",
+    "fewestTransfers": "fewest transfers",
+    "pays": "{from} pays {to}",
+    "suggested": "suggested",
+    "remaining": "remaining",
+    "amount": "Amount",
+    "partialHint": "Pay part of it if that's what happened. The rest stays owed.",
+    "note": "Note",
+    "record": "Record settlement",
+    "failed": "Could not record that settlement.",
+    "methodLabel": "How was it paid?",
+    "method": {
+      "upi": "UPI",
+      "manual": "Cash or bank transfer",
+      "forgiven": "Written off"
+    },
+    "forgivenExplain": "Writes the debt off for good. It's recorded, never silent.",
+    "openUpi": "Open UPI app",
+    "noVpa": "{name} hasn't added a UPI VPA, so record it manually.",
+    "errorAmount": "Enter an amount, like 500.00.",
+    "errorTooMuch": "That's more than is owed.",
+    "nothingBody": "Nothing to settle here yet.",
+    "whyFor": "Why does {from} pay {to}?",
+    "trailEmpty": "No expenses behind this one yet.",
+    "trailShare": "{name}'s share"
+  },
+  "profile": {
+    "displayName": "Display name",
+    "vpa": "UPI VPA",
+    "vpaInvalid": "A VPA looks like name@bank.",
+    "vpaVisibility": "Only people you share a ledger with can see this.",
+    "saved": "Profile saved.",
+    "devices": "Devices",
+    "passkey": "Passkey",
+    "noDevices": "No passkeys registered.",
+    "archived": "Archived ledgers",
+    "noArchived": "Nothing archived yet.",
+    "export": "Export",
+    "exportSoon": "CSV export lands with the admin panel."
+  },
+  "onboarding": {
+    "title": "tally",
+    "subtitle": "Split expenses with the people you actually see.",
+    "bootstrapSecret": "Bootstrap secret",
+    "iRunThis": "I run this instance",
+    "checking": "Checking this device…",
+    "passkeyTitle": "Create a passkey",
+    "passkeyBody": "No password, no email. Your device unlocks tally with the same face or fingerprint it already uses.",
+    "createPasskey": "Create passkey",
+    "noWebauthnTitle": "Open this in your browser",
+    "noWebauthnBody": "This app is running inside another app's built-in browser, which can't create passkeys. Copy the link below and open it in Safari or Chrome.",
+    "copyLink": "Copy link",
+    "vpaTitle": "Add your UPI VPA",
+    "vpaBody": "It lets people pay you back in one tap. You can skip this and add it later."
+  },
+  "empty": {
+    "ledgers": "No ledgers yet.",
+    "ledgersBody": "A ledger is any set of people sharing costs — a trip, a flatshare, or just you and one friend. Create one and add the first expense.",
+    "expenses": "No expenses yet.",
+    "expensesBody": "Tap + to add the first one. Pick who paid and who it splits between; tally works out the rest.",
+    "balances": "All settled up.",
+    "insights": "Nothing to show yet.",
+    "insightsBody": "Once there are a few months of expenses, this is where categories, trends, and who you spend the most with will live."
+  },
+  "error": {
+    "generic": "Something went wrong.",
+    "network": "Couldn't reach the server.",
+    "unauthorized": "Sign in to continue."
+  }
+}
