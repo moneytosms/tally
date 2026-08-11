@@ -5,7 +5,7 @@
 import { describe, expect, it } from "vitest";
 // @ts-expect-error node:sqlite is untyped here — @types/node is not a dependency
 import { DatabaseSync } from "node:sqlite";
-import ddl from "../../../migrations/0000_calm_malice.sql?raw";
+import { migrate } from "./_test-harness";
 import app from "~/server/index";
 import { createDb } from "~/db";
 import { SESSION_COOKIE, createSession } from "~/server/auth/session";
@@ -53,7 +53,7 @@ function d1(sql: Sqlite) {
 
 function setup() {
   const sql = new DatabaseSync(":memory:") as Sqlite;
-  sql.exec(ddl);
+  migrate(sql);
   const binding = d1(sql);
   return { sql, db: createDb(binding), env: { DB: binding, BOOTSTRAP_SECRET: SECRET } };
 }

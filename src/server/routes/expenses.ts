@@ -41,10 +41,14 @@ export const rejectArchivedWrites: MiddlewareHandler<Env> = async (c, next) => {
 
 const PATH = "/ledgers/:ledgerId/expenses";
 const ITEM = `${PATH}/:expenseId` as const;
+const REVISIONS = `${ITEM}/revisions` as const;
+const UNDO = `${ITEM}/undo` as const;
 
 const expenses = new Hono<Env>();
 expenses.use(PATH, requireSession, requireMember, rejectArchivedWrites);
 expenses.use(ITEM, requireSession, requireMember, rejectArchivedWrites);
+expenses.use(REVISIONS, requireSession, requireMember);
+expenses.use(UNDO, requireSession, requireMember, rejectArchivedWrites);
 
 type StoredExpense = NonNullable<Awaited<ReturnType<Db["findExpense"]>>>;
 
@@ -110,8 +114,35 @@ const splitRows = (expenseId: string, body: CreateExpense, amounts: number[]) =>
     sortOrder: i,
   }));
 
+/** `from`/`to` are epoch ms integers on the wire; anything else is a 400. */
+function parseEpoch(raw: string | undefined): number | undefined {
+  if (raw === undefined) return undefined;
+  if (!/^-?\d+$/.test(raw)) throw new Error("must be an integer epoch ms");
+  return Number(raw);
+}
+
 expenses.get(PATH, async (c) => {
-  const rows = await c.var.db.listExpenses(c.req.param("ledgerId"));
+  const q = c.req.query("q");
+  const categoryId = c.req.query("categoryId");
+  const memberId = c.req.query("memberId");
+  let from: number | undefined;
+  let to: number | undefined;
+  try {
+    from = parseEpoch(c.req.query("from"));
+    to = parseEpoch(c.req.query("to"));
+  } catch {
+    return c.json({ error: "from/to must be an integer epoch ms" }, 400);
+  }
+
+  // With no params this is byte-identical to listExpenses: searchExpenses with
+  // an empty filter set applies the exact same clauses and ordering.
+  const rows = await c.var.db.searchExpenses(c.req.param("ledgerId"), {
+    q: q || undefined,
+    categoryId: categoryId || undefined,
+    memberId: memberId || undefined,
+    from,
+    to,
+  });
   return c.json(rows.map(toWire));
 });
 
@@ -228,6 +259,90 @@ expenses.delete(ITEM, async (c) => {
     db.softDeleteExpense(expenseId, now),
   ]);
   return c.json({ id: expenseId, deletedAt: now });
+});
+
+expenses.get(REVISIONS, async (c) => {
+  const db = c.var.db;
+  const ledgerId = c.req.param("ledgerId");
+  const revisions = await db.listRevisions(c.req.param("expenseId"));
+  // listRevisions isn't ledger-scoped — a wrong ledgerId in the path would
+  // otherwise leak another ledger's expense history to any member.
+  if (revisions[0] && (JSON.parse(revisions[0].snapshot) as StoredExpense).ledgerId !== ledgerId) {
+    return c.json({ error: "not found" }, 404);
+  }
+
+  const users = await db.listUsers();
+  const nameOf = new Map(users.map((u) => [u.id, u.displayName]));
+  return c.json(
+    revisions.map((r) => ({
+      id: r.id,
+      revisedBy: r.revisedBy,
+      revisedByName: nameOf.get(r.revisedBy) ?? "",
+      revisedAt: r.revisedAt,
+      snapshot: JSON.parse(r.snapshot) as StoredExpense,
+    })),
+  );
+});
+
+/**
+ * Restores the expense to its most recent revision. Writes a revision of the
+ * CURRENT state first — undo is itself undoable, per SPEC. Column update,
+ * split clear and split reinsert go in one batch: D1 has no cross-request
+ * transaction and a half-applied restore is wrong money.
+ */
+expenses.post(UNDO, async (c) => {
+  const db = c.var.db;
+  const ledgerId = c.req.param("ledgerId");
+  const expenseId = c.req.param("expenseId");
+
+  const revisions = await db.listRevisions(expenseId);
+  if (revisions.length === 0) return c.json({ error: "nothing to undo" }, 400);
+
+  const target = JSON.parse(revisions[0]!.snapshot) as StoredExpense;
+  if (target.ledgerId !== ledgerId) return c.json({ error: "not found" }, 404);
+
+  const now = Date.now();
+  // findExpense excludes soft-deleted rows: if the expense is currently live,
+  // that IS the current state to snapshot. If it's soft-deleted, its non-
+  // deletedAt columns are unchanged since the delete (which snapshotted them
+  // as `target` here), so the deleted marker is the only thing to add back.
+  const live = await db.findExpense(ledgerId, expenseId);
+  const currentSnapshot = live ?? { ...target, deletedAt: now };
+
+  await db.batch([
+    db.insertRevision({
+      id: uuidv7(),
+      expenseId,
+      snapshot: JSON.stringify(currentSnapshot),
+      revisedBy: c.var.user.id,
+      revisedAt: now,
+    }),
+    db.restoreExpense(expenseId, {
+      description: target.description,
+      total: target.total,
+      paidAt: target.paidAt,
+      payerMemberId: target.payerMemberId,
+      categoryId: target.categoryId,
+      notes: target.notes,
+      mode: target.mode,
+      deletedAt: null,
+      updatedAt: now,
+    }),
+    db.clearSplits(expenseId),
+    db.insertSplits(
+      target.splits.map((s, i) => ({
+        id: uuidv7(),
+        expenseId,
+        memberId: s.memberId,
+        amount: s.amount,
+        inputValue: s.inputValue,
+        sortOrder: i,
+      })),
+    ),
+  ]);
+
+  const saved = await db.findExpense(ledgerId, expenseId);
+  return c.json(toWire(saved!));
 });
 
 export default expenses;

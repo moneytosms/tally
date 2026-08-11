@@ -6,7 +6,6 @@
 // @ts-expect-error node:sqlite is untyped here — @types/node is not a dependency
 import { DatabaseSync } from "node:sqlite";
 import { Hono } from "hono";
-import ddl from "../../../migrations/0000_calm_malice.sql?raw";
 import { createDb, type Db } from "~/db";
 import type { Env } from "~/server/context";
 import { SESSION_COOKIE, createSession } from "~/server/auth/session";
@@ -65,6 +64,26 @@ function asD1(sql: Sqlite) {
 
 export const NOW = 1_760_000_000_000;
 
+// Every migration, in order — so tests run against the schema production will
+// actually have, not just the first migration. A new migration file is picked
+// up automatically; one that does not apply cleanly fails every route test,
+// which is exactly when you want to hear about it.
+const MIGRATIONS = Object.entries(
+  import.meta.glob("../../../migrations/*.sql", { query: "?raw", import: "default", eager: true }),
+)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([, sql]) => sql as string);
+
+export function migrate(sql: Sqlite) {
+  // node:sqlite exec() stops at the first statement in some builds, and the
+  // `--> statement-breakpoint` markers are drizzle's own separators anyway.
+  for (const file of MIGRATIONS) {
+    for (const stmt of file.split("--> statement-breakpoint")) {
+      if (stmt.trim()) sql.exec(stmt);
+    }
+  }
+}
+
 export type Harness = Awaited<ReturnType<typeof setup>>;
 
 /**
@@ -73,7 +92,7 @@ export type Harness = Awaited<ReturnType<typeof setup>>;
  */
 export async function setup() {
   const sql = new DatabaseSync(":memory:") as Sqlite;
-  sql.exec(ddl);
+  migrate(sql);
 
   const user = sql.prepare("INSERT INTO users (id, display_name, vpa, is_owner, created_at) VALUES (?,?,?,?,?)");
   user.run("u_ada", "Ada", "ada@bank", 1, NOW);

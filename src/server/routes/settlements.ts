@@ -14,8 +14,9 @@ import type { Env } from "~/server/context";
 import { netPositions, transferPlan } from "~/server/balances";
 import { requireMember } from "~/server/middleware/membership";
 import { requireSession } from "~/server/middleware/session";
+import { notify } from "~/server/routes/push";
 import { uuidv7 } from "~/shared/id";
-import type { Paise } from "~/shared/money";
+import { formatPaise, type Paise } from "~/shared/money";
 import { createSettlementSchema } from "~/shared/schemas";
 
 const settlements = new Hono<Env>();
@@ -60,6 +61,21 @@ settlements.post("/ledgers/:ledgerId/settlements", requireSession, requireMember
     declaredBy: c.var.user.id,
     declaredAt: Date.now(),
   });
+
+  // Trigger 1 of the two push triggers (SPEC §9): the payee is NOTIFIED, not
+  // asked — a settlement is declared, never negotiated. Single recipient, and
+  // awaited only so a test can observe it; a failure inside notify() is
+  // swallowed there and can never fail the settlement itself.
+  const payee = (await db.listMembers(ledgerId)).find((m) => m.id === body.toMemberId);
+  if (payee?.userId && payee.userId !== c.var.user.id) {
+    const ledger = await db.findLedger(ledgerId);
+    await notify(c.env, db, payee.userId, {
+      title: `${c.var.user.displayName} settled with you`,
+      body: `${formatPaise(body.amount)} in ${ledger?.name ?? "a shared ledger"}`,
+      url: `/ledgers/${ledgerId}`,
+    });
+  }
+
   return c.json({ id }, 201);
 });
 

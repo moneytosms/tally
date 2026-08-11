@@ -14,6 +14,14 @@ import ledgers from "~/server/routes/ledgers";
 import expenses from "~/server/routes/expenses";
 import settlements from "~/server/routes/settlements";
 import balances from "~/server/routes/balances";
+import categories from "~/server/routes/categories";
+import comments from "~/server/routes/comments";
+import insights from "~/server/routes/insights";
+import exportCsv from "~/server/routes/export";
+import recurring from "~/server/routes/recurring";
+import push from "~/server/routes/push";
+import admin from "~/server/routes/admin";
+import activity from "~/server/routes/activity";
 
 const app = new Hono<Env>();
 
@@ -43,6 +51,14 @@ app.route("/api", ledgers);
 app.route("/api", expenses);
 app.route("/api", settlements);
 app.route("/api", balances);
+app.route("/api", categories);
+app.route("/api", comments);
+app.route("/api", insights);
+app.route("/api", exportCsv);
+app.route("/api", recurring);
+app.route("/api", push);
+app.route("/api", admin);
+app.route("/api", activity);
 
 app.notFound((c) => c.json({ error: "not found" }, 404));
 // Never leak an internal message to the client, and never log a request body —
@@ -50,3 +66,6 @@ app.notFound((c) => c.json({ error: "not found" }, 404));
 app.onError((_err, c) => c.json({ error: "internal error" }, 500));
 
 export default app;
+// The recurring-expense alarm. Exported here because a Durable Object class must
+// be a named export of the Worker's entrypoint for wrangler to bind it.
+export { RecurringAlarm } from "~/server/recurring-do";

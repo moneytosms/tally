@@ -222,6 +222,172 @@ describe("PATCH /ledgers/:ledgerId/expenses/:expenseId", () => {
   });
 });
 
+describe("GET /ledgers/:ledgerId/expenses (search & filter)", () => {
+  const list = (qs: string) => app.request(req(h, `/api/ledgers/L1/expenses?${qs}`));
+
+  it("returns everything, unchanged, with no params", async () => {
+    await create({ description: "Dinner", mode: "equal", total: 1_000, participants: [{ memberId: "m_ada" }] });
+    await create({ description: "Taxi", mode: "equal", total: 2_000, participants: [{ memberId: "m_bob" }] });
+    const withParams = await app.request(req(h, "/api/ledgers/L1/expenses"));
+    const plain = await app.request(req(h, "/api/ledgers/L1/expenses"));
+    const withParamsBody = await withParams.json();
+    expect(withParamsBody).toEqual(await plain.json());
+    expect(withParamsBody as unknown[]).toHaveLength(2);
+  });
+
+  it("matches q against description and notes, literally on a %", async () => {
+    await create({ description: "50% off dinner", mode: "equal", total: 1_000, participants: [{ memberId: "m_ada" }] });
+    await create({ description: "Groceries", notes: "had a 50% coupon", mode: "equal", total: 500, participants: [{ memberId: "m_ada" }] });
+    await create({ description: "Something else entirely", mode: "equal", total: 700, participants: [{ memberId: "m_ada" }] });
+
+    const res = await list("q=" + encodeURIComponent("50%"));
+    const body = (await res.json()) as Array<{ description: string }>;
+    expect(body).toHaveLength(2);
+    expect(body.map((b) => b.description).sort()).toEqual(["50% off dinner", "Groceries"]);
+  });
+
+  it("filters by categoryId", async () => {
+    await create({ description: "Lunch", categoryId: "cat_food", mode: "equal", total: 1_000, participants: [{ memberId: "m_ada" }] });
+    await create({ description: "Bus", categoryId: "cat_transport", mode: "equal", total: 500, participants: [{ memberId: "m_ada" }] });
+
+    const res = await list("categoryId=cat_food");
+    const body = (await res.json()) as Array<{ description: string }>;
+    expect(body).toHaveLength(1);
+    expect(body[0]!.description).toBe("Lunch");
+  });
+
+  it("filters by from/to date range", async () => {
+    await create({ description: "Early", paidAtEpochMs: 1_000, mode: "equal", total: 1_000, participants: [{ memberId: "m_ada" }] });
+    await create({ description: "Late", paidAtEpochMs: 9_000, mode: "equal", total: 1_000, participants: [{ memberId: "m_ada" }] });
+
+    const res = await list("from=5000&to=10000");
+    const body = (await res.json()) as Array<{ description: string }>;
+    expect(body).toHaveLength(1);
+    expect(body[0]!.description).toBe("Late");
+  });
+
+  it("rejects a non-integer from/to with 400", async () => {
+    const res = await list("from=notanumber");
+    expect(res.status).toBe(400);
+  });
+
+  it("filters by memberId, matching both payer and participant", async () => {
+    // Bob pays, Ada + guest participate.
+    await create({
+      description: "Bob paid",
+      payerMemberId: "m_bob",
+      mode: "equal",
+      total: 2_000,
+      participants: [{ memberId: "m_ada" }, { memberId: "m_guest" }],
+    });
+    // Ada pays, Bob is not involved at all.
+    await create({
+      description: "Ada solo",
+      mode: "equal",
+      total: 1_000,
+      participants: [{ memberId: "m_ada" }],
+    });
+
+    const res = await list("memberId=m_bob");
+    const body = (await res.json()) as Array<{ description: string }>;
+    expect(body).toHaveLength(1);
+    expect(body[0]!.description).toBe("Bob paid");
+
+    const resAda = await list("memberId=m_ada");
+    const bodyAda = (await resAda.json()) as Array<{ description: string }>;
+    expect(bodyAda).toHaveLength(2);
+  });
+});
+
+describe("GET /ledgers/:ledgerId/expenses/:expenseId/revisions", () => {
+  it("returns revisions newest-first with parsed snapshots and reviser names", async () => {
+    const { id } = (await (
+      await create({ mode: "equal", total: 10_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }) // ₹100.00
+    ).json()) as { id: string };
+
+    await app.request(
+      req(h, `/api/ledgers/L1/expenses/${id}`, {
+        method: "PATCH",
+        json: { ...base, description: "v2", mode: "equal", total: 12_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }, // ₹120.00
+      }),
+    );
+    await app.request(
+      req(h, `/api/ledgers/L1/expenses/${id}`, {
+        method: "PATCH",
+        json: { ...base, description: "v3", mode: "equal", total: 13_000, participants: [{ memberId: "m_ada" }] }, // ₹130.00
+      }),
+    );
+
+    const res = await app.request(req(h, `/api/ledgers/L1/expenses/${id}/revisions`));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Array<{ revisedByName: string; snapshot: { description: string } }>;
+    expect(body).toHaveLength(2);
+    expect(body[0]!.snapshot.description).toBe("v2"); // newest first: state before the v3 edit
+    expect(body[1]!.snapshot.description).toBe("Dinner"); // state before the v2 edit
+    expect(body.every((r) => r.revisedByName === "Ada")).toBe(true);
+  });
+});
+
+describe("POST /ledgers/:ledgerId/expenses/:expenseId/undo", () => {
+  const createOne = () =>
+    create({ description: "Dinner", mode: "equal", total: 10_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00
+
+  it("400s when there are no revisions", async () => {
+    const { id } = (await (await createOne()).json()) as { id: string };
+    const res = await app.request(req(h, `/api/ledgers/L1/expenses/${id}/undo`, { method: "POST" }));
+    expect(res.status).toBe(400);
+  });
+
+  it("restores the previous description, total and splits, still summing to the total", async () => {
+    const { id } = (await (await createOne()).json()) as { id: string };
+    await app.request(
+      req(h, `/api/ledgers/L1/expenses/${id}`, {
+        method: "PATCH",
+        json: { ...base, description: "Dinner (edited)", mode: "exact", total: 15_000, participants: [{ memberId: "m_ada", value: 15_000 }] }, // ₹150.00
+      }),
+    );
+
+    const res = await app.request(req(h, `/api/ledgers/L1/expenses/${id}/undo`, { method: "POST" }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { description: string; total: number; splits: Array<{ amount: number }> };
+    expect(body.description).toBe("Dinner");
+    expect(body.total).toBe(10_000);
+    expect(body.splits.reduce((a, s) => a + s.amount, 0)).toBe(10_000);
+  });
+
+  it("undoes a delete, bringing the expense back", async () => {
+    const { id } = (await (await createOne()).json()) as { id: string };
+    await app.request(req(h, `/api/ledgers/L1/expenses/${id}`, { method: "DELETE" }));
+    expect(await h.db.findExpense("L1", id)).toBeUndefined();
+
+    const res = await app.request(req(h, `/api/ledgers/L1/expenses/${id}/undo`, { method: "POST" }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { description: string; total: number };
+    expect(body.description).toBe("Dinner");
+    expect(body.total).toBe(10_000);
+    expect(await h.db.findExpense("L1", id)).toBeDefined();
+  });
+
+  it("is itself undoable: undoing twice returns to the state before the first undo", async () => {
+    const { id } = (await (await createOne()).json()) as { id: string };
+    await app.request(
+      req(h, `/api/ledgers/L1/expenses/${id}`, {
+        method: "PATCH",
+        json: { ...base, description: "Dinner (edited)", mode: "equal", total: 20_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }, // ₹200.00
+      }),
+    );
+
+    const first = await app.request(req(h, `/api/ledgers/L1/expenses/${id}/undo`, { method: "POST" }));
+    expect(((await first.json()) as { description: string }).description).toBe("Dinner");
+
+    const second = await app.request(req(h, `/api/ledgers/L1/expenses/${id}/undo`, { method: "POST" }));
+    expect(second.status).toBe(200);
+    const body = (await second.json()) as { description: string; total: number };
+    expect(body.description).toBe("Dinner (edited)");
+    expect(body.total).toBe(20_000);
+  });
+});
+
 describe("DELETE /ledgers/:ledgerId/expenses/:expenseId", () => {
   it("soft-deletes: the row survives, the read path stops returning it", async () => {
     const { id } = (await (
