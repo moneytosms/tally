@@ -14,7 +14,7 @@
 // batch item, so `db.batch([...])` runs several atomically. D1 has no
 // cross-request transaction — batch is what keeps the 1:1 ledger auto-create
 // and bulk settle from half-applying (SPEC §11 hazard 2).
-import { and, desc, eq, gt, inArray, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, or, sql as raw } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
 import { drizzle } from "drizzle-orm/d1";
 import * as t from "~/db/schema";
@@ -168,6 +168,33 @@ export function createDb(d1: D1Database) {
         .limit(1);
       return row;
     },
+    /** Every live ledger on the instance. Owner-only — the admin panel is the
+     *  single caller, and membership is deliberately not consulted. */
+    async listAllLedgers() {
+      return db
+        .select()
+        .from(t.ledgers)
+        .where(isNull(t.ledgers.deletedAt))
+        .orderBy(desc(t.ledgers.createdAt));
+    },
+    /** Invites that could still be redeemed right now. A leaked invite is
+     *  potentially account access (CONTEXT.md), so the owner can see and revoke
+     *  every one that is still live. */
+    async listOpenInvites(now: number) {
+      return db
+        .select({ invite: t.invites, ledger: t.ledgers })
+        .from(t.invites)
+        .innerJoin(t.ledgers, eq(t.ledgers.id, t.invites.ledgerId))
+        .where(
+          and(
+            isNull(t.invites.consumedAt),
+            isNull(t.invites.revokedAt),
+            gt(t.invites.expiresAt, now),
+            isNull(t.ledgers.deletedAt),
+          ),
+        )
+        .orderBy(desc(t.invites.createdAt));
+    },
     insertInvite: (v: Insert<typeof t.invites>) => db.insert(t.invites).values(v),
     /** Single-use: the WHERE clause is the guard against a double-accept race. */
     consumeInvite: (id: string, userId: string, at: number) =>
@@ -197,6 +224,84 @@ export function createDb(d1: D1Database) {
       const [row] = await withSplits(rows);
       return row;
     },
+    /**
+     * Search and filter within one ledger. Every clause is optional; with none
+     * set this is exactly `listExpenses`. `q` matches description and notes,
+     * case-insensitively — SQLite LIKE is already case-insensitive for ASCII.
+     */
+    async searchExpenses(
+      ledgerId: string,
+      f: { q?: string; categoryId?: string; memberId?: string; from?: number; to?: number },
+    ) {
+      const clauses = [eq(t.expenses.ledgerId, ledgerId), isNull(t.expenses.deletedAt)];
+      if (f.q) {
+        // Escape LIKE wildcards so a user typing "50%" searches for "50%"
+        // rather than matching every row. drizzle's `like()` has no ESCAPE
+        // option, so the clause is spelled out.
+        const pattern = `%${f.q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
+        clauses.push(
+          or(
+            // `\'` inside a JS template literal is an escaped quote — it eats the
+            // backslash and emits `ESCAPE ''`, an empty (invalid) escape char.
+            // `\\'` is what actually puts a literal backslash in the SQL text.
+            raw`${t.expenses.description} LIKE ${pattern} ESCAPE '\\'`,
+            raw`${t.expenses.notes} LIKE ${pattern} ESCAPE '\\'`,
+          )!,
+        );
+      }
+      if (f.categoryId) clauses.push(eq(t.expenses.categoryId, f.categoryId));
+      if (f.from !== undefined) clauses.push(gte(t.expenses.paidAt, f.from));
+      if (f.to !== undefined) clauses.push(lte(t.expenses.paidAt, f.to));
+      // "involving this member" means payer OR participant, so it needs the
+      // splits table — a bare payer filter would silently hide their shares.
+      if (f.memberId) {
+        clauses.push(
+          or(
+            eq(t.expenses.payerMemberId, f.memberId),
+            raw`EXISTS (SELECT 1 FROM ${t.expenseSplits} WHERE ${t.expenseSplits.expenseId} = ${t.expenses.id} AND ${t.expenseSplits.memberId} = ${f.memberId})`,
+          )!,
+        );
+      }
+      const rows = await db
+        .select()
+        .from(t.expenses)
+        .where(and(...clauses))
+        .orderBy(desc(t.expenses.paidAt));
+      return withSplits(rows);
+    },
+    /**
+     * Every live expense the user has a share in, across every ledger they are
+     * still a member of. Feeds lifetime analytics. Returns the user's own split
+     * amount alongside the expense, because that — not the total — is what they
+     * actually spent.
+     */
+    async listExpenseSharesForUser(userId: string) {
+      return db
+        .select({
+          expenseId: t.expenses.id,
+          ledgerId: t.expenses.ledgerId,
+          description: t.expenses.description,
+          categoryId: t.expenses.categoryId,
+          paidAt: t.expenses.paidAt,
+          total: t.expenses.total,
+          share: t.expenseSplits.amount,
+          payerMemberId: t.expenses.payerMemberId,
+          memberId: t.ledgerMembers.id,
+        })
+        .from(t.expenses)
+        .innerJoin(t.expenseSplits, eq(t.expenseSplits.expenseId, t.expenses.id))
+        .innerJoin(t.ledgerMembers, eq(t.ledgerMembers.id, t.expenseSplits.memberId))
+        .innerJoin(t.ledgers, eq(t.ledgers.id, t.expenses.ledgerId))
+        .where(
+          and(
+            eq(t.ledgerMembers.userId, userId),
+            isNull(t.expenses.deletedAt),
+            isNull(t.ledgerMembers.deletedAt),
+            isNull(t.ledgers.deletedAt),
+          ),
+        )
+        .orderBy(desc(t.expenses.paidAt));
+    },
     insertExpense: (v: Insert<typeof t.expenses>) => db.insert(t.expenses).values(v),
     insertSplits: (v: Insert<typeof t.expenseSplits>[]) => db.insert(t.expenseSplits).values(v),
     /** Splits carry no deleted_at — they live and die with their expense, and the
@@ -209,6 +314,11 @@ export function createDb(d1: D1Database) {
         .update(t.expenses)
         .set({ deletedAt: at, updatedAt: at })
         .where(and(eq(t.expenses.id, expenseId), isNull(t.expenses.deletedAt))),
+    /** Undo's write path: unlike `updateExpense`, not guarded by isNull(deletedAt) —
+     *  undo must be able to reach past a soft-delete to un-delete the row, which
+     *  is the one legitimate reason a write here skips that guard. */
+    restoreExpense: (expenseId: string, v: Partial<Insert<typeof t.expenses>>) =>
+      db.update(t.expenses).set(v).where(eq(t.expenses.id, expenseId)),
     insertRevision: (v: Insert<typeof t.expenseRevisions>) => db.insert(t.expenseRevisions).values(v),
     async listRevisions(expenseId: string) {
       return db
@@ -239,6 +349,177 @@ export function createDb(d1: D1Database) {
     async listCategories() {
       return db.select().from(t.categories).where(isNull(t.categories.deletedAt)).orderBy(t.categories.name);
     },
+    insertCategory: (v: Insert<typeof t.categories>) => db.insert(t.categories).values(v),
+    softDeleteCategory: (id: string, at: number) =>
+      db
+        .update(t.categories)
+        .set({ deletedAt: at })
+        // Seeded rows are structural: the charts and the NL parser both assume
+        // "Other" exists. Removing a default is not a thing the admin panel does.
+        .where(and(eq(t.categories.id, id), eq(t.categories.isDefault, false), isNull(t.categories.deletedAt))),
+
+    // ---- activity --------------------------------------------------------
+    //
+    // The three helpers below deliberately return rows the ordinary helpers
+    // hide: soft-deleted expenses, and members who have left. That is the whole
+    // point of an activity feed — "Bob deleted Dinner" and "Cy left" are events,
+    // and a feed that silently omits them is lying about what happened.
+    //
+    // They are named for that single purpose so they cannot be reached for by
+    // accident. NOTHING that computes money may call them. Balances read
+    // listExpenses/listMembers, which filter, and that is not negotiable.
+
+    /** Includes soft-deleted expenses. Never feed this to a balance. */
+    async listExpensesForActivity(ledgerId: string) {
+      return db
+        .select()
+        .from(t.expenses)
+        .where(eq(t.expenses.ledgerId, ledgerId))
+        .orderBy(desc(t.expenses.createdAt));
+    },
+    /** Includes members who have left. Never feed this to a balance. */
+    async listMembersForActivity(ledgerId: string) {
+      return db
+        .select()
+        .from(t.ledgerMembers)
+        .where(and(eq(t.ledgerMembers.ledgerId, ledgerId), isNull(t.ledgerMembers.deletedAt)))
+        .orderBy(t.ledgerMembers.joinedAt);
+    },
+    /** Every revision on this ledger, with the description of what was revised. */
+    async listRevisionsForActivity(ledgerId: string) {
+      return db
+        .select({ revision: t.expenseRevisions, description: t.expenses.description })
+        .from(t.expenseRevisions)
+        .innerJoin(t.expenses, eq(t.expenses.id, t.expenseRevisions.expenseId))
+        .where(eq(t.expenses.ledgerId, ledgerId))
+        .orderBy(desc(t.expenseRevisions.revisedAt));
+    },
+
+    // ---- comments --------------------------------------------------------
+    async listComments(expenseId: string) {
+      return db
+        .select({ comment: t.comments, author: t.users })
+        .from(t.comments)
+        .innerJoin(t.users, eq(t.users.id, t.comments.authorUserId))
+        .where(and(eq(t.comments.expenseId, expenseId), isNull(t.comments.deletedAt)))
+        .orderBy(asc(t.comments.createdAt));
+    },
+    async listLedgerComments(ledgerId: string) {
+      return db
+        .select({ comment: t.comments, author: t.users })
+        .from(t.comments)
+        .innerJoin(t.users, eq(t.users.id, t.comments.authorUserId))
+        .where(and(eq(t.comments.ledgerId, ledgerId), isNull(t.comments.deletedAt)))
+        .orderBy(desc(t.comments.createdAt));
+    },
+    async findComment(id: string) {
+      const [row] = await db
+        .select()
+        .from(t.comments)
+        .where(and(eq(t.comments.id, id), isNull(t.comments.deletedAt)))
+        .limit(1);
+      return row;
+    },
+    insertComment: (v: Insert<typeof t.comments>) => db.insert(t.comments).values(v),
+    softDeleteComment: (id: string, at: number) =>
+      db.update(t.comments).set({ deletedAt: at }).where(and(eq(t.comments.id, id), isNull(t.comments.deletedAt))),
+
+    // ---- recurring series ------------------------------------------------
+    async listSeries(ledgerId: string) {
+      return db
+        .select()
+        .from(t.recurringSeries)
+        .where(and(eq(t.recurringSeries.ledgerId, ledgerId), isNull(t.recurringSeries.deletedAt)))
+        .orderBy(desc(t.recurringSeries.createdAt));
+    },
+    async findSeries(id: string) {
+      const [row] = await db
+        .select()
+        .from(t.recurringSeries)
+        .where(and(eq(t.recurringSeries.id, id), isNull(t.recurringSeries.deletedAt)))
+        .limit(1);
+      return row;
+    },
+    /**
+     * Every live, unpaused series that owes at least one occurrence, on a ledger
+     * that is neither archived nor deleted. This is the catch-up work list after
+     * downtime — the alarm handler drains it, and the unique index on
+     * (series_id, occurrence_at) is what makes a replay harmless.
+     */
+    async listDueSeries(now: number) {
+      return db
+        .select({ series: t.recurringSeries })
+        .from(t.recurringSeries)
+        .innerJoin(t.ledgers, eq(t.ledgers.id, t.recurringSeries.ledgerId))
+        .where(
+          and(
+            isNull(t.recurringSeries.deletedAt),
+            isNull(t.recurringSeries.pausedAt),
+            lte(t.recurringSeries.nextOccurrenceAt, now),
+            isNull(t.ledgers.archivedAt),
+            isNull(t.ledgers.deletedAt),
+          ),
+        );
+    },
+    /**
+     * The occurrence instants a series has already generated, including
+     * soft-deleted ones. Deliberately NOT filtered by deleted_at: a user who
+     * deletes a generated occurrence means "not this one", and catch-up must not
+     * helpfully recreate it on the next alarm.
+     */
+    async listSeriesOccurrences(seriesId: string) {
+      const rows = await db
+        .select({ occurrenceAt: t.expenses.occurrenceAt })
+        .from(t.expenses)
+        .where(eq(t.expenses.seriesId, seriesId));
+      return rows.map((r) => r.occurrenceAt).filter((v): v is number => v !== null);
+    },
+    insertSeries: (v: Insert<typeof t.recurringSeries>) => db.insert(t.recurringSeries).values(v),
+    updateSeries: (id: string, v: Partial<Insert<typeof t.recurringSeries>>) =>
+      db.update(t.recurringSeries).set(v).where(and(eq(t.recurringSeries.id, id), isNull(t.recurringSeries.deletedAt))),
+    softDeleteSeries: (id: string, at: number) =>
+      db
+        .update(t.recurringSeries)
+        .set({ deletedAt: at })
+        .where(and(eq(t.recurringSeries.id, id), isNull(t.recurringSeries.deletedAt))),
+
+    // ---- push ------------------------------------------------------------
+    /** Live subscriptions only — a row the push service has rejected is not one. */
+    async listPushSubscriptions(userId: string) {
+      return db
+        .select()
+        .from(t.pushSubscriptions)
+        .where(and(eq(t.pushSubscriptions.userId, userId), isNull(t.pushSubscriptions.failedAt)));
+    },
+    /** Upsert on endpoint: the same browser resubscribing must revive its row,
+     *  not collide with the unique index. */
+    insertPushSubscription: (v: Insert<typeof t.pushSubscriptions>) =>
+      db
+        .insert(t.pushSubscriptions)
+        .values(v)
+        .onConflictDoUpdate({
+          target: t.pushSubscriptions.endpoint,
+          set: { userId: v.userId, p256dh: v.p256dh, auth: v.auth, failedAt: null },
+        }),
+    markPushFailed: (endpoint: string, at: number) =>
+      db.update(t.pushSubscriptions).set({ failedAt: at }).where(eq(t.pushSubscriptions.endpoint, endpoint)),
+    deletePushSubscription: (endpoint: string, userId: string) =>
+      db
+        .delete(t.pushSubscriptions)
+        .where(and(eq(t.pushSubscriptions.endpoint, endpoint), eq(t.pushSubscriptions.userId, userId))),
+
+    // ---- nudges ----------------------------------------------------------
+    /** When this pair was last nudged, for the server-side rate limit. */
+    async lastNudgeAt(fromUserId: string, toUserId: string) {
+      const [row] = await db
+        .select({ sentAt: t.nudges.sentAt })
+        .from(t.nudges)
+        .where(and(eq(t.nudges.fromUserId, fromUserId), eq(t.nudges.toUserId, toUserId)))
+        .orderBy(desc(t.nudges.sentAt))
+        .limit(1);
+      return row?.sentAt;
+    },
+    insertNudge: (v: Insert<typeof t.nudges>) => db.insert(t.nudges).values(v),
 
     // ---- instance state --------------------------------------------------
     async getInstanceState(key: string) {

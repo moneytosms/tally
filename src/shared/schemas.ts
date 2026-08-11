@@ -60,7 +60,50 @@ export const addGuestSchema = z.object({
   guestName: name,
 });
 
+export const createCommentSchema = z.object({
+  body: z.string().trim().min(1).max(2000),
+});
+
+export const createCategorySchema = z.object({
+  name,
+  icon: z.string().trim().min(1).max(8),
+});
+
+// A recurring series carries the same shape as an expense minus the date (each
+// occurrence gets its own) plus the cadence. Splits are stored as a template and
+// re-resolved per occurrence, so the remainder rule applies to each one.
+export const createSeriesSchema = createExpenseSchema
+  .omit({ paidAtEpochMs: true })
+  .extend({
+    intervalUnit: z.enum(["day", "week", "month"]),
+    intervalCount: z.int().min(1).max(365),
+    startAt: epochMs,
+    endAt: epochMs.nullable().default(null),
+  })
+  .refine((v) => v.endAt === null || v.endAt > v.startAt, {
+    message: "a series cannot end before it starts",
+    path: ["endAt"],
+  });
+
+export const updateSeriesSchema = createSeriesSchema;
+
+export const pushSubscribeSchema = z.object({
+  endpoint: z.url().max(1000),
+  p256dh: z.string().min(1).max(200),
+  auth: z.string().min(1).max(200),
+});
+
+export const nudgeSchema = z.object({
+  ledgerId: id,
+  toUserId: id,
+});
+
 export type CreateLedger = z.infer<typeof createLedgerSchema>;
+export type CreateComment = z.infer<typeof createCommentSchema>;
+export type CreateCategory = z.infer<typeof createCategorySchema>;
+export type CreateSeries = z.infer<typeof createSeriesSchema>;
+export type PushSubscribe = z.infer<typeof pushSubscribeSchema>;
+export type Nudge = z.infer<typeof nudgeSchema>;
 export type UpdateLedger = z.infer<typeof updateLedgerSchema>;
 export type CreateExpense = z.infer<typeof createExpenseSchema>;
 export type UpdateExpense = z.infer<typeof updateExpenseSchema>;

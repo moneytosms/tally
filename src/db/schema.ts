@@ -148,6 +148,12 @@ export const expenses = sqliteTable(
     createdAt: integer("created_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
     deletedAt: integer("deleted_at"),
+    // Set only on generated occurrences. The unique index below is what makes
+    // recurring catch-up idempotent — a retry hits the constraint instead of
+    // creating a second copy (SPEC §11 hazard 5). Do not enforce this in app
+    // code; app code forgets and the DB does not.
+    seriesId: text("series_id"),
+    occurrenceAt: integer("occurrence_at"),
   },
   (t) => [
     check(
@@ -156,7 +162,13 @@ export const expenses = sqliteTable(
     ),
     check("expenses_total_nonzero_ck", sql`${t.total} <> 0`),
     check("expenses_currency_ck", sql`${t.currency} = 'INR'`),
+    check(
+      "expenses_series_pair_ck",
+      sql`(${t.seriesId} IS NULL) = (${t.occurrenceAt} IS NULL)`,
+    ),
     index("expenses_ledger_idx").on(t.ledgerId),
+    index("expenses_category_idx").on(t.categoryId),
+    uniqueIndex("expenses_series_occurrence_uq").on(t.seriesId, t.occurrenceAt),
   ],
 );
 
@@ -240,3 +252,116 @@ export const instanceState = sqliteTable("instance_state", {
   value: text("value").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
+
+// A comment on an expense. The activity feed is DERIVED from expenses,
+// settlements and these — there is no activity table, because every row it
+// would hold already exists somewhere else.
+export const comments = sqliteTable(
+  "comments",
+  {
+    id: text("id").primaryKey(),
+    ledgerId: text("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    expenseId: text("expense_id")
+      .notNull()
+      .references(() => expenses.id),
+    authorUserId: text("author_user_id")
+      .notNull()
+      .references(() => users.id),
+    body: text("body").notNull(),
+    createdAt: integer("created_at").notNull(),
+    deletedAt: integer("deleted_at"),
+  },
+  (t) => [
+    check("comments_body_nonempty_ck", sql`length(trim(${t.body})) > 0`),
+    index("comments_expense_idx").on(t.expenseId),
+    index("comments_ledger_idx").on(t.ledgerId),
+  ],
+);
+
+// A recurring expense template. One Durable Object alarm per live series.
+// Generation is idempotent structurally: see the unique index on
+// (series_id, occurrence_at) over expenses. A retry cannot double-create.
+export const recurringSeries = sqliteTable(
+  "recurring_series",
+  {
+    id: text("id").primaryKey(),
+    ledgerId: text("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    description: text("description").notNull(),
+    total: integer("total").notNull(), // paise
+    payerMemberId: text("payer_member_id")
+      .notNull()
+      .references(() => ledgerMembers.id),
+    categoryId: text("category_id").references(() => categories.id),
+    notes: text("notes"),
+    mode: text("mode").notNull(),
+    // The split template: JSON [{ memberId, inputValue }] in stable order.
+    // Amounts are re-resolved at generation time so the remainder rule applies
+    // to each occurrence, exactly as it would for a hand-entered expense.
+    splitTemplate: text("split_template").notNull(),
+    intervalUnit: text("interval_unit").notNull(), // day | week | month
+    intervalCount: integer("interval_count").notNull(),
+    startAt: integer("start_at").notNull(),
+    endAt: integer("end_at"), // null => runs until the ledger is archived
+    // The occurrence this series has generated up to, exclusive. Catch-up walks
+    // forward from here, so downtime replays deterministically.
+    nextOccurrenceAt: integer("next_occurrence_at").notNull(),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer("created_at").notNull(),
+    pausedAt: integer("paused_at"),
+    deletedAt: integer("deleted_at"),
+  },
+  (t) => [
+    check("recurring_mode_ck", sql`${t.mode} IN ('equal', 'exact', 'shares', 'percent')`),
+    check("recurring_unit_ck", sql`${t.intervalUnit} IN ('day', 'week', 'month')`),
+    check("recurring_count_positive_ck", sql`${t.intervalCount} > 0`),
+    check("recurring_total_nonzero_ck", sql`${t.total} <> 0`),
+    index("recurring_ledger_idx").on(t.ledgerId),
+  ],
+);
+
+// A Web Push subscription. One row per browser, not per user — a user with a
+// phone and a laptop has two. Push is single-recipient by design (SPEC §9),
+// so this is never fanned out across more than one user's rows.
+export const pushSubscriptions = sqliteTable(
+  "push_subscriptions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
+    endpoint: text("endpoint").notNull().unique(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: integer("created_at").notNull(),
+    // Set when the push service returns 404/410. The row is kept, not deleted,
+    // so a resubscribe from the same browser reuses it rather than colliding.
+    failedAt: integer("failed_at"),
+  },
+  (t) => [index("push_subscriptions_user_idx").on(t.userId)],
+);
+
+// Server-side rate limit for manual settle reminders ("nudges"). SPEC §9:
+// reminders are manual and rate-limited server-side, with no scheduled sweep.
+export const nudges = sqliteTable(
+  "nudges",
+  {
+    id: text("id").primaryKey(),
+    ledgerId: text("ledger_id")
+      .notNull()
+      .references(() => ledgers.id),
+    fromUserId: text("from_user_id")
+      .notNull()
+      .references(() => users.id),
+    toUserId: text("to_user_id")
+      .notNull()
+      .references(() => users.id),
+    sentAt: integer("sent_at").notNull(),
+  },
+  (t) => [index("nudges_pair_idx").on(t.fromUserId, t.toUserId, t.sentAt)],
+);

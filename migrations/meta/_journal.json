@@ -8,6 +8,13 @@
       "when": 1786422991680,
       "tag": "0000_calm_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1786442997517,
+      "tag": "0001_numerous_sunspot",
+      "breakpoints": true
     }
   ]
 }
