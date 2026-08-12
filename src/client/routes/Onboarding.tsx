@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
-import { startRegistration } from "@simplewebauthn/browser";
+import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Field, Input } from "~/client/components/ui";
 import { api, ApiError } from "~/client/lib/api";
@@ -8,6 +8,7 @@ import { qk, useMe } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
 
 type RegistrationOptions = Parameters<typeof startRegistration>[0]["optionsJSON"];
+type AuthenticationOptions = Parameters<typeof startAuthentication>[0]["optionsJSON"];
 
 /** In-app WebViews have no WebAuthn and fail SILENTLY. Detect before showing the
  *  passkey step and offer an explicit way out — this is mandatory, not an edge case. */
@@ -33,9 +34,12 @@ export function Onboarding() {
   const qc = useQueryClient();
   const [params] = useSearchParams();
   const inviteToken = params.get("invite");
+  // Recovery re-enrols an account that already exists, so there is no name to
+  // ask for — go straight to the passkey step.
+  const recoveryToken = params.get("recovery");
   const authenticator = usePlatformAuthenticator();
 
-  const [step, setStep] = useState<"name" | "passkey" | "vpa">("name");
+  const [step, setStep] = useState<"name" | "passkey" | "vpa">(recoveryToken ? "passkey" : "name");
   const [owner, setOwner] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [secret, setSecret] = useState("");
@@ -55,7 +59,9 @@ export function Onboarding() {
       if (owner) await api("/api/auth/bootstrap", { method: "POST", body: JSON.stringify({ secret, displayName }) });
       const optionsJSON = await api<RegistrationOptions>("/api/auth/register/options", {
         method: "POST",
-        body: JSON.stringify({ displayName, inviteToken }),
+        // displayName is ignored by the server on the recovery path — the
+        // account already has one — but the schema still requires a string.
+        body: JSON.stringify({ displayName: displayName || "—", inviteToken, recoveryToken }),
       });
       const attestation = await startRegistration({ optionsJSON });
       await api("/api/auth/register/verify", {
@@ -65,6 +71,25 @@ export function Onboarding() {
       if (inviteToken) await api(`/api/invites/${inviteToken}/accept`, { method: "POST" });
       await qc.invalidateQueries({ queryKey: qk.me });
       setStep("vpa");
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  /** Returning user. Credentials are discoverable (residentKey: "required"), so
+   *  the authenticator picks the account — nothing is typed and no display name
+   *  is involved. Without this the only path off this screen is enrolment. */
+  const signIn = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      const optionsJSON = await api<AuthenticationOptions>("/api/auth/login/options", { method: "POST" });
+      const assertion = await startAuthentication({ optionsJSON });
+      await api("/api/auth/login/verify", { method: "POST", body: JSON.stringify({ response: assertion }) });
+      await qc.invalidateQueries({ queryKey: qk.me });
+      navigate("/", { replace: true });
     } catch (e) {
       fail(e);
     } finally {
@@ -102,6 +127,18 @@ export function Onboarding() {
           <p role="alert" className="mb-4 rounded-[6px] border px-3 py-2 text-[13px]" style={{ borderColor: "var(--clay)", background: "var(--clay-wash)", color: "var(--clay)" }}>
             {error}
           </p>
+        )}
+
+        {step === "name" && (
+          <>
+            <Button className="w-full" onClick={signIn} disabled={busy}>
+              {t("onboarding.signIn")}
+            </Button>
+            <p className="mt-2 mb-5 text-center text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+              {t("onboarding.signInHint")}
+            </p>
+            <div className="mb-5 border-t" style={{ borderColor: "var(--line)" }} />
+          </>
         )}
 
         {step === "name" && (

@@ -205,6 +205,34 @@ export function createDb(d1: D1Database) {
     revokeInvite: (id: string, at: number) =>
       db.update(t.invites).set({ revokedAt: at }).where(and(eq(t.invites.id, id), isNull(t.invites.revokedAt))),
 
+    // ---- recovery tokens -------------------------------------------------
+    insertRecoveryToken: (v: Insert<typeof t.recoveryTokens>) => db.insert(t.recoveryTokens).values(v),
+    /** Unconsumed, unrevoked, unexpired, and pointing at a live user. Undefined
+     *  otherwise — every rejection reason collapses to one, as with invites. */
+    async findUsableRecoveryToken(tokenHash: string, now: number) {
+      const [row] = await db
+        .select({ token: t.recoveryTokens, user: t.users })
+        .from(t.recoveryTokens)
+        .innerJoin(t.users, eq(t.users.id, t.recoveryTokens.userId))
+        .where(
+          and(
+            eq(t.recoveryTokens.tokenHash, tokenHash),
+            isNull(t.recoveryTokens.consumedAt),
+            isNull(t.recoveryTokens.revokedAt),
+            gt(t.recoveryTokens.expiresAt, now),
+            isNull(t.users.deletedAt),
+          ),
+        )
+        .limit(1);
+      return row;
+    },
+    /** Single-use: the WHERE clause is the guard against a double-claim race. */
+    consumeRecoveryToken: (id: string, at: number) =>
+      db
+        .update(t.recoveryTokens)
+        .set({ consumedAt: at })
+        .where(and(eq(t.recoveryTokens.id, id), isNull(t.recoveryTokens.consumedAt))),
+
     // ---- expenses --------------------------------------------------------
     /** Live expenses of a ledger, each with its splits. */
     async listExpenses(ledgerId: string) {

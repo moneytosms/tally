@@ -1,8 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
+import { startRegistration } from "@simplewebauthn/browser";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button, EmptyState, Field, Input } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
-import { useLedgers, useMe, useUpdateProfile } from "~/client/lib/queries";
+import { api } from "~/client/lib/api";
+import { qk, useLedgers, useMe, useUpdateProfile } from "~/client/lib/queries";
 import { currentPushState, disablePush, enablePush, type PushState } from "~/client/lib/push";
 import { t } from "~/client/i18n";
 
@@ -44,6 +47,46 @@ function NotificationsSection() {
           {t(state.status === "on" ? "notifications.disable" : "notifications.enable")}
         </Button>
       )}
+    </div>
+  );
+}
+
+/** Enrols an ADDITIONAL passkey on the session that is already signed in.
+ *  Without this the only enrolment path is Onboarding, which is unreachable
+ *  once you have a session — leaving a one-device account one revoke from
+ *  being locked out. Picking "use a phone or tablet" in the browser prompt is
+ *  what gets a synced credential onto a second device. */
+function AddPasskey({ displayName }: { displayName: string }) {
+  const qc = useQueryClient();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
+
+  const add = async () => {
+    setBusy(true);
+    setError(false);
+    try {
+      const optionsJSON = await api<Parameters<typeof startRegistration>[0]["optionsJSON"]>(
+        "/api/auth/register/options",
+        { method: "POST", body: JSON.stringify({ displayName }) },
+      );
+      const attestation = await startRegistration({ optionsJSON });
+      await api("/api/auth/register/verify", { method: "POST", body: JSON.stringify({ response: attestation }) });
+      await qc.invalidateQueries({ queryKey: qk.me });
+    } catch {
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-2 border-t pt-2.5" style={{ borderColor: "var(--line)" }}>
+      <Button variant="ghost" size="sm" disabled={busy} onClick={add}>
+        {t("profile.addPasskey")}
+      </Button>
+      <p className="mt-2 text-[11.5px]" style={{ color: error ? "var(--clay)" : "var(--ink-3)" }}>
+        {t(error ? "error.generic" : "profile.addPasskeyHint")}
+      </p>
     </div>
   );
 }
@@ -116,6 +159,7 @@ export function YouTab() {
             </div>
           ))
         )}
+        <AddPasskey displayName={me.data.displayName} />
       </div>
 
       <Section title={t("profile.archived")} />

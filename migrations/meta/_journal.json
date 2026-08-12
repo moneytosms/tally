@@ -15,6 +15,13 @@
       "when": 1786442997517,
       "tag": "0001_numerous_sunspot",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786548814259,
+      "tag": "0002_blue_red_hulk",
+      "breakpoints": true
     }
   ]
 }

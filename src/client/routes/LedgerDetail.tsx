@@ -5,6 +5,7 @@ import { focusRing } from "~/client/components/ui/focus";
 import { ExpenseSheet } from "~/client/components/ExpenseSheet";
 import {
   useCategories,
+  useCreateInvite,
   useExpenseSearch,
   useExpenses,
   useLedger,
@@ -80,6 +81,62 @@ function ExpenseRow({
         </div>
       </div>
     </button>
+  );
+}
+
+/** Creates a single-use, 48-hour invite link for this ledger.
+ *  The server returns the token ONCE. It is held in component state only —
+ *  navigating away loses it and a new invite must be minted, which is correct:
+ *  an invite is a bearer credential, so it is never re-fetchable. */
+function InviteRow({ ledgerId }: { ledgerId: string }) {
+  const create = useCreateInvite(ledgerId);
+  const [link, setLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const mint = () =>
+    create.mutate(undefined, {
+      onSuccess: ({ token }) => {
+        setLink(`${window.location.origin}/welcome?invite=${encodeURIComponent(token)}`);
+        setCopied(false);
+      },
+    });
+
+  return (
+    <div className="mt-1 border-t pt-2.5" style={{ borderColor: "var(--line)" }}>
+      {link === null ? (
+        <>
+          <Button variant="ghost" size="sm" disabled={create.isPending} onClick={mint}>
+            {t("ledger.invite")}
+          </Button>
+          {create.isError && (
+            <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+              {t("error.generic")}
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all" style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}>
+            {link}
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                navigator.clipboard?.writeText(link);
+                setCopied(true);
+              }}
+            >
+              {t(copied ? "ledger.inviteCopied" : "ledger.inviteCopy")}
+            </Button>
+          </div>
+          <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+            {t("ledger.inviteHint")}
+          </p>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -257,6 +314,7 @@ export function LedgerDetail() {
             )}
           </div>
         ))}
+        <InviteRow ledgerId={ledgerId} />
       </div>
 
       {selected && (

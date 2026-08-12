@@ -11,7 +11,7 @@
   // database_id comes from `npx wrangler d1 list` (scripts/setup-cloudflare.sh
   // prints it during provisioning). Not a secret — it is meant to be committed.
   "d1_databases": [
-    { "binding": "DB", "database_name": "tally", "database_id": "", "migrations_dir": "migrations" }
+    { "binding": "DB", "database_name": "tally", "database_id": "de36a292-b08b-454f-b523-a01b806b7739", "migrations_dir": "migrations" }
   ],
 
   // One alarm object for the whole instance drives recurring expenses.
@@ -29,7 +29,7 @@
   //   npx wrangler secret put VAPID_PRIVATE_KEY
   //   npx wrangler secret put BOOTSTRAP_SECRET
   "vars": {
-    "VAPID_PUBLIC_KEY": ""
+    "VAPID_PUBLIC_KEY": "BAx4W0HGwrAKWBBGDWh_KjSyrxRXK74xd73lGxhDV8TM6yutfUanuv1oLNLP2OZOOGLqVRXQw-t6UCRoCHE37Gs"
   }
 
   // R2 backups are deliberately not configured. See docs/OPERATIONS.md —

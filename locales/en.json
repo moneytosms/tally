@@ -46,6 +46,10 @@
     },
     "expenses": "Expenses",
     "members": "Members",
+    "invite": "Invite someone",
+    "inviteCopy": "Copy link",
+    "inviteCopied": "Copied",
+    "inviteHint": "Single use, expires in 48 hours. Anyone with this link joins as themselves, so send it to one person over a private channel.",
     "netPosition": "net position"
   },
   "member": {
@@ -181,6 +185,8 @@
     "devices": "Devices",
     "passkey": "Passkey",
     "noDevices": "No passkeys registered.",
+    "addPasskey": "Add passkey",
+    "addPasskeyHint": "To sign in on another device, choose \"use a phone or tablet\" when your browser asks — that passkey syncs, a fingerprint one does not.",
     "archived": "Archived ledgers",
     "noArchived": "Nothing archived yet.",
     "export": "Export"
@@ -189,6 +195,8 @@
     "title": "tally",
     "subtitle": "Split expenses with the people you actually see.",
     "bootstrapSecret": "Bootstrap secret",
+    "signIn": "Sign in with a passkey",
+    "signInHint": "Already set up on this device? Sign in. Otherwise enter your name below.",
     "iRunThis": "I run this instance",
     "checking": "Checking this device…",
     "passkeyTitle": "Create a passkey",
@@ -299,6 +307,9 @@
     "peopleBody": "Everyone with an account on this instance.",
     "owner": "Owner",
     "credentials": "{count} passkeys",
+    "recovery": "Issue recovery link",
+    "recoveryHint": "Single use, expires in one hour. It re-enrols this same account on a new device, so their history stays attached. Treat it as account access and hand it over directly.",
+    "lastCredential": "Their only passkey. Issue a recovery link and let them enrol a new device before revoking this one.",
     "revoke": "Revoke passkey",
     "revoked": "Passkey revoked. They will need a fresh invite to re-enrol.",
     "ledgers": "Ledgers",

@@ -61,6 +61,31 @@ export const sessions = sqliteTable("sessions", {
   userAgent: text("user_agent"),
 });
 
+/**
+ * Owner-issued account recovery. Bound to a USER, not a ledger — that is the
+ * whole difference from an invite, and the reason this is a separate table:
+ * an invite enrols a NEW person, a recovery token re-enrols an EXISTING one and
+ * must never create a second account (which would orphan their expense history).
+ *
+ * Same handling rules as an invite: 256-bit token, returned once, stored only as
+ * a SHA-256 hash, single-use, never logged. Shorter TTL because the owner hands
+ * it over directly rather than mailing it out.
+ */
+export const recoveryTokens = sqliteTable("recovery_tokens", {
+  id: text("id").primaryKey(),
+  tokenHash: text("token_hash").notNull().unique(), // never store the plaintext token
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => users.id),
+  createdAt: integer("created_at").notNull(),
+  expiresAt: integer("expires_at").notNull(), // 1h
+  consumedAt: integer("consumed_at"),
+  revokedAt: integer("revoked_at"),
+});
+
 export const invites = sqliteTable("invites", {
   id: text("id").primaryKey(),
   tokenHash: text("token_hash").notNull().unique(), // never store the plaintext token

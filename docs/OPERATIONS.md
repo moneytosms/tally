@@ -154,8 +154,14 @@ That is accepted knowingly, and CSV export is the answer to it.
 
 ## Recovery scenarios
 
-**Someone lost their phone.** Admin panel → People → revoke the lost passkey.
-Then send them a fresh invite to re-enrol. Revoking is the whole recovery path.
+**Someone lost their phone.** Admin panel → People → **Issue recovery link**,
+and hand it over directly. It is single-use, expires in an hour, and re-enrols
+their existing account on the new device with their history intact. Once they
+are back in, revoke the lost passkey.
+
+Do it in that order. Revoking their *last* passkey is refused (409) precisely
+because an invite cannot undo it — an invite creates a new user, which would
+strand the old account and everything in it.
 
 **An invite leaked.** Admin panel → Open invites → revoke. An invite is
 potentially account access, which is why they are listed and revocable.

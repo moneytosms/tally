@@ -8,7 +8,7 @@ import { DatabaseSync } from "node:sqlite";
 import { migrate } from "./_test-harness";
 import app from "~/server/index";
 import { createDb } from "~/db";
-import { SESSION_COOKIE, createSession } from "~/server/auth/session";
+import { SESSION_COOKIE, createSession, sha256Hex } from "~/server/auth/session";
 import { serialiseUser } from "~/server/routes/me";
 import { uuidv7 } from "~/shared/id";
 import { ORIGIN } from "~/shared/rp-id";
@@ -292,5 +292,105 @@ describe("vpa visibility", () => {
     const user = { id: "u2", displayName: "Bob", vpa: "bob@bank" };
     expect(serialiseUser(user, false)).toEqual({ id: "u2", displayName: "Bob", vpa: null });
     expect(serialiseUser(user, true).vpa).toBe("bob@bank");
+  });
+});
+
+describe("account recovery", () => {
+  /** A credential row, without going through WebAuthn. */
+  const addCredential = (db: ReturnType<typeof createDb>, userId: string, credentialId: string) =>
+    db.insertCredential({
+      id: uuidv7(),
+      userId,
+      credentialId,
+      publicKey: "pk",
+      counter: 0,
+      transports: null,
+      backedUp: false,
+      createdAt: NOW,
+    });
+
+  async function ownerAnd(db: ReturnType<typeof createDb>, memberName: string) {
+    const ownerId = uuidv7();
+    await db.insertUser({ id: ownerId, displayName: "Owner", isOwner: true, createdAt: NOW });
+    const cookie = `${SESSION_COOKIE}=${await createSession(db, ownerId, NOW)}`;
+    const member = await signIn(db, memberName);
+    return { ownerId, cookie, member };
+  }
+
+  it("refuses to revoke a user's last credential, admin or self", async () => {
+    const { env, db } = setup();
+    const { cookie, member } = await ownerAnd(db, "Ada");
+    await addCredential(db, member.id, "only-one");
+    const [only] = await db.listCredentials(member.id);
+    if (!only) throw new Error("fixture: expected one credential");
+
+    const asAdmin = await del(env, `/api/admin/users/${member.id}/credentials/${only.id}`, cookie);
+    expect(asAdmin.status).toBe(409);
+    const asSelf = await del(env, `/api/me/devices/${only.id}`, member.cookie);
+    expect(asSelf.status).toBe(409);
+    // still usable — a refused revoke must not half-apply
+    expect(await db.listCredentials(member.id)).toHaveLength(1);
+
+    // with a second credential the revoke goes through
+    await addCredential(db, member.id, "second");
+    const ok = await del(env, `/api/admin/users/${member.id}/credentials/${only.id}`, cookie);
+    expect(ok.status).toBe(200);
+    expect(await db.listCredentials(member.id)).toHaveLength(1);
+  });
+
+  it("a recovery token re-enrols the SAME user and never creates a second one", async () => {
+    const { env, db } = setup();
+    const { cookie, member } = await ownerAnd(db, "Ada");
+    await addCredential(db, member.id, "lost-device");
+
+    const minted = await post(env, `/api/admin/users/${member.id}/recovery`, {}, cookie);
+    expect(minted.status).toBe(201);
+    const { token } = (await minted.json()) as { token: string };
+
+    const before = (await db.listUsers()).length;
+    // no session cookie: this is the locked-out device
+    const res = await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: token });
+    expect(res.status).toBe(200);
+    // the session it hands back belongs to the EXISTING account
+    const session = /tally_session=([^;]+)/.exec(res.headers.get("set-cookie") ?? "")![1];
+    const who = await get(env, "/api/me", `${SESSION_COOKIE}=${session}`);
+    expect(await who.json()).toMatchObject({ id: member.id, displayName: "Ada" });
+    expect((await db.listUsers()).length).toBe(before); // no orphaned second account
+  });
+
+  it("a recovery token is single-use and rejects a replay", async () => {
+    const { env, db } = setup();
+    const { cookie, member } = await ownerAnd(db, "Ada");
+    const { token } = (await (
+      await post(env, `/api/admin/users/${member.id}/recovery`, {}, cookie)
+    ).json()) as { token: string };
+
+    expect((await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: token })).status).toBe(200);
+    const replay = await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: token });
+    expect(replay.status).toBe(403);
+  });
+
+  it("only the owner may mint a recovery token", async () => {
+    const { env, db } = setup();
+    const { member } = await ownerAnd(db, "Ada");
+    const bob = await signIn(db, "Bob");
+    expect((await post(env, `/api/admin/users/${member.id}/recovery`, {}, bob.cookie)).status).toBe(403);
+    expect((await post(env, `/api/admin/users/${member.id}/recovery`, {})).status).toBe(401);
+  });
+
+  it("a forged or expired recovery token is refused", async () => {
+    const { env, db } = setup();
+    const { member } = await ownerAnd(db, "Ada");
+    expect((await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: "made-up" })).status).toBe(403);
+
+    await db.insertRecoveryToken({
+      id: uuidv7(),
+      tokenHash: await sha256Hex("stale"),
+      userId: member.id,
+      createdBy: member.id,
+      createdAt: NOW - 7_200_000,
+      expiresAt: NOW - 3_600_000,
+    });
+    expect((await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: "stale" })).status).toBe(403);
   });
 });

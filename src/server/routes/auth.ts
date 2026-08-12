@@ -42,6 +42,7 @@ const bootstrapSchema = z.object({ secret: z.string().min(1), displayName });
 const registerOptionsSchema = z.object({
   displayName,
   inviteToken: z.string().min(1).nullish(),
+  recoveryToken: z.string().min(1).nullish(),
 });
 const verifySchema = z.object({ response: z.record(z.string(), z.unknown()) });
 
@@ -98,6 +99,20 @@ auth.post("/register/options", async (c) => {
 
   const now = Date.now();
   let user = await optionalUser(c);
+  if (!user && parsed.data.recoveryToken) {
+    // Recovery re-enrols an EXISTING user. It must never insertUser — a second
+    // account would strand the first one's expense history. The displayName in
+    // the request is ignored here; the account already has one.
+    const row = await db.findUsableRecoveryToken(await sha256Hex(parsed.data.recoveryToken), now);
+    if (!row) return c.json({ error: "forbidden" }, 403);
+    // Single-use rests on this conditional UPDATE, exactly as with invites.
+    const claimed = await db.consumeRecoveryToken(row.token.id, now);
+    if (claimed.meta.changes !== 1) return c.json({ error: "forbidden" }, 403);
+
+    user = { id: row.user.id, displayName: row.user.displayName, isOwner: row.user.isOwner };
+    const token = await createSession(db, user.id, now, c.req.header("user-agent") ?? null);
+    c.header("set-cookie", sessionCookie(token), { append: true });
+  }
   if (!user) {
     const inviteToken = parsed.data.inviteToken;
     // Every rejection reason collapses to one — an invite is a bearer credential.

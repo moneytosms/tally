@@ -72,7 +72,9 @@ Decisions live in [`docs/adr/`](docs/adr/). The buildable spec is [`docs/SPEC.md
 
 **Owner** — the person who runs the Instance. Claims it with the **bootstrap secret**, holds the admin panel, manages Guests, and performs passkey recovery.
 
-**Invite** — a single-use, 48-hour, hashed token binding a new member to a Ledger. Also the recovery path — so a leaked Invite is potentially account access.
+**Invite** — a single-use, 48-hour, hashed token binding a **new** member to a Ledger. A leaked Invite is potentially account access.
+
+**Recovery token** — a single-use, one-hour, hashed token the Owner issues to re-enrol an **existing** User on a new device. Bound to a User, not a Ledger, and it never creates an account — that is what separates it from an Invite. Revoking a User's last Credential is refused for the same reason.
 
 **Credential** — a registered passkey. A User may hold several. Recovery **revokes** the lost one.
 

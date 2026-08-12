@@ -1,8 +1,11 @@
 // Invites: single-use, 48 hours, revocable, bound to exactly one ledger.
 //
-// An invite is also the recovery path, so a leaked link is potentially account
-// access. The token is 256 bits from the platform CSPRNG, returned once, and
-// stored only as a SHA-256 hash. Never log a token.
+// An invite enrols a NEW person. Re-enrolling an existing account is a recovery
+// token instead (`recovery_tokens`) — an invite cannot do it without creating a
+// second user and stranding the first one's history.
+//
+// A leaked link is still account access. The token is 256 bits from the platform
+// CSPRNG, returned once, and stored only as a SHA-256 hash. Never log a token.
 import { uuidv7 } from "~/shared/id";
 import { randomToken, sha256Hex } from "~/server/auth/session";
 

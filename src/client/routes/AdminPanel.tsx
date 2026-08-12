@@ -4,6 +4,7 @@ import {
   useAdminUsers,
   useAdminInvites,
   useAdminInstance,
+  useCreateRecovery,
   useRevokeCredential,
   useRevokeInvite,
   useCategories,
@@ -51,6 +52,58 @@ function InstanceSection() {
         <span style={{ color: "var(--ink-3)" }}>{t("recurring.title")}</span>
         <span>{d.recurringConfigured ? "✓" : "—"}</span>
       </div>
+    </div>
+  );
+}
+
+/** Re-enrols an EXISTING account on a new device. Bound to this user, so unlike
+ *  an invite it cannot create a second account and strand their history. */
+function RecoveryRow({ userId }: { userId: string }) {
+  const create = useCreateRecovery();
+  const [link, setLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const mint = () =>
+    create.mutate(userId, {
+      onSuccess: ({ token }) => {
+        setLink(`${window.location.origin}/welcome?recovery=${encodeURIComponent(token)}`);
+        setCopied(false);
+      },
+    });
+
+  if (link !== null) {
+    return (
+      <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
+        <p className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all" style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}>
+          {link}
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            navigator.clipboard?.writeText(link);
+            setCopied(true);
+          }}
+        >
+          {t(copied ? "ledger.inviteCopied" : "ledger.inviteCopy")}
+        </Button>
+        <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          {t("admin.recoveryHint")}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
+      <Button variant="ghost" size="sm" disabled={create.isPending} onClick={mint}>
+        {t("admin.recovery")}
+      </Button>
+      {create.isError && (
+        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+          {t("error.generic")}
+        </p>
+      )}
     </div>
   );
 }
@@ -110,7 +163,9 @@ function PeopleSection() {
                     <Button
                       variant="danger"
                       size="sm"
-                      disabled={revoke.isPending}
+                      // Revoking the only passkey locks the account out and the
+                      // server refuses it (409). Issue a recovery link instead.
+                      disabled={revoke.isPending || u.credentials.length === 1}
                       onClick={() => setConfirming({ userId: u.id, credentialId: c.id })}
                     >
                       {t("admin.revoke")}
@@ -119,7 +174,13 @@ function PeopleSection() {
                 </div>
               ))
             )}
+            {u.credentials.length === 1 && (
+              <p className="pb-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                {t("admin.lastCredential")}
+              </p>
+            )}
           </div>
+          <RecoveryRow userId={u.id} />
         </div>
       ))}
 

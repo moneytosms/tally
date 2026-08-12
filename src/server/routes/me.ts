@@ -72,6 +72,9 @@ me.delete("/me/devices/:credentialId", async (c) => {
   const id = c.req.param("credentialId");
   const own = await c.var.db.listCredentials(c.var.user.id);
   if (!own.some((cred) => cred.id === id)) return c.json({ error: "not found" }, 404);
+  // Same guard as the admin route: revoking your only passkey locks you out of
+  // your own account, and no invite can undo it. Add the replacement first.
+  if (own.length === 1) return c.json({ error: "last credential", code: "last_credential" }, 409);
   await revokeCredential(c.var.db, id, Date.now());
   return c.json({ ok: true });
 });

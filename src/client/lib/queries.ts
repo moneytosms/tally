@@ -443,6 +443,26 @@ export function useSeriesAction(ledgerId: string) {
   });
 }
 
+/** The token comes back exactly once and is never stored — the caller must show
+ *  it immediately or it is gone. Not logged, not persisted, not re-fetchable. */
+export function useCreateInvite(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api<{ token: string; expiresAt: number }>(`/api/ledgers/${ledgerId}/invites`, { method: "POST" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.adminInvites }),
+  });
+}
+
+/** Owner-only. Like an invite the token comes back once and is never stored —
+ *  show it immediately or mint a new one. */
+export function useCreateRecovery() {
+  return useMutation({
+    mutationFn: (userId: string) =>
+      api<{ token: string; expiresAt: number }>(`/api/admin/users/${userId}/recovery`, { method: "POST" }),
+  });
+}
+
 export function useRevokeCredential() {
   const qc = useQueryClient();
   return useMutation({
