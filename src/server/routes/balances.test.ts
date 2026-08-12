@@ -79,7 +79,7 @@ describe("GET /ledgers/:ledgerId/balances", () => {
   });
 
   it("explains a simplified transfer through the gross pairs", async () => {
-    // Bob owes Ada, the guest owes Bob — the plan suggests guest -> Ada, a pair
+    // Bob owes Ada, the guest owes Bob - the plan suggests guest -> Ada, a pair
     // with no shared expense. `pairs` is what makes that one explainable.
     await expense("L1", { total: 6_000, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹60.00
     await expense("L1", { total: 6_000, payerMemberId: "m_bob", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] }); // ₹60.00
@@ -132,8 +132,8 @@ describe("GET /balances", () => {
   const cross = async () => (await (await app.request(req(h, "/api/balances"))).json()) as Cross;
 
   it("sums one number per friend across every shared ledger", async () => {
-    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00 — Bob +₹50.00
-    await expense("L2", { total: 6_000, payerMemberId: "n_cy", participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }] }); // ₹60.00 — Cy +₹30.00
+    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00 - Bob +₹50.00
+    await expense("L2", { total: 6_000, payerMemberId: "n_cy", participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }] }); // ₹60.00 - Cy +₹30.00
 
     const rows = await cross();
     expect(rows.sort((a, b) => a.userId.localeCompare(b.userId))).toEqual([
@@ -151,7 +151,7 @@ describe("GET /balances", () => {
     expect((await cross()).find((r) => r.userId === "u_cy")!.net).toBe(2_000); // ₹30.00 - ₹10.00
   });
 
-  it("excludes guests — they are per-ledger entities with no user and no VPA", async () => {
+  it("excludes guests - they are per-ledger entities with no user and no VPA", async () => {
     await expense("L1", { total: 4_000, payerMemberId: "m_guest", participants: [{ memberId: "m_ada" }, { memberId: "m_guest" }] }); // ₹40.00
     const rows = await cross();
     expect(rows.map((r) => r.userId)).not.toContain("m_guest");

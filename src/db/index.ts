@@ -2,7 +2,7 @@
 // Data-access layer.
 //
 // IMPORTANT: soft-delete filtering is enforced HERE, structurally.
-// Never leave `deleted_at IS NULL` to individual callers — forgetting once
+// Never leave `deleted_at IS NULL` to individual callers - forgetting once
 // produces wrong money. See docs/adr/0004 and SPEC §11 hazard 1.
 //
 // The drizzle instance is deliberately NOT exported. Reads are only reachable
@@ -12,7 +12,7 @@
 // Writes return the drizzle statement instead of running it. A statement is
 // awaitable, so `await db.insertExpense(...)` executes it; it is also a valid
 // batch item, so `db.batch([...])` runs several atomically. D1 has no
-// cross-request transaction — batch is what keeps the 1:1 ledger auto-create
+// cross-request transaction - batch is what keeps the 1:1 ledger auto-create
 // and bulk settle from half-applying (SPEC §11 hazard 2).
 import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, or, sql as raw } from "drizzle-orm";
 import type { BatchItem } from "drizzle-orm/batch";
@@ -168,7 +168,7 @@ export function createDb(d1: D1Database) {
         .limit(1);
       return row;
     },
-    /** Every live ledger on the instance. Owner-only — the admin panel is the
+    /** Every live ledger on the instance. Owner-only - the admin panel is the
      *  single caller, and membership is deliberately not consulted. */
     async listAllLedgers() {
       return db
@@ -208,7 +208,7 @@ export function createDb(d1: D1Database) {
     // ---- recovery tokens -------------------------------------------------
     insertRecoveryToken: (v: Insert<typeof t.recoveryTokens>) => db.insert(t.recoveryTokens).values(v),
     /** Unconsumed, unrevoked, unexpired, and pointing at a live user. Undefined
-     *  otherwise — every rejection reason collapses to one, as with invites. */
+     *  otherwise - every rejection reason collapses to one, as with invites. */
     async findUsableRecoveryToken(tokenHash: string, now: number) {
       const [row] = await db
         .select({ token: t.recoveryTokens, user: t.users })
@@ -255,7 +255,7 @@ export function createDb(d1: D1Database) {
     /**
      * Search and filter within one ledger. Every clause is optional; with none
      * set this is exactly `listExpenses`. `q` matches description and notes,
-     * case-insensitively — SQLite LIKE is already case-insensitive for ASCII.
+     * case-insensitively - SQLite LIKE is already case-insensitive for ASCII.
      */
     async searchExpenses(
       ledgerId: string,
@@ -269,7 +269,7 @@ export function createDb(d1: D1Database) {
         const pattern = `%${f.q.replace(/[%_\\]/g, (c) => `\\${c}`)}%`;
         clauses.push(
           or(
-            // `\'` inside a JS template literal is an escaped quote — it eats the
+            // `\'` inside a JS template literal is an escaped quote - it eats the
             // backslash and emits `ESCAPE ''`, an empty (invalid) escape char.
             // `\\'` is what actually puts a literal backslash in the SQL text.
             raw`${t.expenses.description} LIKE ${pattern} ESCAPE '\\'`,
@@ -281,7 +281,7 @@ export function createDb(d1: D1Database) {
       if (f.from !== undefined) clauses.push(gte(t.expenses.paidAt, f.from));
       if (f.to !== undefined) clauses.push(lte(t.expenses.paidAt, f.to));
       // "involving this member" means payer OR participant, so it needs the
-      // splits table — a bare payer filter would silently hide their shares.
+      // splits table - a bare payer filter would silently hide their shares.
       if (f.memberId) {
         clauses.push(
           or(
@@ -300,7 +300,7 @@ export function createDb(d1: D1Database) {
     /**
      * Every live expense the user has a share in, across every ledger they are
      * still a member of. Feeds lifetime analytics. Returns the user's own split
-     * amount alongside the expense, because that — not the total — is what they
+     * amount alongside the expense, because that - not the total - is what they
      * actually spent.
      */
     async listExpenseSharesForUser(userId: string) {
@@ -332,7 +332,7 @@ export function createDb(d1: D1Database) {
     },
     insertExpense: (v: Insert<typeof t.expenses>) => db.insert(t.expenses).values(v),
     insertSplits: (v: Insert<typeof t.expenseSplits>[]) => db.insert(t.expenseSplits).values(v),
-    /** Splits carry no deleted_at — they live and die with their expense, and the
+    /** Splits carry no deleted_at - they live and die with their expense, and the
      *  prior set survives in the revision snapshot. */
     clearSplits: (expenseId: string) => db.delete(t.expenseSplits).where(eq(t.expenseSplits.expenseId, expenseId)),
     updateExpense: (expenseId: string, v: Partial<Insert<typeof t.expenses>>) =>
@@ -342,7 +342,7 @@ export function createDb(d1: D1Database) {
         .update(t.expenses)
         .set({ deletedAt: at, updatedAt: at })
         .where(and(eq(t.expenses.id, expenseId), isNull(t.expenses.deletedAt))),
-    /** Undo's write path: unlike `updateExpense`, not guarded by isNull(deletedAt) —
+    /** Undo's write path: unlike `updateExpense`, not guarded by isNull(deletedAt) -
      *  undo must be able to reach past a soft-delete to un-delete the row, which
      *  is the one legitimate reason a write here skips that guard. */
     restoreExpense: (expenseId: string, v: Partial<Insert<typeof t.expenses>>) =>
@@ -390,7 +390,7 @@ export function createDb(d1: D1Database) {
     //
     // The three helpers below deliberately return rows the ordinary helpers
     // hide: soft-deleted expenses, and members who have left. That is the whole
-    // point of an activity feed — "Bob deleted Dinner" and "Cy left" are events,
+    // point of an activity feed - "Bob deleted Dinner" and "Cy left" are events,
     // and a feed that silently omits them is lying about what happened.
     //
     // They are named for that single purpose so they cannot be reached for by
@@ -471,7 +471,7 @@ export function createDb(d1: D1Database) {
     /**
      * Every live, unpaused series that owes at least one occurrence, on a ledger
      * that is neither archived nor deleted. This is the catch-up work list after
-     * downtime — the alarm handler drains it, and the unique index on
+     * downtime - the alarm handler drains it, and the unique index on
      * (series_id, occurrence_at) is what makes a replay harmless.
      */
     async listDueSeries(now: number) {
@@ -512,7 +512,7 @@ export function createDb(d1: D1Database) {
         .where(and(eq(t.recurringSeries.id, id), isNull(t.recurringSeries.deletedAt))),
 
     // ---- push ------------------------------------------------------------
-    /** Live subscriptions only — a row the push service has rejected is not one. */
+    /** Live subscriptions only - a row the push service has rejected is not one. */
     async listPushSubscriptions(userId: string) {
       return db
         .select()

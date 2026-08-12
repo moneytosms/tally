@@ -2,12 +2,16 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router";
 import { startRegistration } from "@simplewebauthn/browser";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, EmptyState, Field, Input } from "~/client/components/ui";
+import { Button, EmptyState, Field, Input, ScreenSkeleton } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import { api } from "~/client/lib/api";
 import { qk, useLedgers, useMe, useUpdateProfile } from "~/client/lib/queries";
 import { currentPushState, disablePush, enablePush, type PushState } from "~/client/lib/push";
 import { t } from "~/client/i18n";
+
+// One date format for the whole app: en-IN, day first. Never toLocaleDateString
+// with no locale, which follows the browser and disagrees with every other screen.
+const dayFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 const pushMessage: Record<PushState["status"], string> = {
   on: "notifications.enabled",
@@ -53,7 +57,7 @@ function NotificationsSection() {
 
 /** Enrols an ADDITIONAL passkey on the session that is already signed in.
  *  Without this the only enrolment path is Onboarding, which is unreachable
- *  once you have a session — leaving a one-device account one revoke from
+ *  once you have a session - leaving a one-device account one revoke from
  *  being locked out. Picking "use a phone or tablet" in the browser prompt is
  *  what gets a synced credential onto a second device. */
 function AddPasskey({ displayName }: { displayName: string }) {
@@ -103,7 +107,7 @@ export function YouTab() {
   const save = useUpdateProfile();
   const [draft, setDraft] = useState<{ displayName: string; vpa: string } | null>(null);
 
-  if (me.isPending) return null;
+  if (me.isPending) return <ScreenSkeleton />;
   if (me.error || !me.data) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
 
   // Only ever this user's own VPA. Another member's VPA is never rendered here.
@@ -146,15 +150,28 @@ export function YouTab() {
       <Section title={t("profile.devices")} />
       <div className="rounded-[7px] border px-3.5 py-2" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
         {me.data.credentials.length === 0 ? (
-          <p className="py-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
-            {t("profile.noDevices")}
+          // Not a quiet list item: this is the state where closing the tab can
+          // cost the account, so it is styled as the warning it is.
+          <p
+            role="alert"
+            className="my-2 rounded-[6px] border px-3 py-2.5 text-[13px] leading-relaxed"
+            style={{ borderColor: "var(--clay)", background: "var(--clay-wash)", color: "var(--clay)" }}
+          >
+            {t("profile.noDevicesWarning")}
           </p>
         ) : (
           me.data.credentials.map((c) => (
             <div key={c.id} className="flex items-center justify-between gap-2 py-2 text-[13px]">
-              <span className="truncate">{t("profile.passkey")}</span>
-              <span className="tnum text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-                {new Date(c.lastUsedAt ?? c.createdAt).toLocaleDateString("en-IN")}
+              <span className="truncate">
+                {t("profile.passkey")}{" "}
+                <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                  {t("profile.passkeyAdded", { date: dayFormat.format(c.createdAt) })}
+                </span>
+              </span>
+              <span className="tnum flex-none text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                {c.lastUsedAt === null
+                  ? t("profile.passkeyNeverUsed")
+                  : t("profile.passkeyLastUsed", { date: dayFormat.format(c.lastUsedAt) })}
               </span>
             </div>
           ))

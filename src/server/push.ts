@@ -31,7 +31,7 @@ export function b64urlToBytes(s: string): Uint8Array {
   return Uint8Array.from(bin, (c) => c.charCodeAt(0));
 }
 
-/** Accepts either alphabet — `web-push` emits base64url, but a hand-pasted key
+/** Accepts either alphabet - `web-push` emits base64url, but a hand-pasted key
  *  is often standard base64, and a JWK `d` value must be base64url. */
 const toB64url = (s: string) => s.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
@@ -153,7 +153,7 @@ async function importVapidKey(publicKey: string, privateKey: string): Promise<Cr
 /**
  * A signed VAPID JWT for one push endpoint's origin.
  *
- * `aud` is the ORIGIN of the endpoint, not the full URL — sending the full URL
+ * `aud` is the ORIGIN of the endpoint, not the full URL - sending the full URL
  * is the single most common reason a push service answers 401.
  */
 export async function vapidHeaders(
@@ -169,7 +169,7 @@ export async function vapidHeaders(
   const signingInput = `${header}.${payload}`;
 
   const key = await importVapidKey(keys.publicKey, keys.privateKey);
-  // WebCrypto emits raw r||s, which is exactly what JWS ES256 wants — no DER
+  // WebCrypto emits raw r||s, which is exactly what JWS ES256 wants - no DER
   // unwrapping needed.
   const sig = new Uint8Array(
     await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, key, utf8(signingInput) as BufferSource),
@@ -186,8 +186,8 @@ export type SendResult = { ok: boolean; status: number; gone: boolean };
  * Deliver one message to one subscription.
  *
  * `gone` is the caller's signal to stop using this subscription: 404 and 410
- * both mean the browser threw it away. Anything else — including a 429 or a 5xx
- * — is transient and the row is left alone. Push is best-effort; a failure here
+ * both mean the browser threw it away. Anything else - including a 429 or a 5xx
+ * - is transient and the row is left alone. Push is best-effort; a failure here
  * never fails the user action that triggered it.
  */
 export async function sendPush(

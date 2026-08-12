@@ -1,5 +1,5 @@
 // The feed is DERIVED, so the thing worth testing is that it reports what
-// actually happened — including the two categories of row every other read path
+// actually happened - including the two categories of row every other read path
 // deliberately hides: soft-deleted expenses and members who have left.
 //
 // Amounts are paise, written as integers with the rupee value in a comment.
@@ -54,6 +54,27 @@ describe("GET /ledgers/:ledgerId/activity", () => {
     // Ada, Bob and the guest Dee
     expect(events).toHaveLength(3);
     expect(events.map((e) => e.actorName).sort()).toEqual(["Ada", "Bob", "Dee"]);
+  });
+
+  // Accepting an invite inserts a member with a NULL nickname - the label is meant
+  // to fall back to the account's display name. The feed skipped that fallback, so
+  // every real join rendered as "Unknown member joined". The seed data all carries
+  // explicit nicknames, which is exactly why nothing caught it.
+  it("names a member who has no per-ledger nickname", async () => {
+    h.sql
+      .prepare("INSERT INTO ledger_members (id, ledger_id, user_id, guest_name, nickname, joined_at) VALUES (?,?,?,?,?,?)")
+      .run("m_cy", "L1", "u_cy", null, null, 1_760_000_000_000);
+
+    const joined = (await feed()).filter((e) => e.kind === "joined");
+    expect(joined.map((e) => e.actorName)).toContain("Cy");
+    expect(joined.map((e) => e.actorName)).not.toContain(null);
+  });
+
+  it("reports who paid, not only who logged it", async () => {
+    await createExpense("L1", { description: "Cab", payerMemberId: "m_bob" });
+    const added = (await feed()).find((e) => e.kind === "added");
+    expect(added?.actorName).toBe("Ada"); // the session that created it
+    expect(added?.fromName).toBe("Bob"); // the member who actually paid
   });
 
   it("reports an added expense with its actor, description and amount", async () => {
@@ -182,5 +203,43 @@ describe("GET /ledgers/:ledgerId/activity", () => {
     await createExpense("L1");
     const res = await app.request(req(h, "/api/ledgers/L1/activity?limit=2"));
     expect((await res.json()) as ActivityEvent[]).toHaveLength(2);
+  });
+});
+
+// The home feed. Same events, but across the ledgers the caller is in - so the
+// two things worth pinning are that it merges and that it does not over-share.
+describe("GET /activity", () => {
+  const home = async () => {
+    const res = await app.request(req(h, "/api/activity"));
+    expect(res.status).toBe(200);
+    return (await res.json()) as ActivityEvent[];
+  };
+
+  it("merges events from every ledger the caller is in, newest first", async () => {
+    await createExpense("L1", { description: "Cab" });
+    const events = await home();
+    const names = new Set(events.map((e) => e.ledgerName));
+    expect(names).toEqual(new Set(["Trip", "Flat"]));
+    for (let i = 1; i < events.length; i++) {
+      expect(events[i - 1]!.at).toBeGreaterThanOrEqual(events[i]!.at);
+    }
+  });
+
+  it("says which ledger each event belongs to", async () => {
+    await createExpense("L1", { description: "Cab" });
+    const added = (await home()).find((e) => e.kind === "added");
+    expect(added).toMatchObject({ description: "Cab", ledgerId: "L1", ledgerName: "Trip" });
+  });
+
+  it("excludes ledgers the caller has left", async () => {
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = ?").run(Date.now(), "n_ada");
+    const events = await home();
+    expect(events.every((e) => e.ledgerId !== "L2")).toBe(true);
+  });
+
+  it("excludes archived ledgers", async () => {
+    h.sql.prepare("UPDATE ledgers SET archived_at = ? WHERE id = ?").run(Date.now(), "L2");
+    const events = await home();
+    expect(events.every((e) => e.ledgerId !== "L2")).toBe(true);
   });
 });

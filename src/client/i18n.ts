@@ -1,5 +1,5 @@
 // Plain t() over locales/<lang>.json + native Intl.PluralRules. No framework.
-// English only for now, but EVERY user-facing string goes through here from line one —
+// English only for now, but EVERY user-facing string goes through here from line one -
 // retrofitting the extraction later is the expensive path.
 // ?raw avoids needing resolveJsonModule in tsconfig; Vite types the import as a string.
 import enRaw from "../../locales/en.json?raw";

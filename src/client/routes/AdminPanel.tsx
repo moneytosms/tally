@@ -46,11 +46,11 @@ function InstanceSection() {
       </div>
       <div className="flex items-center justify-between py-1 text-[13px]">
         <span style={{ color: "var(--ink-3)" }}>{t("notifications.title")}</span>
-        <span>{d.pushConfigured ? "✓" : "—"}</span>
+        <span>{d.pushConfigured ? "✓" : "-"}</span>
       </div>
       <div className="flex items-center justify-between py-1 text-[13px]">
         <span style={{ color: "var(--ink-3)" }}>{t("recurring.title")}</span>
-        <span>{d.recurringConfigured ? "✓" : "—"}</span>
+        <span>{d.recurringConfigured ? "✓" : "-"}</span>
       </div>
     </div>
   );

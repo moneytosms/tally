@@ -25,7 +25,7 @@ const create = (body: object, ledgerId = "L1") =>
 describe("POST /ledgers/:ledgerId/expenses", () => {
   it("stores splits summing exactly to the total, in all four modes", async () => {
     const cases = [
-      // ₹100.01 three ways — 1 paise remainder, absorbed by the payer
+      // ₹100.01 three ways - 1 paise remainder, absorbed by the payer
       { mode: "equal", total: 10_001, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }, { memberId: "m_guest" }] },
       // ₹120.00 stated exactly
       { mode: "exact", total: 12_000, participants: [{ memberId: "m_ada", value: 5_000 }, { memberId: "m_bob", value: 7_000 }] },
@@ -47,7 +47,7 @@ describe("POST /ledgers/:ledgerId/expenses", () => {
   });
 
   it("keeps participants in stable order and gives the remainder to the payer", async () => {
-    // payer is m_bob, second in the participant list — the remainder follows the
+    // payer is m_bob, second in the participant list - the remainder follows the
     // payer, not the first participant.
     const res = await create({
       payerMemberId: "m_bob",
@@ -75,7 +75,7 @@ describe("POST /ledgers/:ledgerId/expenses", () => {
     const res = await create({
       payerMemberId: "m_guest",
       mode: "equal",
-      total: 10_001, // ₹100.01 — remainder falls to the first participant
+      total: 10_001, // ₹100.01 - remainder falls to the first participant
       participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
     });
     expect(res.status).toBe(201);
@@ -144,7 +144,7 @@ describe("POST /ledgers/:ledgerId/expenses", () => {
 
   it("403s a caller who is not a member of the ledger", async () => {
     // Ada is in L1 and L2; there is no ledger she is absent from, so use an
-    // unknown ledger id — requireMember cannot find a membership either way.
+    // unknown ledger id - requireMember cannot find a membership either way.
     const res = await create({ mode: "equal", total: 100, participants: [{ memberId: "m_ada" }] }, "L_nope");
     expect(res.status).toBe(403);
   });

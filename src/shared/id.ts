@@ -1,4 +1,4 @@
-// UUIDv7 — time-ordered so ids sort by creation. RFC 9562 method 2: the 12-bit
+// UUIDv7 - time-ordered so ids sort by creation. RFC 9562 method 2: the 12-bit
 // rand_a field is a per-millisecond counter, which keeps ids monotonic within a tick.
 let lastMs = 0;
 let seq = 0;

@@ -2,8 +2,8 @@
 // interface, so route tests exercise the actual data-access layer, the actual
 // migration SQL and the actual middleware. Nothing here ships.
 //
-// Not named *.test.ts on purpose — vitest must not collect it.
-// @ts-expect-error node:sqlite is untyped here — @types/node is not a dependency
+// Not named *.test.ts on purpose - vitest must not collect it.
+// @ts-expect-error node:sqlite is untyped here - @types/node is not a dependency
 import { DatabaseSync } from "node:sqlite";
 import { Hono } from "hono";
 import { createDb, type Db } from "~/db";
@@ -64,7 +64,7 @@ function asD1(sql: Sqlite) {
 
 export const NOW = 1_760_000_000_000;
 
-// Every migration, in order — so tests run against the schema production will
+// Every migration, in order - so tests run against the schema production will
 // actually have, not just the first migration. A new migration file is picked
 // up automatically; one that does not apply cleanly fails every route test,
 // which is exactly when you want to hear about it.

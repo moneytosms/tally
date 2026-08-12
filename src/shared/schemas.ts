@@ -14,9 +14,14 @@ export const createLedgerSchema = z.object({
   name,
   endDate: epochMs.nullable().default(null),
   budget: paise.positive().nullable().default(null),
+  /** Copy the members of a ledger the caller is already in (SPEC §8). Not a
+   *  ledger column - the server turns it into member rows and drops it. */
+  cloneFrom: id.nullable().default(null),
 });
 
-export const updateLedgerSchema = createLedgerSchema.partial();
+// `cloneFrom` only means anything at creation: members join or leave afterwards,
+// they are never re-cloned.
+export const updateLedgerSchema = createLedgerSchema.omit({ cloneFrom: true }).partial();
 
 export const createExpenseSchema = z.object({
   description: name,

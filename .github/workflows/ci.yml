@@ -1,0 +1,23 @@
+# Typecheck, tests and a real build on every push and PR. Deployment stays
+# manual (docs/DEPLOYMENT.md) - this only says whether main is sound.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm vitest run
+      - run: pnpm build

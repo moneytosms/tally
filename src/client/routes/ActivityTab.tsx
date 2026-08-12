@@ -1,93 +1,18 @@
-// The ledger's activity feed. Everything here is derived server-side — see
+// The ledger's activity feed. Everything here is derived server-side - see
 // src/server/routes/activity.ts for why there is no activity table.
-//
-// The amount is never inlined into the sentence: it renders as <Amount>, which
-// carries its own sign and label, because that is the only way a money value is
-// allowed to reach the screen.
 import { Link, useParams } from "react-router";
-import { Amount, Avatar, EmptyState } from "~/client/components/ui";
+import { EmptyState, ScreenSkeleton } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
+import { ActivityRow, dayFormat } from "~/client/components/ActivityRow";
 import { useActivity, useLedger, type ActivityEvent } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
-
-const dayFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
-const timeFormat = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" });
-
-/** The sentence for one event. All phrasing lives client-side; the server sends
- *  a `kind` and the parts, never assembled English. */
-function sentence(e: ActivityEvent): string {
-  const name = e.actorName ?? t("member.unknown");
-  const description = e.description ?? t("expense.total");
-  switch (e.kind) {
-    case "settled":
-    case "forgave":
-      return t(`activity.${e.kind}`, {
-        from: e.fromName ?? t("member.unknown"),
-        to: e.toName ?? t("member.unknown"),
-      });
-    case "joined":
-    case "left":
-      return t(`activity.${e.kind}`, { name });
-    default:
-      return t(`activity.${e.kind}`, { name, description });
-  }
-}
-
-/** A muted dot per kind. Never the ONLY cue — the sentence always says what
- *  happened, so this is reinforcement for people who scan. */
-const dotColour: Record<ActivityEvent["kind"], string> = {
-  added: "var(--moss)",
-  edited: "var(--ochre)",
-  deleted: "var(--clay)",
-  settled: "var(--moss)",
-  forgave: "var(--clay)",
-  commented: "var(--ink-3)",
-  joined: "var(--moss)",
-  left: "var(--ink-3)",
-};
-
-function Row({ event }: { event: ActivityEvent }) {
-  const who = event.actorName ?? event.fromName;
-  return (
-    <li className="flex items-start gap-2.5 py-2.5">
-      <span className="mt-1.5 flex-none">
-        {who ? (
-          <Avatar name={who} />
-        ) : (
-          <span
-            className="block size-2 rounded-full"
-            style={{ background: dotColour[event.kind] }}
-            aria-hidden="true"
-          />
-        )}
-      </span>
-      <div className="min-w-0 flex-1">
-        <div className="text-[13.5px]">{sentence(event)}</div>
-        <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-          <time dateTime={new Date(event.at).toISOString()}>
-            {dayFormat.format(event.at)} · {timeFormat.format(event.at)}
-          </time>
-        </div>
-      </div>
-      {event.amount !== null && (
-        <div className="flex-none">
-          <Amount
-            paise={event.amount}
-            label={t(event.kind === "added" || event.kind === "deleted" ? "activity.expenseLabel" : "activity.amountLabel")}
-            tone="neutral"
-          />
-        </div>
-      )}
-    </li>
-  );
-}
 
 export default function ActivityTab() {
   const { ledgerId = "" } = useParams();
   const ledger = useLedger(ledgerId);
   const events = useActivity(ledgerId);
 
-  if (events.isPending || ledger.isPending) return null;
+  if (events.isPending || ledger.isPending) return <ScreenSkeleton />;
   if (events.error || ledger.error) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
 
   const rows = events.data ?? [];
@@ -136,7 +61,7 @@ export default function ActivityTab() {
               style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
             >
               {g.events.map((e) => (
-                <Row key={e.id} event={e} />
+                <ActivityRow key={e.id} event={e} />
               ))}
             </ul>
           </section>

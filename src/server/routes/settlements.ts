@@ -1,4 +1,4 @@
-// Settlements. The payer declares; the payee is notified, not asked — so the
+// Settlements. The payer declares; the payee is notified, not asked - so the
 // balance moves ON DECLARATION and `acknowledgedAt` is a tick, never a gate.
 // Nothing in this file reads acknowledgedAt as a precondition.
 //
@@ -24,7 +24,7 @@ const settlements = new Hono<Env>();
 type Stmt = ReturnType<Db["insertSettlement"]>;
 
 /** Bulk settle clears what the viewer owes across every shared ledger at once.
- *  `toUserId` narrows it to one friend — the UPI-link flow. */
+ *  `toUserId` narrows it to one friend - the UPI-link flow. */
 const bulkSchema = z.object({
   toUserId: z.string().min(1).max(64).optional(),
   method: z.enum(["upi", "manual", "forgiven"]),
@@ -63,7 +63,7 @@ settlements.post("/ledgers/:ledgerId/settlements", requireSession, requireMember
   });
 
   // Trigger 1 of the two push triggers (SPEC §9): the payee is NOTIFIED, not
-  // asked — a settlement is declared, never negotiated. Single recipient, and
+  // asked - a settlement is declared, never negotiated. Single recipient, and
   // awaited only so a test can observe it; a failure inside notify() is
   // swallowed there and can never fail the settlement itself.
   const payee = (await db.listMembers(ledgerId)).find((m) => m.id === body.toMemberId);
@@ -99,7 +99,7 @@ settlements.post(
 /**
  * Bulk settle: ONE action writing a settlement into EVERY contributing ledger,
  * so each ledger's sum-to-zero invariant still holds afterwards. This is the
- * multi-ledger write that must not half-apply — one db.batch, or nothing.
+ * multi-ledger write that must not half-apply - one db.batch, or nothing.
  *
  * Guests have no VPA, so an obligation running to a guest cannot be part of a
  * UPI push. Those are returned in `skipped` rather than silently dropped.

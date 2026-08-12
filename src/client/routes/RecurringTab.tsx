@@ -1,8 +1,8 @@
 // Recurring series: an expense template plus a cadence. List + create/edit sheet.
-// The split UI is SplitEditor's job — this file only collects cadence + dates.
+// The split UI is SplitEditor's job - this file only collects cadence + dates.
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { Amount, Avatar, Button, EmptyState, Field, Input, Sheet } from "~/client/components/ui";
+import { Amount, Avatar, Button, EmptyState, Field, Input, ScreenSkeleton, Select, Sheet } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import {
   SplitEditor,
@@ -17,8 +17,6 @@ import { ApiError } from "~/client/lib/api";
 import { t } from "~/client/i18n";
 import type { SplitMode } from "~/shared/money";
 
-const selectClass = `min-h-11 w-full rounded-[6px] border px-3 text-[14px] ${focusRing}`;
-const selectStyle = { background: "var(--paper-sunk)", borderColor: "var(--line)", color: "var(--ink)" };
 
 type IntervalUnit = "day" | "week" | "month";
 const units: IntervalUnit[] = ["day", "week", "month"];
@@ -201,24 +199,24 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
       </Field>
 
       <Field label={t("expense.paidBy")}>
-        <select className={selectClass} style={selectStyle} value={payerId} onChange={(e) => setPayerId(e.target.value)}>
+        <Select value={payerId} onChange={(e) => setPayerId(e.target.value)}>
           {roster.map((m) => (
             <option key={m.id} value={m.id}>
               {m.nickname}
             </option>
           ))}
-        </select>
+        </Select>
       </Field>
 
       <Field label={t("expense.category")}>
-        <select className={selectClass} style={selectStyle} value={categoryId ?? ""} onChange={(e) => setCategoryId(e.target.value || null)}>
+        <Select value={categoryId ?? ""} onChange={(e) => setCategoryId(e.target.value || null)}>
           <option value="">{t("expense.categoryNone")}</option>
           {(categories.data ?? []).map((c) => (
             <option key={c.id} value={c.id}>
               {c.icon} {c.name}
             </option>
           ))}
-        </select>
+        </Select>
       </Field>
 
       <Field label={t("expense.notes")}>
@@ -238,9 +236,7 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
 
       {absent.length > 0 && (
         <Field label={t("expense.addParticipant")}>
-          <select
-            className={selectClass}
-            style={selectStyle}
+          <Select
             value=""
             onChange={(e) => e.target.value && setParticipantIds((ids) => [...ids, e.target.value])}
           >
@@ -250,7 +246,7 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
                 {m.nickname}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
       )}
 
@@ -261,10 +257,8 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
           </Field>
         </span>
         <span className="flex-[2] pb-[1px]">
-          <select
+          <Select
             aria-label={t("recurring.every")}
-            className={selectClass}
-            style={selectStyle}
             value={intervalUnit}
             onChange={(e) => setIntervalUnit(e.target.value as IntervalUnit)}
           >
@@ -273,7 +267,7 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
                 {unitLabel(u, 2)}
               </option>
             ))}
-          </select>
+          </Select>
         </span>
       </div>
 
@@ -312,7 +306,7 @@ export default function RecurringTab() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Series | null>(null);
 
-  if (series.isPending || members.isPending) return null;
+  if (series.isPending || members.isPending) return <ScreenSkeleton />;
   if (series.error || members.error) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
 
   const byId = new Map(members.data.map((m) => [m.id, m]));

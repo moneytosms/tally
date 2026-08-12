@@ -9,19 +9,19 @@ what and hands you a UPI link to settle. **It never touches your money.**
 
 ## What it does
 
-**Ledgers** — one container concept. A trip, a flatshare, and a one-to-one are
+**Ledgers** - one container concept. A trip, a flatshare, and a one-to-one are
 all Ledgers, differing only in whether they have an end date and a budget.
 
-**Expenses** — split four ways: equally, by exact amounts, by shares, or by
+**Expenses** - split four ways: equally, by exact amounts, by shares, or by
 percentage. Negative totals are refunds. Any member can edit any expense; every
 edit is recorded and undoable.
 
-**Balances** — a net position per person per ledger, plus a cross-ledger view
+**Balances** - a net position per person per ledger, plus a cross-ledger view
 answering "what do I owe Rahul, overall?". Always derived, never stored. The
 suggested transfers are the minimal set that clears a ledger, and every one of
 them can explain itself.
 
-**Settling** — declare a payment, optionally hand off to a UPI app. Partial
+**Settling** - declare a payment, optionally hand off to a UPI app. Partial
 settles are first-class. Bulk settle clears someone across every shared ledger
 at once.
 
@@ -79,7 +79,7 @@ The provisioning wizard walks the whole thing:
 Violating any of these is a defect:
 
 - **Money is integer paise.** No float in storage, API, or calculation. Ever.
-- **Never render a bare amount.** Sign and label always — colour is never the
+- **Never render a bare amount.** Sign and label always - colour is never the
   only cue for owed vs owe.
 - **The RP ID is a frozen constant.** Never derived from `location.hostname`.
 - **Soft-delete filtering is structural**, in the data-access layer. Never left
@@ -93,5 +93,5 @@ Violating any of these is a defect:
 
 ## Licence
 
-Not currently licensed for redistribution — this is a single-instance personal
+Not currently licensed for redistribution - this is a single-instance personal
 deployment, not a distributable product.

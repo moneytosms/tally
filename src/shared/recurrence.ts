@@ -1,18 +1,18 @@
-// Recurrence arithmetic. Pure, deterministic, no I/O and no `Date.now()` —
+// Recurrence arithmetic. Pure, deterministic, no I/O and no `Date.now()` -
 // every function takes the current time as an argument so catch-up after
 // downtime replays identically in a test and in production.
 //
 // SPEC §11 hazard 5: "Recurring catch-up must be idempotent. A retry must never
 // double-create." Idempotency is ultimately enforced by a unique index on
 // (series_id, occurrence_at) in the database. This module's contribution is that
-// the occurrence SEQUENCE is a pure function of (startAt, unit, count) — the
+// the occurrence SEQUENCE is a pure function of (startAt, unit, count) - the
 // same series always produces the same instants, so a replay collides with the
 // existing rows instead of landing between them.
 
 export type IntervalUnit = "day" | "week" | "month";
 
 export type Cadence = {
-  startAt: number; // epoch ms — the first occurrence
+  startAt: number; // epoch ms - the first occurrence
   intervalUnit: IntervalUnit;
   intervalCount: number; // >= 1
   endAt: number | null; // epoch ms, exclusive bound; null runs forever
@@ -30,7 +30,7 @@ const DAY_MS = 86_400_000;
  * starting on the 31st falls to the 30th, or to the 28th/29th in February,
  * rather than overflowing into the next month the way `setUTCMonth` does on its
  * own. The anchor day is always taken from `startAt`, never from the previous
- * occurrence, so a clamped month does not permanently drag the series earlier —
+ * occurrence, so a clamped month does not permanently drag the series earlier -
  * Jan 31 → Feb 28 → Mar 31, not Feb 28 → Mar 28.
  */
 export function nextOccurrence(cadence: Cadence, from: number): number {
@@ -44,7 +44,7 @@ export function nextOccurrence(cadence: Cadence, from: number): number {
       (new Date(from).getUTCFullYear() - anchor.getUTCFullYear()) * 12 +
       (new Date(from).getUTCMonth() - anchor.getUTCMonth());
     // Round down to a whole number of intervals, then step forward until we are
-    // strictly past `from`. At most two iterations — the clamp can only pull an
+    // strictly past `from`. At most two iterations - the clamp can only pull an
     // occurrence back within its own month.
     let steps = Math.floor(elapsedMonths / intervalCount) * intervalCount;
     for (;;) {
@@ -86,7 +86,7 @@ function addMonths(base: Date, months: number, anchorDay: number): number {
  *
  * `limit` caps a single catch-up so a series dormant for years cannot blow the
  * 10 ms CPU ceiling in one invocation (CLAUDE.md). Hitting the cap is not an
- * error — the caller reschedules immediately and drains the rest.
+ * error - the caller reschedules immediately and drains the rest.
  */
 export function occurrencesDue(cadence: Cadence, cursor: number, now: number, limit = 50): number[] {
   const out: number[] = [];
@@ -101,7 +101,7 @@ export function occurrencesDue(cadence: Cadence, cursor: number, now: number, li
 
 /**
  * When the alarm should next fire, or null when the series is finished.
- * Null means "cancel the alarm" — an ended series must not hold a live timer.
+ * Null means "cancel the alarm" - an ended series must not hold a live timer.
  */
 export function nextAlarmAt(cadence: Cadence, cursor: number): number | null {
   const at = Math.max(cursor, cadence.startAt);

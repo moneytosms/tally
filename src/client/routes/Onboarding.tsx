@@ -11,7 +11,7 @@ type RegistrationOptions = Parameters<typeof startRegistration>[0]["optionsJSON"
 type AuthenticationOptions = Parameters<typeof startAuthentication>[0]["optionsJSON"];
 
 /** In-app WebViews have no WebAuthn and fail SILENTLY. Detect before showing the
- *  passkey step and offer an explicit way out — this is mandatory, not an edge case. */
+ *  passkey step and offer an explicit way out - this is mandatory, not an edge case. */
 function usePlatformAuthenticator() {
   const [state, setState] = useState<"checking" | "available" | "unavailable">("checking");
   useEffect(() => {
@@ -35,7 +35,7 @@ export function Onboarding() {
   const [params] = useSearchParams();
   const inviteToken = params.get("invite");
   // Recovery re-enrols an account that already exists, so there is no name to
-  // ask for — go straight to the passkey step.
+  // ask for - go straight to the passkey step.
   const recoveryToken = params.get("recovery");
   const authenticator = usePlatformAuthenticator();
 
@@ -47,10 +47,18 @@ export function Onboarding() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (me.data) return <Navigate to="/" replace />;
+  // Registration signs you in, so `me.data` becomes truthy BEFORE the VPA step gets
+  // to render. Without the step check that redirect fires first and the VPA prompt
+  // is unreachable for every new account.
+  if (me.data && step !== "vpa") return <Navigate to="/" replace />;
 
-  const fail = (e: unknown) =>
-    setError(e instanceof ApiError && e.code === "offline" ? t("error.network") : t("error.generic"));
+  const fail = (e: unknown) => {
+    if (e instanceof ApiError && e.code === "offline") return setError(t("error.network"));
+    // 403 on the registration path means one thing only: no invite, no unclaimed
+    // instance. "Something went wrong" leaves the reader with nowhere to go.
+    if (e instanceof ApiError && e.status === 403) return setError(t("onboarding.closedInstance"));
+    setError(t("error.generic"));
+  };
 
   const registerPasskey = async () => {
     setBusy(true);
@@ -59,9 +67,9 @@ export function Onboarding() {
       if (owner) await api("/api/auth/bootstrap", { method: "POST", body: JSON.stringify({ secret, displayName }) });
       const optionsJSON = await api<RegistrationOptions>("/api/auth/register/options", {
         method: "POST",
-        // displayName is ignored by the server on the recovery path — the
-        // account already has one — but the schema still requires a string.
-        body: JSON.stringify({ displayName: displayName || "—", inviteToken, recoveryToken }),
+        // displayName is ignored by the server on the recovery path - the
+        // account already has one - but the schema still requires a string.
+        body: JSON.stringify({ displayName: displayName || "-", inviteToken, recoveryToken }),
       });
       const attestation = await startRegistration({ optionsJSON });
       await api("/api/auth/register/verify", {
@@ -69,8 +77,9 @@ export function Onboarding() {
         body: JSON.stringify({ displayName, inviteToken, response: attestation }),
       });
       if (inviteToken) await api(`/api/invites/${inviteToken}/accept`, { method: "POST" });
-      await qc.invalidateQueries({ queryKey: qk.me });
+      // Step BEFORE the invalidate: refetching `me` re-runs the redirect guard above.
       setStep("vpa");
+      await qc.invalidateQueries({ queryKey: qk.me });
     } catch (e) {
       fail(e);
     } finally {
@@ -79,7 +88,7 @@ export function Onboarding() {
   };
 
   /** Returning user. Credentials are discoverable (residentKey: "required"), so
-   *  the authenticator picks the account — nothing is typed and no display name
+   *  the authenticator picks the account - nothing is typed and no display name
    *  is involved. Without this the only path off this screen is enrolment. */
   const signIn = async () => {
     setBusy(true);
@@ -88,6 +97,9 @@ export function Onboarding() {
       const optionsJSON = await api<AuthenticationOptions>("/api/auth/login/options", { method: "POST" });
       const assertion = await startAuthentication({ optionsJSON });
       await api("/api/auth/login/verify", { method: "POST", body: JSON.stringify({ response: assertion }) });
+      // Someone who already has an account can still be invited to a new ledger.
+      // Without this the invite is silently dropped the moment they sign in.
+      if (inviteToken) await api(`/api/invites/${inviteToken}/accept`, { method: "POST" });
       await qc.invalidateQueries({ queryKey: qk.me });
       navigate("/", { replace: true });
     } catch (e) {
@@ -112,15 +124,20 @@ export function Onboarding() {
 
   const onName = (e: FormEvent) => {
     e.preventDefault();
+    // `required` alone leaves the button looking live and doing nothing when the
+    // native bubble is suppressed. Say it in the page.
+    if (displayName.trim() === "") return setError(t("onboarding.nameRequired"));
+    if (owner && secret.trim() === "") return setError(t("onboarding.secretRequired"));
+    setError(null);
     setStep("passkey");
   };
 
   return (
-    <div className="paper-ground flex min-h-dvh flex-col">
+    <div className="paper-ground h-full overflow-auto">
       <div className="relative z-10 mx-auto w-full max-w-[420px] px-5 py-10">
         <h1 className="serif mb-1 text-[26px] tracking-[-0.01em]">{t("onboarding.title")}</h1>
         <p className="mb-7 text-[13px]" style={{ color: "var(--ink-3)" }}>
-          {t("onboarding.subtitle")}
+          {t(inviteToken ? "onboarding.invitedSubtitle" : "onboarding.subtitle")}
         </p>
 
         {error && (
@@ -135,14 +152,16 @@ export function Onboarding() {
               {t("onboarding.signIn")}
             </Button>
             <p className="mt-2 mb-5 text-center text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-              {t("onboarding.signInHint")}
+              {t(inviteToken ? "onboarding.signInHintInvited" : "onboarding.signInHint")}
             </p>
             <div className="mb-5 border-t" style={{ borderColor: "var(--line)" }} />
           </>
         )}
 
         {step === "name" && (
-          <form onSubmit={onName}>
+          // noValidate: `onName` reports problems in the page. Left to the native
+          // bubble, a suppressed prompt makes Continue look broken.
+          <form onSubmit={onName} noValidate>
             <Field label={t("profile.displayName")}>
               <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} required maxLength={80} autoFocus />
             </Field>
@@ -154,7 +173,9 @@ export function Onboarding() {
             <Button type="submit" className="w-full">
               {t("action.continue")}
             </Button>
-            {!owner && (
+            {/* Someone following an invite is joining an instance that already has
+                an owner, so the claim path is noise on that screen. */}
+            {!owner && !inviteToken && (
               <Button variant="ghost" className="mt-2 w-full" onClick={() => setOwner(true)}>
                 {t("onboarding.iRunThis")}
               </Button>

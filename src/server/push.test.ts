@@ -136,7 +136,7 @@ describe("encryptPayload", () => {
 
   it("handles a multi-byte UTF-8 payload", async () => {
     const r = await makeSubscription();
-    const message = "Priya settled ₹1,240 — “Goa trip” 🎉";
+    const message = "Priya settled ₹1,240 - “Goa trip” 🎉";
     expect(await decrypt(await encryptPayload(r.sub, utf8(message)), r)).toBe(message);
   });
 

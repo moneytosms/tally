@@ -39,4 +39,30 @@ describe("<Amount>", () => {
       expect(render(paise).indexOf("your position")).toBeLessThan(render(paise).indexOf("₹"));
     }
   });
+
+  // A magnitude is not a balance. Speaking "owed to you" over an expense total
+  // told every screen-reader user the opposite of the truth on half the app.
+  it("speaks no direction for a neutral amount", () => {
+    const html = renderToStaticMarkup(
+      createElement(Amount, { paise: 45000, label: "total", tone: "neutral" as const }),
+    );
+    expect(html).toContain("total");
+    expect(html).toContain("₹450.00");
+    expect(html).not.toContain("owed to you");
+    expect(html).not.toContain("you owe");
+  });
+
+  it("speaks another member's position about them, not about the viewer", () => {
+    const theyAreOwed = renderToStaticMarkup(
+      createElement(Amount, { paise: 383334, label: "net position", subject: "Priya" }),
+    );
+    expect(theyAreOwed).toContain("Priya is owed");
+    expect(theyAreOwed).not.toContain("owed to you");
+
+    const theyOwe = renderToStaticMarkup(
+      createElement(Amount, { paise: -383334, label: "net position", subject: "Priya" }),
+    );
+    expect(theyOwe).toContain("Priya owes");
+    expect(theyOwe).not.toContain("you owe,");
+  });
 });

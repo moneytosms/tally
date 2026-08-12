@@ -26,7 +26,15 @@
   "amount": {
     "positive": "owed to you,",
     "negative": "you owe,",
-    "zero": "settled,"
+    "zero": "settled,",
+    "their": {
+      "positive": "{name} is owed,",
+      "negative": "{name} owes,",
+      "zero": "{name} is settled,"
+    }
+  },
+  "money": {
+    "placeholder": "0.00"
   },
   "offline": {
     "title": "You're offline.",
@@ -46,11 +54,30 @@
     },
     "expenses": "Expenses",
     "members": "Members",
+    "create": "Create",
+    "name": "Name",
+    "namePlaceholder": {
+      "trip": "Goa, December",
+      "group": "Flat 4B",
+      "pair": "Me and Ada"
+    },
+    "kindHint": {
+      "trip": "A trip ends on a date. Add a budget too and tally shows what's left to spend per day. You invite the others once it exists.",
+      "group": "Runs indefinitely: a flatshare, a regular set of people. You invite the others once it exists.",
+      "pair": "Just the two of you. Invite them, or add them as a guest if they don't want an account."
+    },
+    "endDate": "End date",
+    "endDateRequired": "Pick the date the trip ends. For something with no end date, create a group instead.",
+    "nameRequired": "Give it a name.",
+    "budgetOptional": "Budget (optional)",
+    "budgetInvalid": "Enter an amount like 2500 or 2500.00.",
     "invite": "Invite someone",
     "inviteCopy": "Copy link",
     "inviteCopied": "Copied",
     "inviteHint": "Single use, expires in 48 hours. Anyone with this link joins as themselves, so send it to one person over a private channel.",
-    "netPosition": "net position"
+    "netPosition": "net position",
+    "cloneFrom": "Add the same people as",
+    "cloneNone": "Nobody yet, I'll invite them"
   },
   "member": {
     "guest": "guest",
@@ -86,8 +113,6 @@
       "other": "{count} members"
     },
     "naturalLanguage": "Quick add",
-    "naturalLanguagePlaceholder": "dinner 1200 split with rahul and mira",
-    "amountHint": "In rupees, e.g. 1234.56",
     "date": "Date",
     "notes": "Notes",
     "addParticipant": "Add participant",
@@ -172,6 +197,7 @@
     "errorAmount": "Enter an amount, like 500.00.",
     "errorTooMuch": "That's more than is owed.",
     "nothingBody": "Nothing to settle here yet.",
+    "notYoursHint": "This one is {name}'s to pay. Record it here only if they already have.",
     "whyFor": "Why does {from} pay {to}?",
     "trailEmpty": "No expenses behind this one yet.",
     "trailShare": "{name}'s share"
@@ -184,9 +210,13 @@
     "saved": "Profile saved.",
     "devices": "Devices",
     "passkey": "Passkey",
+    "passkeyAdded": "added {date}",
+    "passkeyLastUsed": "used {date}",
+    "passkeyNeverUsed": "never used",
     "noDevices": "No passkeys registered.",
+    "noDevicesWarning": "This account has no passkey yet. Add one now: without it, signing out or losing this session locks you out for good.",
     "addPasskey": "Add passkey",
-    "addPasskeyHint": "To sign in on another device, choose \"use a phone or tablet\" when your browser asks — that passkey syncs, a fingerprint one does not.",
+    "addPasskeyHint": "To sign in on another device, choose \"use a phone or tablet\" when your browser asks. That passkey syncs, a fingerprint one does not.",
     "archived": "Archived ledgers",
     "noArchived": "Nothing archived yet.",
     "export": "Export"
@@ -194,9 +224,14 @@
   "onboarding": {
     "title": "tally",
     "subtitle": "Split expenses with the people you actually see.",
+    "invitedSubtitle": "You've been invited to a ledger. Pick a name and you're in.",
     "bootstrapSecret": "Bootstrap secret",
     "signIn": "Sign in with a passkey",
     "signInHint": "Already set up on this device? Sign in. Otherwise enter your name below.",
+    "signInHintInvited": "Already have a tally account? Sign in and the invite is accepted for you. Otherwise enter your name below.",
+    "nameRequired": "Enter a name so people know who you are.",
+    "secretRequired": "Enter the bootstrap secret from your deployment.",
+    "closedInstance": "This instance is invite-only. Ask whoever runs it to send you an invite link.",
     "iRunThis": "I run this instance",
     "checking": "Checking this device…",
     "passkeyTitle": "Create a passkey",
@@ -208,9 +243,21 @@
     "vpaTitle": "Add your UPI VPA",
     "vpaBody": "It lets people pay you back in one tap. You can skip this and add it later."
   },
+  "add": {
+    "title": "Add",
+    "expense": "Add expense",
+    "expenseBody": "Log something someone paid for, and split it.",
+    "expenseNeedsLedger": "Create a trip, group or one-on-one first, because an expense has to live somewhere.",
+    "trip": "New trip",
+    "tripBody": "Has an end date. Optional budget and daily burn rate.",
+    "group": "New group",
+    "groupBody": "Runs indefinitely: a flatshare, a regular crowd.",
+    "pair": "New one-on-one",
+    "pairBody": "Costs shared with a single person."
+  },
   "empty": {
     "ledgers": "No ledgers yet.",
-    "ledgersBody": "A ledger is any set of people sharing costs — a trip, a flatshare, or just you and one friend. Create one and add the first expense.",
+    "ledgersBody": "A ledger is any set of people sharing costs: a trip, a flatshare, or just you and one friend. Create one and add the first expense.",
     "expenses": "No expenses yet.",
     "expensesBody": "Tap + to add the first one. Pick who paid and who it splits between; tally works out the rest.",
     "balances": "All settled up.",
@@ -243,12 +290,21 @@
     "lifetime": "Lifetime",
     "youSpent": "You spent",
     "youPaid": "You paid",
-    "expenseCount": "{count} expenses",
-    "ledgerCount": "across {count} ledgers",
+    "expenseCount": {
+      "one": "{count} expense",
+      "other": "{count} expenses"
+    },
+    "ledgerCount": {
+      "one": "across {count} ledger",
+      "other": "across {count} ledgers"
+    },
     "byCategory": "Where it went",
     "byMonth": "Month by month",
     "mostSpentWith": "Most spent with",
-    "sharedExpenses": "{count} shared expenses",
+    "sharedExpenses": {
+      "one": "{count} shared expense",
+      "other": "{count} shared expenses"
+    },
     "noCategory": "Uncategorised",
     "range": "Range",
     "rangeAll": "All time",
@@ -260,7 +316,7 @@
     "title": "Recurring",
     "add": "New recurring expense",
     "none": "No recurring expenses on this ledger.",
-    "noneBody": "Rent, subscriptions, the shared broadband bill — anything that repeats on a schedule.",
+    "noneBody": "Rent, subscriptions, the shared broadband bill, anything that repeats on a schedule.",
     "every": "Every",
     "unitDay": "day",
     "unitWeek": "week",
@@ -286,7 +342,7 @@
     "enabled": "Notifications are on for this device.",
     "disable": "Turn off on this device",
     "body": "Two things only: someone settles with you, and a settle reminder. Nothing else.",
-    "iosHint": "On iPhone and iPad, add tally to your Home Screen first — web push only works from an installed app.",
+    "iosHint": "On iPhone and iPad, add tally to your Home Screen first, because web push only works from an installed app.",
     "unsupported": "This browser cannot do web push.",
     "denied": "Notifications are blocked in your browser settings.",
     "failed": "Could not enable notifications.",
@@ -347,22 +403,34 @@
     "csv": "Download CSV",
     "ledgerCsv": "Export this ledger",
     "allCsv": "Export everything",
-    "body": "Plain CSV, opens in any spreadsheet. This is the escape hatch — it does not depend on this instance staying up."
+    "body": "Plain CSV, opens in any spreadsheet. This is the escape hatch, and it does not depend on this instance staying up."
   },
   "pwa": {
     "updateTitle": "A new version is ready",
     "updateBody": "Reload when you have finished what you are doing.",
     "updateAction": "Reload",
-    "installTitle": "Add tally to your Home Screen",
-    "installBody": "It opens like an app and is needed for notifications on iPhone.",
+    "installTitle": "Install tally.",
+    "installBody": "Add it to your home screen so it opens like an app and can send you reminders.",
     "installAction": "Install",
     "installIos": "Tap Share, then ‘Add to Home Screen’.",
     "dismiss": "Not now"
   },
   "nl": {
-    "hint": "Try: 450 dinner with rahul and priya",
+    "exampleTwo": "450 dinner with {a} and {b}",
+    "exampleOne": "450 dinner with {a}",
+    "exampleBare": "450 dinner",
     "parsed": "Understood: {summary}",
     "unmatched": "Could not match: {names}",
     "noAmount": "Add an amount and I will fill the form in."
+  },
+  "home": {
+    "greeting": "Hi, {name}",
+    "owed": "owed to you",
+    "owe": "you owe",
+    "recent": "Recent activity",
+    "archived": {
+      "one": "{count} archived ledger",
+      "other": "{count} archived ledgers"
+    }
   }
 }

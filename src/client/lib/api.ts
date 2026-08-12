@@ -1,5 +1,5 @@
 // One fetch wrapper for /api. Same-origin, JSON in, JSON out.
-// Never cached by a service worker — a stale balance is worse than no balance.
+// Never cached by a service worker - a stale balance is worse than no balance.
 
 export class ApiError extends Error {
   constructor(

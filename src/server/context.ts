@@ -1,4 +1,4 @@
-// Hono environment. Types only — no runtime code lives here.
+// Hono environment. Types only - no runtime code lives here.
 import type { D1Database, DurableObjectNamespace } from "@cloudflare/workers-types";
 import type { Db } from "~/db";
 import type { ledgerMembers } from "~/db/schema";

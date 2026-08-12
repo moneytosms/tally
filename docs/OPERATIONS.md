@@ -21,7 +21,7 @@ It will:
 
 1. log you into Cloudflare and read back your account id
 2. establish your `workers.dev` subdomain
-3. **freeze the Worker name and therefore the WebAuthn RP ID** — irreversible
+3. **freeze the Worker name and therefore the WebAuthn RP ID** - irreversible
 4. create the D1 database
 5. create the R2 bucket (optional; see [Backups](#backups))
 6. print the bindings to paste into `wrangler.jsonc`
@@ -52,7 +52,7 @@ Three values need to reach `wrangler.jsonc`, which ships with them blank:
 "vars":         { "VAPID_PUBLIC_KEY": "<from .dev.vars>" }
 ```
 
-Neither is a secret — the D1 database id is an identifier, and the VAPID public
+Neither is a secret - the D1 database id is an identifier, and the VAPID public
 key is public by design and has to reach the browser for it to subscribe. Commit
 both.
 
@@ -86,7 +86,7 @@ pnpm dev            # vite + wrangler dev
 pnpm build          # build client + worker
 pnpm typecheck      # tsc --noEmit
 pnpm test           # vitest
-pnpm db:generate       # drizzle-kit generate — after any schema change
+pnpm db:generate       # drizzle-kit generate - after any schema change
 pnpm db:migrate        # apply migrations to LOCAL D1 (pnpm dev)
 pnpm db:migrate:remote # apply migrations to PRODUCTION D1
 pnpm deploy            # wrangler deploy
@@ -96,14 +96,14 @@ pnpm deploy            # wrangler deploy
 
 ```bash
 pnpm db:generate     # writes migrations/NNNN_*.sql
-# READ the generated SQL before applying it — see the warning below
+# READ the generated SQL before applying it - see the warning below
 pnpm test            # the test harness applies every migration; failures show up here
 pnpm db:migrate:remote
 pnpm deploy
 ```
 
 > **Check drizzle-kit's output.** When SQLite cannot alter a table in place,
-> drizzle-kit emits a create-copy-drop-rename sequence — and it has been observed
+> drizzle-kit emits a create-copy-drop-rename sequence - and it has been observed
 > to emit an `INSERT ... SELECT` that reads the *new* columns from the *old*
 > table, which fails at apply time. `migrations/0001_numerous_sunspot.sql` carries
 > a hand-edit fixing exactly that. Read every generated migration.
@@ -120,11 +120,11 @@ and nightly backups were deliberately deferred rather than half-built.
 
 What exists instead:
 
-- **CSV export** — `/api/export.csv` for everything you are a member of, or
+- **CSV export** - `/api/export.csv` for everything you are a member of, or
   `/api/ledgers/:id/export.csv` for one ledger. Also in the app under **You →
   Export**. One row per expense split, so it pivots in any spreadsheet. This is
   the manual escape hatch and it does not depend on this instance staying up.
-- **`wrangler d1 export`** — a full SQL dump:
+- **`wrangler d1 export`** - a full SQL dump:
 
   ```bash
   npx wrangler d1 export tally --remote --output tally-$(date +%F).sql
@@ -160,20 +160,20 @@ their existing account on the new device with their history intact. Once they
 are back in, revoke the lost passkey.
 
 Do it in that order. Revoking their *last* passkey is refused (409) precisely
-because an invite cannot undo it — an invite creates a new user, which would
+because an invite cannot undo it - an invite creates a new user, which would
 strand the old account and everything in it.
 
 **An invite leaked.** Admin panel → Open invites → revoke. An invite is
 potentially account access, which is why they are listed and revocable.
 
-**A wrong expense.** Any member may edit or delete any expense — the audit trail
+**A wrong expense.** Any member may edit or delete any expense - the audit trail
 is the control, not the permission ([ADR 0005](adr/0005-any-member-can-edit.md)).
 Every edit writes a revision, and undo restores from it. Nothing is ever hard
 deleted.
 
 **Push stopped working.** Check the admin panel's Instance section for
 `pushConfigured`. The usual cause is `VAPID_PUBLIC_KEY` missing from
-`wrangler.jsonc` `vars`. On iOS, web push only works from a Home Screen install —
+`wrangler.jsonc` `vars`. On iOS, web push only works from a Home Screen install -
 the app says so where notifications are enabled.
 
 **A recurring expense did not appear.** Catch-up is idempotent and driven by a

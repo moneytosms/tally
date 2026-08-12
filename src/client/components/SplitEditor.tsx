@@ -102,7 +102,7 @@ export function SplitEditor({
 }) {
   const result = preview({ total, mode, payerIndex, participants, raw });
   const splits = "splits" in result ? result.splits : undefined;
-  // A blank amount is not a split error — the amount field says that itself.
+  // A blank amount is not a split error - the amount field says that itself.
   const error = total !== 0 && "error" in result ? result.error : undefined;
   const isRefund = total < 0;
   const unit = t(`expense.value.${mode}`);
@@ -173,7 +173,7 @@ export function SplitEditor({
                 <Input
                   inputMode="decimal"
                   value={raw[p.memberId] ?? ""}
-                  aria-label={`${p.name} — ${unit}`}
+                  aria-label={`${p.name} - ${unit}`}
                   onChange={(e) => onRawChange({ ...raw, [p.memberId]: e.target.value })}
                 />
               </span>

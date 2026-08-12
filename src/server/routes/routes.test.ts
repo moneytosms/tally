@@ -3,13 +3,14 @@
 // src/server/auth/session.test.ts, plus a thin D1 shim so the real data-access
 // layer (drizzle over D1) runs unchanged.
 import { describe, expect, it } from "vitest";
-// @ts-expect-error node:sqlite is untyped here — @types/node is not a dependency
+// @ts-expect-error node:sqlite is untyped here - @types/node is not a dependency
 import { DatabaseSync } from "node:sqlite";
 import { migrate } from "./_test-harness";
 import app from "~/server/index";
 import { createDb } from "~/db";
 import { SESSION_COOKIE, createSession, sha256Hex } from "~/server/auth/session";
 import { serialiseUser } from "~/server/routes/me";
+import { BOOTSTRAP_BURNED } from "~/server/routes/auth";
 import { uuidv7 } from "~/shared/id";
 import { ORIGIN } from "~/shared/rp-id";
 
@@ -27,7 +28,7 @@ type Stmt = {
 type Sqlite = { exec(sql: string): void; prepare(sql: string): Stmt };
 
 /** The slice of D1 that drizzle's d1 driver actually calls, over node:sqlite.
- *  `raw()` must return POSITIONAL rows — a join selects `sessions.id` and
+ *  `raw()` must return POSITIONAL rows - a join selects `sessions.id` and
  *  `users.id`, and an object row would silently collapse them. */
 function d1(sql: Sqlite) {
   const arrays = <T>(stmt: Stmt, fn: () => T): T => {
@@ -115,17 +116,37 @@ async function ledgerInDebt(env: Env, db: ReturnType<typeof createDb>, a: string
 }
 
 describe("auth", () => {
-  it("burns the bootstrap secret: the second claim fails identically", async () => {
-    const { env } = setup();
+  // The secret is spent on the owner's first passkey, NOT on the claim. Claiming
+  // and then failing to enrol must be retryable, or the instance is bricked: an
+  // owner with no credential, a burned secret, and nobody who can invite anyone.
+  it("re-claiming before enrolment re-attaches to the same owner", async () => {
+    const { env, db } = setup();
 
     const first = await post(env, "/api/auth/bootstrap", { secret: SECRET, displayName: "Ada" });
     expect(first.status).toBe(201);
     expect(first.headers.get("set-cookie")).toContain(`${SESSION_COOKIE}=`);
 
     const second = await post(env, "/api/auth/bootstrap", { secret: SECRET, displayName: "Mallory" });
-    expect(second.status).toBe(403);
+    expect(second.status).toBe(201);
+    // Same account, not a second one, and the display name is not overwritten.
+    const owners = (await db.listUsers()).filter((u) => u.isOwner);
+    expect(owners).toHaveLength(1);
+    expect(owners[0]!.displayName).toBe("Ada");
+  });
+
+  it("rejects the wrong secret, and every claim once the secret is burned", async () => {
+    const { env, db } = setup();
+
     const wrong = await post(env, "/api/auth/bootstrap", { secret: "nope", displayName: "Mallory" });
-    expect(await second.json()).toEqual(await wrong.json());
+    expect(wrong.status).toBe(403);
+
+    await post(env, "/api/auth/bootstrap", { secret: SECRET, displayName: "Ada" });
+    await db.setInstanceState(BOOTSTRAP_BURNED, String(NOW), NOW);
+
+    const after = await post(env, "/api/auth/bootstrap", { secret: SECRET, displayName: "Mallory" });
+    expect(after.status).toBe(403);
+    // Burned and wrong are indistinguishable: the response leaks nothing.
+    expect(await after.json()).toEqual(await wrong.json());
   });
 
   it("serves /.well-known/webauthn listing the frozen origin", async () => {
@@ -328,7 +349,7 @@ describe("account recovery", () => {
     expect(asAdmin.status).toBe(409);
     const asSelf = await del(env, `/api/me/devices/${only.id}`, member.cookie);
     expect(asSelf.status).toBe(409);
-    // still usable — a refused revoke must not half-apply
+    // still usable - a refused revoke must not half-apply
     expect(await db.listCredentials(member.id)).toHaveLength(1);
 
     // with a second credential the revoke goes through

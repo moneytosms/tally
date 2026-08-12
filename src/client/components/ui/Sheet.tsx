@@ -44,7 +44,9 @@ export function Sheet({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="paper-ground relative max-h-[90vh] overflow-auto rounded-t-[14px] border-t"
+        // dvh, not vh: on mobile Chrome vh is the LARGEST viewport, so a 90vh
+        // sheet can run under the URL bar and hide its own submit button.
+        className="paper-ground relative max-h-[90dvh] overflow-auto rounded-t-[14px] border-t"
         style={{ background: "var(--paper)", borderColor: "var(--line)" }}
       >
         <div className="sticky top-0 flex items-center gap-3 border-b px-4 py-3" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
@@ -61,7 +63,7 @@ export function Sheet({
             ✕
           </button>
         </div>
-        <div className="px-4 py-4">{children}</div>
+        <div className="pad-safe-bottom px-4 py-4">{children}</div>
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ const tabs = [
 
 export function TabBar() {
   return (
-    <nav className="flex border-t" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+    <nav className="pad-safe-bottom flex shrink-0 border-t" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
       {tabs.map((tab) => (
         <NavLink
           key={tab.key}

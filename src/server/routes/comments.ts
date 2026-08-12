@@ -1,5 +1,5 @@
 // Comments on expenses. Unlike expenses (any member may edit, ADR 0005), a
-// comment is speech, not shared ledger state — only its author may delete it.
+// comment is speech, not shared ledger state - only its author may delete it.
 //
 // Mounted at `/api` by the root app; paths below are relative to that.
 import { Hono } from "hono";

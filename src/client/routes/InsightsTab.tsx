@@ -10,14 +10,14 @@ const reduceMotion =
     ? window.matchMedia("(prefers-reduced-motion: reduce)").matches
     : false;
 
-// Earth tones from tokens.css, cycled per category/bar — colour is decoration
+// Earth tones from tokens.css, cycled per category/bar - colour is decoration
 // here, never the only cue (the lists next to each chart carry the real data).
 const CHART_COLORS = ["var(--moss)", "var(--ochre)", "var(--clay)", "var(--moss-2)"];
 
 type Range = "all" | "12m" | "30d";
 
 // Both charts share one `import("recharts")` module id, so Rollup emits a
-// single extra chunk regardless of how many lazy() call sites reference it —
+// single extra chunk regardless of how many lazy() call sites reference it -
 // opening this tab is what pulls it in, nothing else does.
 const CategoryChart = lazy(() =>
   import("recharts").then((m) => ({
@@ -37,12 +37,27 @@ const CategoryChart = lazy(() =>
   })),
 );
 
+/** "2026-08" is a database value, not a label. */
+const monthFormat = new Intl.DateTimeFormat("en-IN", { month: "short", year: "2-digit" });
+const monthLabel = (iso: string) => {
+  const [y, m] = iso.split("-").map(Number);
+  return y !== undefined && m !== undefined && Number.isFinite(y) && Number.isFinite(m)
+    ? monthFormat.format(new Date(y, m - 1, 1))
+    : iso;
+};
+
 const MonthChart = lazy(() =>
   import("recharts").then((m) => ({
     default: ({ data }: { data: Insights["byMonth"] }) => (
       <m.ResponsiveContainer width="100%" height={180}>
         <m.BarChart data={data} margin={{ top: 0, right: 8, bottom: 0, left: 0 }}>
-          <m.XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--ink-3)" }} axisLine={false} tickLine={false} />
+          <m.XAxis
+            dataKey="month"
+            tickFormatter={monthLabel}
+            tick={{ fontSize: 10, fill: "var(--ink-3)" }}
+            axisLine={false}
+            tickLine={false}
+          />
           <m.YAxis hide />
           <m.Bar dataKey="spent" fill="var(--moss)" isAnimationActive={!reduceMotion} radius={3} />
         </m.BarChart>
@@ -85,9 +100,13 @@ function InsightsBody({ data }: { data: Insights }) {
       <section className="mb-5">
         <SectionHeading>{t("insights.byCategory")}</SectionHeading>
         <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
-          <Suspense fallback={<ChartFallback height={Math.max(120, data.byCategory.length * 32)} />}>
-            <CategoryChart data={data.byCategory} />
-          </Suspense>
+          {/* One bar is a rectangle, not a comparison. The list below carries the
+              same numbers, so the chart only earns its space once there's a shape. */}
+          {data.byCategory.length > 1 && (
+            <Suspense fallback={<ChartFallback height={Math.max(120, data.byCategory.length * 32)} />}>
+              <CategoryChart data={data.byCategory} />
+            </Suspense>
+          )}
           <ul className="mt-2">
             {data.byCategory.map((c) => (
               <li key={c.categoryId ?? "none"} className="flex items-center justify-between gap-2.5 py-1">
@@ -102,14 +121,16 @@ function InsightsBody({ data }: { data: Insights }) {
         </div>
       </section>
 
-      <section className="mb-5">
-        <SectionHeading>{t("insights.byMonth")}</SectionHeading>
-        <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
-          <Suspense fallback={<ChartFallback height={180} />}>
-            <MonthChart data={data.byMonth} />
-          </Suspense>
-        </div>
-      </section>
+      {data.byMonth.length > 1 && (
+        <section className="mb-5">
+          <SectionHeading>{t("insights.byMonth")}</SectionHeading>
+          <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+            <Suspense fallback={<ChartFallback height={180} />}>
+              <MonthChart data={data.byMonth} />
+            </Suspense>
+          </div>
+        </section>
+      )}
 
       <section className="mb-2">
         <SectionHeading>{t("insights.mostSpentWith")}</SectionHeading>

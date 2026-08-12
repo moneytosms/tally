@@ -6,7 +6,7 @@ import { t } from "~/client/i18n";
 
 describe("settleAmount", () => {
   it("records a partial settle at the amount typed, not the suggestion", () => {
-    // ₹500 against a suggested ₹640 — ₹140 must remain.
+    // ₹500 against a suggested ₹640 - ₹140 must remain.
     expect(settleAmount("500", 640_00)).toEqual({ paise: 500_00 });
     const suggested = 640_00;
     const paid = (settleAmount("500", suggested) as { paise: number }).paise;

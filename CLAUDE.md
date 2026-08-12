@@ -4,9 +4,9 @@ Self-hosted expense splitting for friend groups. PWA. One instance, ~20 users, $
 
 ## Read first
 
-- `CONTEXT.md` — ubiquitous language. Use these terms; don't invent synonyms.
-- `docs/SPEC.md` — the buildable v1 spec.
-- `docs/adr/` — irreversible decisions and why. Contradicting one is allowed; doing it silently is not.
+- `CONTEXT.md` - ubiquitous language. Use these terms; don't invent synonyms.
+- `docs/SPEC.md` - the buildable v1 spec.
+- `docs/adr/` - irreversible decisions and why. Contradicting one is allowed; doing it silently is not.
 
 ## Agent skills
 
@@ -29,7 +29,7 @@ One Worker serves static assets and `/api/*`. One origin, no CORS.
 Violating any of these is a defect, not a style choice.
 
 - **Money is integer paise.** No float in storage, API, or calculation. Ever.
-- **Never render a bare amount.** Sign and label always — colour is never the only cue for owed/owe.
+- **Never render a bare amount.** Sign and label always - colour is never the only cue for owed/owe.
 - **RP ID is a frozen constant.** Never derive it from `location.hostname`.
 - **Filter soft-deleted rows structurally**, in the data-access layer. Never leave it to callers.
 - **Balances are derived**, never stored or cached.
@@ -40,7 +40,7 @@ Violating any of these is a defect, not a style choice.
 
 ## Watch items
 
-- **D1 has no cross-request transactions.** 1:1 ledger auto-create and bulk settle must not half-apply — batched statements or a Durable Object.
+- **D1 has no cross-request transactions.** 1:1 ledger auto-create and bulk settle must not half-apply - batched statements or a Durable Object.
 - **10 ms CPU ceiling per Worker invocation.** Push is single-recipient by design; keep it that way.
 - **Bundle size** fights "very fast". Lazy-load Recharts. Measure before adding anything large.
 - **Recurring catch-up must be idempotent.** A retry must never double-create.

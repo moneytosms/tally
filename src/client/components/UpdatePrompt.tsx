@@ -1,4 +1,4 @@
-// SPEC §10: "Updates prompt; never auto-reload — it would destroy a half-filled
+// SPEC §10: "Updates prompt; never auto-reload - it would destroy a half-filled
 // expense form. The API must tolerate one version of skew, because people
 // dismiss prompts."
 //

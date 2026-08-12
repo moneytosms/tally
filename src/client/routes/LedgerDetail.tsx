@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
-import { Amount, Avatar, Button, EmptyState, Field, Input } from "~/client/components/ui";
+import { Amount, Avatar, Button, EmptyState, Field, Input, ScreenSkeleton, Select } from "~/client/components/ui";
+import { Sheet } from "~/client/components/ui/Sheet";
 import { focusRing } from "~/client/components/ui/focus";
 import { ExpenseSheet } from "~/client/components/ExpenseSheet";
+import { BurnRate, runFor } from "~/client/routes/LedgersTab";
 import {
   useCategories,
   useCreateInvite,
@@ -17,10 +19,11 @@ import {
 } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
 
+// Lazy for the same reason App.tsx keeps it lazy - it pulls in the split editor.
+const ExpenseForm = lazy(() => import("~/client/routes/ExpenseForm"));
+
 const memberName = (m: Member | undefined) => m?.nickname ?? t("member.unknown");
 
-const selectClass = `min-h-11 w-full rounded-[6px] border px-3 text-[14px] ${focusRing}`;
-const selectStyle = { background: "var(--paper-sunk)", borderColor: "var(--line)", color: "var(--ink)" } as const;
 
 // yyyy-mm-dd <-> epoch ms for native date inputs. `to` is end-of-day so the
 // picked day is inclusive.
@@ -77,7 +80,10 @@ function ExpenseRow({
         </div>
         <div className="flex flex-none flex-col items-end gap-1">
           <Amount paise={expense.total} label={t("expense.total")} tone="neutral" />
-          {myShare && <Amount paise={-myShare.amount} label={t("expense.yourShare")} />}
+          {/* A share is a slice of the total, not a balance. Rendering it as a
+              position made a solo expense claim "you owe" while the ledger header
+              said settled. */}
+          {myShare && <Amount paise={myShare.amount} label={t("expense.yourShare")} tone="neutral" />}
         </div>
       </div>
     </button>
@@ -85,7 +91,7 @@ function ExpenseRow({
 }
 
 /** Creates a single-use, 48-hour invite link for this ledger.
- *  The server returns the token ONCE. It is held in component state only —
+ *  The server returns the token ONCE. It is held in component state only -
  *  navigating away loses it and a new invite must be minted, which is correct:
  *  an invite is a bearer credential, so it is never re-fetchable. */
 function InviteRow({ ledgerId }: { ledgerId: string }) {
@@ -150,14 +156,15 @@ export function LedgerDetail() {
 
   const [filters, setFilters] = useState<ExpenseFilters>({});
   const [selected, setSelected] = useState<Expense | null>(null);
+  const [adding, setAdding] = useState(false);
 
   // The unfiltered list is kept alongside the filtered one purely so the result
-  // count can say "3 of 20" — the server is the only thing that filters.
+  // count can say "3 of 20" - the server is the only thing that filters.
   const all = useExpenses(ledgerId);
   const expenses = useExpenseSearch(ledgerId, filters);
   const filtering = Object.values(filters).some((v) => v !== undefined && v !== "");
 
-  if (ledger.isPending) return null;
+  if (ledger.isPending) return <ScreenSkeleton />;
   if (ledger.error) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
 
   const byId = new Map((members.data ?? []).map((m) => [m.id, m]));
@@ -176,16 +183,35 @@ export function LedgerDetail() {
           <h1 className="serif truncate text-[21px] tracking-[-0.01em]">{ledger.data.name}</h1>
           <div className="text-[12px]" style={{ color: "var(--ink-3)" }}>
             {t("expense.member", { count: ledger.data.memberCount })}
+            {" · "}
+            {runFor(ledger.data.endDate)}
           </div>
         </div>
       </header>
 
-      <div className="mb-4 flex items-center justify-between gap-3 rounded-[7px] border px-3.5 py-4" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
-        <Amount paise={ledger.data.net} label={t("ledger.yourPosition")} hero />
-        <Button size="sm" onClick={() => navigate(`/ledgers/${ledgerId}/settle`)}>
-          {t("settle.title")}
-        </Button>
+      <div className="mb-4 rounded-[7px] border px-3.5 py-4" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+        <div className="flex items-center justify-between gap-3">
+          <Amount paise={ledger.data.net} label={t("ledger.yourPosition")} hero />
+          <span className="flex shrink-0 gap-2">
+            {/* The FAB already defaults to this ledger, but the action is worth
+                naming where the expenses actually are. */}
+            <Button size="sm" onClick={() => setAdding(true)}>
+              {t("expense.add")}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => navigate(`/ledgers/${ledgerId}/settle`)}>
+              {t("settle.title")}
+            </Button>
+          </span>
+        </div>
+        {/* A budget entered at creation used to be stored and never shown again. */}
+        <BurnRate ledger={ledger.data} />
       </div>
+
+      <Sheet open={adding} onOpenChange={setAdding} title={t("expense.add")}>
+        <Suspense fallback={null}>
+          <ExpenseForm onDone={() => setAdding(false)} />
+        </Suspense>
+      </Sheet>
 
       <div className="mx-0.5 mt-1 mb-2 flex items-center justify-between gap-2">
         <span className="text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
@@ -209,6 +235,9 @@ export function LedgerDetail() {
         </span>
       </div>
 
+      {/* Nothing to filter until there is a list worth filtering. Five controls
+          above an empty state is furniture, not help. */}
+      {(all.data?.length ?? 0) > 0 && (
       <div className="mb-3 grid gap-2">
         <Field label={t("search.label")}>
           <Input
@@ -218,11 +247,16 @@ export function LedgerDetail() {
             onChange={(e) => patch({ q: e.target.value || undefined })}
           />
         </Field>
-        <div className="grid grid-cols-2 gap-2">
+        <details>
+          <summary
+            className={`inline-flex min-h-11 cursor-pointer list-none items-center text-[12px] underline ${focusRing}`}
+            style={{ color: "var(--moss)" }}
+          >
+            {t("search.filters")}
+          </summary>
+        <div className="mt-2 grid grid-cols-2 gap-2">
           <Field label={t("search.category")}>
-            <select
-              className={selectClass}
-              style={selectStyle}
+            <Select
               value={filters.categoryId ?? ""}
               onChange={(e) => patch({ categoryId: e.target.value || undefined })}
             >
@@ -232,12 +266,10 @@ export function LedgerDetail() {
                   {c.icon} {c.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label={t("search.member")}>
-            <select
-              className={selectClass}
-              style={selectStyle}
+            <Select
               value={filters.memberId ?? ""}
               onChange={(e) => patch({ memberId: e.target.value || undefined })}
             >
@@ -247,7 +279,7 @@ export function LedgerDetail() {
                   {m.nickname}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label={t("search.from")}>
             <Input
@@ -264,6 +296,7 @@ export function LedgerDetail() {
             />
           </Field>
         </div>
+        </details>
         {filtering && (
           <div className="flex items-center justify-between gap-2" role="status" aria-live="polite">
             <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
@@ -280,6 +313,7 @@ export function LedgerDetail() {
           </div>
         )}
       </div>
+      )}
 
       {rows.length === 0 ? (
         filtering ? (

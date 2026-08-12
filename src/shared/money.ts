@@ -73,7 +73,7 @@ export function resolveSplits(input: {
   return parts;
 }
 
-/** Display only. Never used for arithmetic — formats the integer parts separately
+/** Display only. Never used for arithmetic - formats the integer parts separately
  *  so no paise value ever passes through a float. */
 export function formatPaise(amount: Paise): string {
   const abs = Math.abs(amount);

@@ -7,7 +7,7 @@
 //      (~/shared/recurrence), so a replay asks for the same instants.
 //   2. This module reads back which instants already exist and skips them.
 //   3. A unique index on (series_id, occurrence_at) rejects anything that gets
-//      past (2) — a crash between the insert and the cursor advance, or two
+//      past (2) - a crash between the insert and the cursor advance, or two
 //      alarms racing. The database is the authority; the check above it is only
 //      there to keep the happy path from throwing.
 //
@@ -24,7 +24,7 @@ import { nextOccurrence, occurrencesDue, type Cadence } from "~/shared/recurrenc
 export type Series = typeof recurringSeries.$inferSelect;
 
 /** One entry per participant, in stable order. `value` is per mode: exact paise,
- *  share weight, or percent — absent for `equal`. */
+ *  share weight, or percent - absent for `equal`. */
 export type SplitTemplateEntry = { memberId: string; value?: number };
 
 export function parseSplitTemplate(json: string): SplitTemplateEntry[] {
@@ -55,7 +55,7 @@ const BATCH_CAP = 50;
  * Generate every occurrence a series owes at `now`.
  *
  * Members who have left the ledger are dropped from the split before it is
- * resolved — a series outlives its participants, and charging someone who left
+ * resolved - a series outlives its participants, and charging someone who left
  * would break "a member with a non-zero balance cannot have left_at set"
  * (SPEC §12). If the payer has left, or fewer than one participant remains, the
  * occurrence is skipped rather than guessed at.
@@ -81,7 +81,7 @@ export async function runCatchUp(db: Db, series: Series, now: number): Promise<C
     }
     if (!live.has(series.payerMemberId) || template.length === 0) {
       // Nothing sane to write. Still counted as handled so the cursor advances
-      // past it — otherwise the series wedges and retries forever.
+      // past it - otherwise the series wedges and retries forever.
       skipped.push(at);
       continue;
     }

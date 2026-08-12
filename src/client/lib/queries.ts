@@ -7,6 +7,7 @@
 import { useMutation, useQuery, useQueryClient, QueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { api } from "./api";
+import { markActed } from "~/client/components/InstallPrompt";
 import { uuidv7 } from "~/shared/id";
 import type { Paise, SplitMode } from "~/shared/money";
 import type {
@@ -117,7 +118,7 @@ export type Series = {
   pausedAt: number | null;
 };
 
-/** One derived feed event. `kind` maps to a locale key under `activity.*` —
+/** One derived feed event. `kind` maps to a locale key under `activity.*` -
  *  the phrasing is the client's job, so no English crosses the wire. */
 export type ActivityEvent = {
   id: string;
@@ -129,6 +130,9 @@ export type ActivityEvent = {
   fromName: string | null;
   toName: string | null;
   expenseId: string | null;
+  /** Only on the cross-ledger home feed. */
+  ledgerId?: string;
+  ledgerName?: string;
 };
 
 export type AdminUser = {
@@ -155,7 +159,7 @@ export type AdminInstance = {
   recurringConfigured: boolean;
 };
 
-/** Every field optional — an empty filter is the plain expense list. */
+/** Every field optional - an empty filter is the plain expense list. */
 export type ExpenseFilters = {
   q?: string;
   categoryId?: string;
@@ -180,6 +184,7 @@ export const qk = {
   revisions: (expenseId: string) => ["expenses", expenseId, "revisions"] as const,
   series: (ledgerId: string) => ["ledgers", ledgerId, "recurring"] as const,
   activity: (ledgerId: string) => ["ledgers", ledgerId, "activity"] as const,
+  recentActivity: ["activity"] as const,
   pushKey: ["push", "key"] as const,
   adminUsers: ["admin", "users"] as const,
   adminInvites: ["admin", "invites"] as const,
@@ -187,7 +192,7 @@ export const qk = {
 };
 
 /** Nested under the ledger's expense key so any expense mutation invalidates a
- *  filtered view too — a filtered list is still the expense list. */
+ *  filtered view too - a filtered list is still the expense list. */
 const expenseSearchKey = (ledgerId: string, f: ExpenseFilters) =>
   [...qk.expenses(ledgerId), "search", f] as const;
 
@@ -240,7 +245,7 @@ export const useExpenseSearch = (ledgerId: string, filters: ExpenseFilters) =>
     queryFn: () => api<Expense[]>(`/api/ledgers/${ledgerId}/expenses${filterQuery(filters)}`),
   });
 
-/** Categories change about once a year — the one place a longer staleTime is
+/** Categories change about once a year - the one place a longer staleTime is
  *  honest, because none of this is money. */
 export const useCategories = () =>
   useQuery({ queryKey: qk.categories, queryFn: () => api<Category[]>("/api/categories"), staleTime: 5 * 60_000 });
@@ -272,6 +277,10 @@ export const useActivity = (ledgerId: string) =>
     queryFn: () => api<ActivityEvent[]>(`/api/ledgers/${ledgerId}/activity`),
   });
 
+/** The home feed: recent events across the ledgers you are in. */
+export const useRecentActivity = () =>
+  useQuery({ queryKey: qk.recentActivity, queryFn: () => api<ActivityEvent[]>("/api/activity") });
+
 export const useAdminUsers = () =>
   useQuery({ queryKey: qk.adminUsers, queryFn: () => api<AdminUser[]>("/api/admin/users") });
 
@@ -288,7 +297,11 @@ export function useCreateLedger() {
   return useMutation({
     mutationFn: (body: CreateLedger) =>
       api<LedgerSummary>("/api/ledgers", { method: "POST", body: JSON.stringify(body) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: qk.ledgers }),
+    onSuccess: () => {
+      markActed();
+      qc.invalidateQueries({ queryKey: qk.ledgers });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
+    },
   });
 }
 
@@ -300,7 +313,7 @@ export function useUpdateProfile() {
   });
 }
 
-/** Optimistic on the expense LIST only. Balances are invalidated, never guessed —
+/** Optimistic on the expense LIST only. Balances are invalidated, never guessed -
  *  a derived number must not be predicted client-side. */
 export function useCreateExpense(ledgerId: string) {
   const qc = useQueryClient();
@@ -328,11 +341,13 @@ export function useCreateExpense(ledgerId: string) {
     onError: (_e, _body, ctx) => {
       if (ctx?.previous) qc.setQueryData(qk.expenses(ledgerId), ctx.previous);
     },
+    onSuccess: () => markActed(),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: qk.expenses(ledgerId) });
       qc.invalidateQueries({ queryKey: qk.balances(ledgerId) });
       qc.invalidateQueries({ queryKey: qk.ledgers });
       qc.invalidateQueries({ queryKey: qk.crossLedger });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
     },
   });
 }
@@ -342,10 +357,12 @@ export function useCreateSettlement(ledgerId: string) {
   return useMutation({
     mutationFn: (body: CreateSettlement) =>
       api<{ id: string }>(`/api/ledgers/${ledgerId}/settlements`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => markActed(),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: qk.balances(ledgerId) });
       qc.invalidateQueries({ queryKey: qk.ledgers });
       qc.invalidateQueries({ queryKey: qk.crossLedger });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
     },
   });
 }
@@ -357,6 +374,7 @@ function invalidateLedger(qc: ReturnType<typeof useQueryClient>, ledgerId: strin
   qc.invalidateQueries({ queryKey: qk.balances(ledgerId) });
   qc.invalidateQueries({ queryKey: qk.ledgers });
   qc.invalidateQueries({ queryKey: qk.crossLedger });
+  qc.invalidateQueries({ queryKey: qk.recentActivity });
 }
 
 export function useUpdateExpense(ledgerId: string, expenseId: string) {
@@ -443,7 +461,7 @@ export function useSeriesAction(ledgerId: string) {
   });
 }
 
-/** The token comes back exactly once and is never stored — the caller must show
+/** The token comes back exactly once and is never stored - the caller must show
  *  it immediately or it is gone. Not logged, not persisted, not re-fetchable. */
 export function useCreateInvite(ledgerId: string) {
   const qc = useQueryClient();
@@ -454,7 +472,7 @@ export function useCreateInvite(ledgerId: string) {
   });
 }
 
-/** Owner-only. Like an invite the token comes back once and is never stored —
+/** Owner-only. Like an invite the token comes back once and is never stored -
  *  show it immediately or mint a new one. */
 export function useCreateRecovery() {
   return useMutation({

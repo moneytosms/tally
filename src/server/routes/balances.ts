@@ -1,4 +1,4 @@
-// Balances are DERIVED on every request — never stored, never cached (ADR 0004,
+// Balances are DERIVED on every request - never stored, never cached (ADR 0004,
 // SPEC §6). A cached net position that disagrees with expense history is worse
 // than a slow query, so there is deliberately no memoisation here.
 //
@@ -11,7 +11,7 @@ import { requireMember } from "~/server/middleware/membership";
 import { requireSession } from "~/server/middleware/session";
 import type { Paise } from "~/shared/money";
 // Agent H owns the user serialiser. VPA is visible only to ledger co-members and
-// that rule lives in one place — never spread a user row into a response.
+// that rule lives in one place - never spread a user row into a response.
 import { serialiseUser } from "~/server/routes/me";
 
 const balances = new Hono<Env>();
@@ -19,7 +19,7 @@ const balances = new Hono<Env>();
 type Expenses = Awaited<ReturnType<Db["listExpenses"]>>;
 
 /** The "why?" trail: the expenses `to` paid that `from` took a share of.
- *  Direct pairs only — see `pairs` below for simplified (indirect) transfers. */
+ *  Direct pairs only - see `pairs` below for simplified (indirect) transfers. */
 function trailFor(expenses: Expenses, from: string, to: string) {
   return expenses
     .filter((e) => e.payerMemberId === to)
@@ -71,7 +71,7 @@ balances.get("/ledgers/:ledgerId/balances", requireSession, requireMember, async
  * shared with the viewer. Positive = that person is owed overall.
  *
  * Guests are per-ledger entities with no user and no VPA, so they cannot be
- * summed into a cross-ledger figure and are excluded here — they appear only in
+ * summed into a cross-ledger figure and are excluded here - they appear only in
  * their own ledger's balances. The viewer is excluded too; their own figure is
  * `net` on each ledger summary.
  *

@@ -1,11 +1,11 @@
 // The owner's admin panel.
 //
 // Every route here is requireSession + requireOwner. The Owner is the person who
-// runs the Instance (CONTEXT.md) — there is exactly one, and the role is not
+// runs the Instance (CONTEXT.md) - there is exactly one, and the role is not
 // grantable through the API.
 //
 // Deliberately NOT here: anything that edits money. The owner has no special
-// power over expenses, splits or settlements — that is what keeps the audit
+// power over expenses, splits or settlements - that is what keeps the audit
 // trail meaningful (ADR 0005). The panel manages people, invites and categories.
 import { Hono } from "hono";
 import type { Env } from "~/server/context";
@@ -27,7 +27,7 @@ admin.use("/admin/*", requireSession, requireOwner);
  *
  * VPAs are NOT included. The owner is not automatically a co-member of every
  * ledger, and SPEC §7 makes VPA visibility a co-membership question, not a
- * privilege question — so the admin panel does not get to see them either.
+ * privilege question - so the admin panel does not get to see them either.
  */
 admin.get("/admin/users", async (c) => {
   const users = await c.var.db.listUsers();
@@ -48,7 +48,7 @@ admin.get("/admin/users", async (c) => {
 /**
  * Passkey recovery, step two: revoke the lost credential.
  *
- * Refuses to revoke a user's LAST credential. An Invite cannot undo it — the
+ * Refuses to revoke a user's LAST credential. An Invite cannot undo it - the
  * invite path creates a new user, so the old account and its expense history
  * would be stranded. Issue a recovery token and let them enrol a replacement
  * first; then this revoke is safe.
@@ -108,7 +108,7 @@ admin.get("/admin/ledgers", async (c) => {
 
 admin.get("/admin/invites", async (c) => {
   const rows = await c.var.db.listOpenInvites(Date.now());
-  // The token itself is never returned — only its hash is stored, and an invite
+  // The token itself is never returned - only its hash is stored, and an invite
   // is shown so it can be REVOKED, not so it can be re-sent.
   return c.json(
     rows.map(({ invite, ledger }) => ({

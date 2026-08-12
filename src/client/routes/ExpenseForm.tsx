@@ -5,7 +5,7 @@
 // disabled with a caption. The structured form below it is the whole feature.
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { Button, Field, Input } from "~/client/components/ui";
+import { Button, Field, Input, Rupees, Select } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import {
   SplitEditor,
@@ -21,10 +21,8 @@ import { t } from "~/client/i18n";
 import { parseExpenseLine } from "~/shared/nl";
 import type { SplitMode } from "~/shared/money";
 
-const selectClass = `min-h-11 w-full rounded-[6px] border px-3 text-[14px] ${focusRing}`;
-const selectStyle = { background: "var(--paper-sunk)", borderColor: "var(--line)", color: "var(--ink)" };
 
-/** Local calendar day, not UTC — an expense added at 1am is still today's. */
+/** Local calendar day, not UTC - an expense added at 1am is still today's. */
 const todayLocal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 10);
 
 export default function ExpenseForm({ onDone }: { onDone: () => void }) {
@@ -79,6 +77,19 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
     }
   }
 
+  // The example has to be typable ON THIS LEDGER. The old hardcoded one named
+  // people who were never members, so following it produced "could not match".
+  const example = useMemo(() => {
+    const names = roster.flatMap((m) => {
+      const first = m.nickname.trim().toLowerCase().split(/\s+/)[0];
+      return first ? [first] : [];
+    });
+    const [a, b] = names;
+    if (a && b) return t("nl.exampleTwo", { a, b });
+    if (a) return t("nl.exampleOne", { a });
+    return t("nl.exampleBare");
+  }, [rosterKey]);
+
   const byId = new Map(roster.map((m) => [m.id, m]));
   const participants: SplitParticipant[] = participantIds.flatMap((id) => {
     const m = byId.get(id);
@@ -120,26 +131,29 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
         <Input
           value={nlText}
           onChange={(e) => handleNlChange(e.target.value)}
-          placeholder={t("expense.naturalLanguagePlaceholder")}
+          placeholder={example}
           autoComplete="off"
         />
-        <span className="mt-1.5 block text-[11px]" style={{ color: "var(--ink-3)" }}>
-          {t("nl.hint")}
-        </span>
+        {/* The placeholder IS the example; a caption repeating it verbatim was
+            just a second line saying the same thing. */}
         <p role="status" aria-live="polite" className="mt-1.5 block text-[11px]" style={{ color: "var(--clay)" }}>
           {nlUnmatched.length > 0 ? t("nl.unmatched", { names: nlUnmatched.join(", ") }) : ""}
         </p>
       </Field>
 
-      <Field label={t("expense.ledger")}>
-        <select className={selectClass} style={selectStyle} value={ledgerId} onChange={(e) => setPickedLedger(e.target.value)}>
-          {(ledgers.data ?? []).map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.name}
-            </option>
-          ))}
-        </select>
-      </Field>
+      {/* Opened from inside a ledger, the answer is already known. The picker is
+          only worth asking for when the form was opened from the FAB. */}
+      {!params.ledgerId && (
+        <Field label={t("expense.ledger")}>
+          <Select value={ledgerId} onChange={(e) => setPickedLedger(e.target.value)}>
+            {(ledgers.data ?? []).map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+      )}
 
       <Field label={t("expense.description")}>
         <Input value={description} onChange={(e) => setDescription(e.target.value)} autoComplete="off" />
@@ -149,10 +163,8 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
         label={t("expense.amount")}
         error={amountRaw.trim() && total === null ? t("expense.error.amount") : undefined}
       >
-        <Input inputMode="decimal" value={amountRaw} onChange={(e) => setAmountRaw(e.target.value)} placeholder="0.00" />
-        <span className="mt-1.5 block text-[11px]" style={{ color: "var(--ink-3)" }}>
-          {t("expense.amountHint")}
-        </span>
+        {/* The ₹ is in the control now, so the "in rupees" caption is redundant. */}
+        <Rupees value={amountRaw} onChange={setAmountRaw} autoFocus />
       </Field>
 
       <Field label={t("expense.date")}>
@@ -160,19 +172,17 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
       </Field>
 
       <Field label={t("expense.paidBy")}>
-        <select className={selectClass} style={selectStyle} value={payerId} onChange={(e) => setPayerId(e.target.value)}>
+        <Select value={payerId} onChange={(e) => setPayerId(e.target.value)}>
           {roster.map((m) => (
             <option key={m.id} value={m.id}>
               {m.nickname}
             </option>
           ))}
-        </select>
+        </Select>
       </Field>
 
       <Field label={t("expense.category")}>
-        <select
-          className={selectClass}
-          style={selectStyle}
+        <Select
           value={categoryId ?? ""}
           onChange={(e) => setCategoryId(e.target.value || null)}
         >
@@ -182,7 +192,7 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
               {c.icon} {c.name}
             </option>
           ))}
-        </select>
+        </Select>
       </Field>
 
       <Field label={t("expense.notes")}>
@@ -202,9 +212,7 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
 
       {absent.length > 0 && (
         <Field label={t("expense.addParticipant")}>
-          <select
-            className={selectClass}
-            style={selectStyle}
+          <Select
             value=""
             onChange={(e) => e.target.value && setParticipantIds((ids) => [...ids, e.target.value])}
           >
@@ -214,7 +222,7 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
                 {m.nickname}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
       )}
 
@@ -222,9 +230,13 @@ export default function ExpenseForm({ onDone }: { onDone: () => void }) {
         {failure}
       </p>
 
-      <Button type="submit" disabled={blocked} className="w-full">
-        {t("expense.save")}
-      </Button>
+      {/* Sticky: this form is taller than a phone screen, and a Save button below
+          the fold from the moment the sheet opens is a Save button nobody finds. */}
+      <div className="pad-safe-bottom sticky bottom-0 -mx-4 px-4 pt-2 pb-2" style={{ background: "var(--paper)" }}>
+        <Button type="submit" disabled={blocked} className="w-full">
+          {t("expense.save")}
+        </Button>
+      </div>
     </form>
   );
 }

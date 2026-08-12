@@ -1,5 +1,5 @@
 // Server-side sessions in D1. The plaintext token is returned to the client
-// exactly once (in the Set-Cookie header) and is never stored or logged —
+// exactly once (in the Set-Cookie header) and is never stored or logged -
 // only its SHA-256 hash goes to the database.
 import { uuidv7 } from "~/shared/id";
 import type { SessionUser } from "~/server/context";
@@ -75,7 +75,7 @@ export type SessionStore = {
 
 // ---- operations ------------------------------------------------------------
 
-/** Creates a session row and returns the plaintext token — the only time it exists. */
+/** Creates a session row and returns the plaintext token - the only time it exists. */
 export async function createSession(
   store: SessionStore,
   userId: string,
@@ -106,7 +106,7 @@ export async function resolveSession(
   if (now - row.session.lastSeenAt > REFRESH_AFTER_MS) {
     await store.touchSession(row.session.id, now, now + SESSION_TTL_MS);
   }
-  // built explicitly — never spread a user row into a response (SPEC §7)
+  // built explicitly - never spread a user row into a response (SPEC §7)
   return {
     id: row.user.id,
     displayName: row.user.displayName,

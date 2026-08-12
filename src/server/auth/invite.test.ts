@@ -1,7 +1,7 @@
 // Real DB tests: node:sqlite in memory, migrated with the actual migration SQL.
 // The (ledger_id, user_id) unique index is load-bearing here, so use real DDL.
 import { describe, expect, it } from "vitest";
-// @ts-expect-error node:sqlite is untyped here — @types/node is not a dependency
+// @ts-expect-error node:sqlite is untyped here - @types/node is not a dependency
 import { DatabaseSync } from "node:sqlite";
 import ddl from "../../../migrations/0000_calm_malice.sql?raw";
 import {

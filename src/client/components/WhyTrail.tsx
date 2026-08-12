@@ -1,4 +1,4 @@
-// "why?" — the trail behind a suggested transfer. SPEC §6 calls this a
+// "why?" - the trail behind a suggested transfer. SPEC §6 calls this a
 // requirement, not a nicety: it is the answer to the complaint that always-on
 // simplification reliably produces.
 //
@@ -59,8 +59,14 @@ export function WhyTrail({
                     {day.format(e.paidAt)} · {t("expense.paidByName", { name: name(e.payerMemberId) })}
                   </span>
                 </span>
-                {/* Sign is from the payer-of-the-transfer's side: negative = they owe it. */}
-                <Amount paise={paidByTo ? -share : share} label={t("settle.trailShare", { name: name(fromMemberId) })} />
+                {/* Sign is from the payer-of-the-transfer's side: negative = they owe
+                    it. `subject` makes the spoken direction match - this is never the
+                    viewer's own balance. */}
+                <Amount
+                  paise={paidByTo ? -share : share}
+                  label={t("settle.trailShare", { name: name(fromMemberId) })}
+                  subject={name(fromMemberId)}
+                />
               </li>
             );
           })}

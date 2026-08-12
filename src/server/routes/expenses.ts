@@ -1,4 +1,4 @@
-// Expenses. Any member may edit or delete any expense (ADR 0005) — the audit
+// Expenses. Any member may edit or delete any expense (ADR 0005) - the audit
 // trail is the control, not the permission, so every edit writes a revision
 // snapshot BEFORE it mutates. An edit without a revision is a defect.
 //
@@ -18,7 +18,7 @@ import { resolveSplits, type SplitMode } from "~/shared/money";
 import { createExpenseSchema, updateExpenseSchema, type CreateExpense } from "~/shared/schemas";
 
 /**
- * An archived ledger is READ-ONLY (SPEC §4) — that is what keeps "a ledger with
+ * An archived ledger is READ-ONLY (SPEC §4) - that is what keeps "a ledger with
  * archived_at set has all balances at zero" (SPEC §12) true after the archive
  * check has run. It is a router-level guard rather than a line in each handler
  * for the same reason soft-delete filtering is structural: a check a handler can
@@ -71,7 +71,7 @@ function toWire(e: StoredExpense) {
 
 /**
  * requireMember proves the CALLER belongs to this ledger. It says nothing about
- * the ids in the body — a member id from another ledger would otherwise be a
+ * the ids in the body - a member id from another ledger would otherwise be a
  * silent cross-ledger write.
  */
 async function checkMembers(db: Db, ledgerId: string, body: CreateExpense): Promise<string | null> {
@@ -86,7 +86,7 @@ async function checkMembers(db: Db, ledgerId: string, body: CreateExpense): Prom
   return null;
 }
 
-/** Participants arrive in stable order (order of addition) and stay in it — the
+/** Participants arrive in stable order (order of addition) and stay in it - the
  *  remainder rule depends on the ordering, so it is never re-sorted. */
 function resolve(body: CreateExpense) {
   const payerIndex = body.participants.findIndex((p) => p.memberId === body.payerMemberId);
@@ -265,7 +265,7 @@ expenses.get(REVISIONS, async (c) => {
   const db = c.var.db;
   const ledgerId = c.req.param("ledgerId");
   const revisions = await db.listRevisions(c.req.param("expenseId"));
-  // listRevisions isn't ledger-scoped — a wrong ledgerId in the path would
+  // listRevisions isn't ledger-scoped - a wrong ledgerId in the path would
   // otherwise leak another ledger's expense history to any member.
   if (revisions[0] && (JSON.parse(revisions[0].snapshot) as StoredExpense).ledgerId !== ledgerId) {
     return c.json({ error: "not found" }, 404);
@@ -286,7 +286,7 @@ expenses.get(REVISIONS, async (c) => {
 
 /**
  * Restores the expense to its most recent revision. Writes a revision of the
- * CURRENT state first — undo is itself undoable, per SPEC. Column update,
+ * CURRENT state first - undo is itself undoable, per SPEC. Column update,
  * split clear and split reinsert go in one batch: D1 has no cross-request
  * transaction and a half-applied restore is wrong money.
  */

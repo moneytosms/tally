@@ -53,33 +53,42 @@ export default function BalancesTab() {
       {rows.length === 0 ? (
         <EmptyState title={t("empty.balances")} body={t("balances.emptyBody")} />
       ) : (
-        rows.map((f) => (
-          <div
-            key={f.userId}
-            className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-3"
-            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-          >
-            <div className="flex min-w-0 items-center gap-2.5">
-              <Avatar name={f.displayName} />
-              <div className="min-w-0">
-                <div className="truncate text-[14.5px]">{f.displayName}</div>
-                <Amount paise={f.net} label={t("balances.overall")} />
+        rows.map((f) => {
+          // The API returns THEIR position ("positive = that person is owed").
+          // Every label and colour in this row is written from the viewer's side,
+          // so flip it once, here, rather than at each use.
+          const mine = -f.net;
+          return (
+            <div
+              key={f.userId}
+              className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-3"
+              style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+            >
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar name={f.displayName} />
+                <div className="min-w-0">
+                  <div className="truncate text-[14.5px]">{f.displayName}</div>
+                  <Amount paise={mine} label={t("balances.overall")} />
+                </div>
               </div>
+              {mine < 0 && (
+                <Button size="sm" onClick={() => setBulkFor(f)}>
+                  {t("balances.settleAcross")}
+                </Button>
+              )}
             </div>
-            {f.net < 0 && (
-              <Button size="sm" onClick={() => setBulkFor(f)}>
-                {t("balances.settleAcross")}
-              </Button>
-            )}
-          </div>
-        ))
+          );
+        })
       )}
 
       {/* Guests have no VPA and no user, so they never reach this tab. Said out
-          loud rather than silently omitted (SPEC §6). */}
-      <p className="mt-2 mb-5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-        {t("balances.guestsSkipped")}
-      </p>
+          loud rather than silently omitted (SPEC §6) - but only once there is a
+          list for them to be missing from. */}
+      {rows.length > 0 && (
+        <p className="mt-2 mb-5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          {t("balances.guestsSkipped")}
+        </p>
+      )}
 
       <div className="mx-0.5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
         {t("balances.perLedger")}
@@ -140,7 +149,13 @@ function LedgerPlan({ ledger, onLegs }: { ledger: LedgerSummary; onLegs: (id: st
       {(balances.data?.positions ?? []).map((p) => (
         <div key={p.memberId} className="flex items-center justify-between gap-2.5 py-1">
           <span className="min-w-0 flex-1 truncate text-[13.5px]">{name(p.memberId)}</span>
-          <Amount paise={p.net} label={t("ledger.netPosition")} />
+          {/* Every row here is a MEMBER's position. Only my own row is spoken in
+              the second person; the rest are spoken about the person named. */}
+          <Amount
+            paise={p.net}
+            label={t("ledger.netPosition")}
+            subject={p.memberId === myMemberId ? undefined : name(p.memberId)}
+          />
         </div>
       ))}
 
@@ -177,8 +192,8 @@ function BulkSettle({ friend, legs, onDone }: { friend: CrossLedgerBalance; legs
   const total = legs.reduce((a, c) => a + c.amount, 0);
 
   // One server-side batched write across every contributing ledger, so a bulk settle
-  // cannot half-apply (SPEC §11). Guests come back in `skipped` — they have no VPA
-  // and are settled by hand — rather than being silently dropped.
+  // cannot half-apply (SPEC §11). Guests come back in `skipped` - they have no VPA
+  // and are settled by hand - rather than being silently dropped.
   async function record() {
     setBusy(true);
     setStatus("");

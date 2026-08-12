@@ -17,7 +17,7 @@ import { addGuestSchema, createLedgerSchema, updateLedgerSchema } from "~/shared
 
 type Ledger = NonNullable<Awaited<ReturnType<Db["findLedger"]>>>;
 
-/** Net positions of a whole ledger. Derived on every call — never stored. */
+/** Net positions of a whole ledger. Derived on every call - never stored. */
 async function positionsOf(db: Db, ledgerId: string) {
   const [expenses, settlements] = await Promise.all([
     db.listExpenses(ledgerId),
@@ -68,7 +68,7 @@ ledgers.use("/ledgers/:ledgerId/*", requireMember);
 
 ledgers.get("/ledgers", async (c) => {
   const rows = await c.var.db.listLedgersForUser(c.var.user.id);
-  // ponytail: one pass per ledger. ~20 users, a handful of ledgers each — well
+  // ponytail: one pass per ledger. ~20 users, a handful of ledgers each - well
   // inside the 10 ms CPU budget. Denormalise only if that stops being true.
   return c.json(await Promise.all(rows.map((r) => summarise(c.var.db, r.ledger, r.memberId))));
 });
@@ -79,13 +79,40 @@ ledgers.post("/ledgers", async (c) => {
 
   const db = c.var.db;
   const now = Date.now();
-  const ledger = { ...parsed.data, id: uuidv7(), createdBy: c.var.user.id, createdAt: now };
+  const { cloneFrom, ...fields } = parsed.data;
+  const ledger = { ...fields, id: uuidv7(), createdBy: c.var.user.id, createdAt: now };
   const memberId = uuidv7();
+
+  // Clone members: only from a ledger the caller is currently in, otherwise it
+  // reads any ledger's roster. Current members only - someone who left is not
+  // carried into a new trip. The caller's own row is inserted below either way.
+  let cloned: ReturnType<Db["insertMember"]>[] = [];
+  if (cloneFrom !== null) {
+    const source = await db.listMembers(cloneFrom);
+    if (!source.some((m) => m.userId === c.var.user.id && m.leftAt === null)) {
+      return c.json({ error: "forbidden", code: "not_member" }, 403);
+    }
+    cloned = source
+      .filter((m) => m.leftAt === null && m.userId !== c.var.user.id)
+      .map((m) =>
+        db.insertMember({
+          id: uuidv7(),
+          ledgerId: ledger.id,
+          userId: m.userId,
+          // Guests are data: a cloned guest is a new guest row, never a principal.
+          guestName: m.guestName,
+          nickname: m.nickname,
+          joinedAt: now,
+        }),
+      );
+  }
+
   // D1 has no cross-request transaction: a ledger without its creator as a
-  // member would be unreachable, so both rows go in one batch.
+  // member would be unreachable, so all the rows go in one batch.
   await db.batch([
     db.insertLedger(ledger),
     db.insertMember({ id: memberId, ledgerId: ledger.id, userId: c.var.user.id, joinedAt: now }),
+    ...cloned,
   ]);
   const row = await db.findLedger(ledger.id);
   return c.json(await summarise(db, row!, memberId), 201);
@@ -110,7 +137,7 @@ ledgers.patch("/ledgers/:ledgerId", async (c) => {
   return c.json(await summarise(db, ledger, c.var.member.id));
 });
 
-/** The creator's one special power. Soft-delete — nothing is ever removed. */
+/** The creator's one special power. Soft-delete - nothing is ever removed. */
 ledgers.delete("/ledgers/:ledgerId", async (c) => {
   const ledger = await c.var.db.findLedger(c.req.param("ledgerId"));
   if (!ledger) return c.json({ error: "forbidden" }, 403);
@@ -171,7 +198,7 @@ ledgers.post("/ledgers/:ledgerId/guests", requireOwner, async (c) => {
 });
 
 /** Blocked while the member's net position is non-zero. Settle, or have someone
- *  forgive it explicitly — never a silent write-off (SPEC §4). */
+ *  forgive it explicitly - never a silent write-off (SPEC §4). */
 ledgers.post("/ledgers/:ledgerId/leave", async (c) => {
   const { positions } = await positionsOf(c.var.db, c.req.param("ledgerId"));
   const net = positions.find((p) => p.memberId === c.var.member.id)?.net ?? 0;
@@ -182,7 +209,7 @@ ledgers.post("/ledgers/:ledgerId/leave", async (c) => {
 
 // ---- invites ----------------------------------------------------------------
 
-/** Any member may invite. The token is returned exactly once — never logged. */
+/** Any member may invite. The token is returned exactly once - never logged. */
 ledgers.post("/ledgers/:ledgerId/invites", async (c) => {
   const now = Date.now();
   const token = await createInvite(c.var.db, {
@@ -198,7 +225,7 @@ ledgers.delete("/ledgers/:ledgerId/invites/:inviteId", async (c) => {
   return c.json({ ok: true });
 });
 
-/** The one ledger route with no :ledgerId — the invite itself carries the
+/** The one ledger route with no :ledgerId - the invite itself carries the
  *  ledger binding, so requireSession is the correct and only guard. */
 ledgers.post("/invites/:token/accept", async (c) => {
   try {

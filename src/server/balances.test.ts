@@ -25,7 +25,7 @@ describe("netPositions", () => {
   });
 
   it("a payer who is not a participant is owed the whole total", () => {
-    // ₹90 paid by C, split equally A/B — C is not a participant
+    // ₹90 paid by C, split equally A/B - C is not a participant
     const ps = netPositions(
       [
         {
@@ -63,7 +63,7 @@ describe("netPositions", () => {
     const before = netPositions([expense], []);
     const after = netPositions([expense, refund], []);
     expect(net(before, "B")).toBe(-5000); // ₹50 owed
-    expect(net(after, "B")).toBe(-3000); // ₹30 owed — closer to zero
+    expect(net(after, "B")).toBe(-3000); // ₹30 owed - closer to zero
     expect(net(after, "A")).toBe(3000);
     expect(sum(after)).toBe(0);
   });
@@ -85,7 +85,7 @@ describe("netPositions", () => {
   it("settlement direction is signed correctly in both directions", () => {
     // No expenses: a bare settlement of ₹10 from B to A leaves B owed ₹10.
     const ba = netPositions([], [{ fromMemberId: "B", toMemberId: "A", amount: 1000 }]);
-    expect(net(ba, "B")).toBe(1000); // ₹10 — B overpaid, is now owed it
+    expect(net(ba, "B")).toBe(1000); // ₹10 - B overpaid, is now owed it
     expect(net(ba, "A")).toBe(-1000);
 
     const ab = netPositions([], [{ fromMemberId: "A", toMemberId: "B", amount: 1000 }]);
@@ -109,7 +109,7 @@ describe("netPositions", () => {
   });
 
   it("a forgiven settlement is arithmetically ordinary", () => {
-    // method is not part of the input at all — the engine cannot special-case it.
+    // method is not part of the input at all - the engine cannot special-case it.
     const ps = netPositions(
       [{ payerMemberId: "A", splits: [{ memberId: "B", amount: 2500 }] }], // ₹25
       [{ fromMemberId: "B", toMemberId: "A", amount: 2500 }],
@@ -133,7 +133,7 @@ describe("netPositions", () => {
   });
 
   it("all amounts stay integers", () => {
-    // ₹100.01 paid by A across three participants — resolved splits, not divided here
+    // ₹100.01 paid by A across three participants - resolved splits, not divided here
     const ps = netPositions(
       [
         {

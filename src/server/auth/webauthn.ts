@@ -1,7 +1,7 @@
 // Passkeys. Thin wrappers over SimpleWebAuthn v13.
 //
 // Multiple credentials per user from day one. Recovery REVOKES the lost
-// credential (revokedAt) rather than only adding a new one — enforced here,
+// credential (revokedAt) rather than only adding a new one - enforced here,
 // so no caller can authenticate a revoked credential.
 //
 // The challenge is server-generated, single-use and time-limited. It lives in a
@@ -233,7 +233,7 @@ export async function verifyAuthentication(
   );
   const row = await store.findCredential(args.response.id);
   if (!row) throw new Error("unknown credential");
-  // a revoked credential never authenticates — checked here, not in callers
+  // a revoked credential never authenticates - checked here, not in callers
   if (row.revokedAt !== null) throw new Error("credential revoked");
 
   const result = await verifyAuthenticationResponse({

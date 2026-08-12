@@ -1,6 +1,6 @@
 // Push subscriptions and the two triggers that use them.
 //
-// SPEC §9: push has EXACTLY two triggers, both single-recipient —
+// SPEC §9: push has EXACTLY two triggers, both single-recipient -
 //   1. someone settled with you   (fired from settlements.ts via notifySettled)
 //   2. a manual settle reminder   (POST /push/nudge, rate-limited server-side)
 //
@@ -61,7 +61,7 @@ push.post("/push/nudge", async (c) => {
   const body = parsed.data;
   if (body.toUserId === c.var.user.id) return c.json({ error: "you cannot nudge yourself" }, 400);
 
-  // Both parties must be current members of the ledger being nudged about —
+  // Both parties must be current members of the ledger being nudged about -
   // otherwise this is an unsolicited-message endpoint with a ledger id attached.
   const me = await db.findMember(body.ledgerId, c.var.user.id);
   const them = await db.findMember(body.ledgerId, body.toUserId);
@@ -105,7 +105,7 @@ export async function notify(
   message: PushMessage,
 ): Promise<void> {
   // `env` is optional-chained because push must degrade to a no-op wherever the
-  // bindings are absent — an un-provisioned instance, and the route tests, which
+  // bindings are absent - an un-provisioned instance, and the route tests, which
   // mount routers without a Workers env. Push failing must never fail the action
   // that triggered it, and that starts here.
   const publicKey = env?.VAPID_PUBLIC_KEY;
@@ -120,14 +120,14 @@ export async function notify(
   }
 
   // RFC 8292 wants a stable contact for the push service. The instance origin is
-  // the honest one and is already a frozen constant — see ADR 0002.
+  // the honest one and is already a frozen constant - see ADR 0002.
   const keys = { publicKey, privateKey, subject: ORIGIN };
   for (const s of subs) {
     try {
       const res = await sendPush({ endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth }, message, keys);
       if (res.gone) await db.markPushFailed(s.endpoint, Date.now());
     } catch {
-      // transient — leave the row alone and try again next time
+      // transient - leave the row alone and try again next time
     }
   }
 }

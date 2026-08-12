@@ -6,28 +6,28 @@ import { createExpenseSchema } from "~/shared/schemas";
 // `P` marks the payer; participants are in stable order (order of addition).
 
 describe("the twelve worked examples", () => {
-  it("1 — equal, clean", () => {
+  it("1 - equal, clean", () => {
     // 900.00 among A(P), B, C
     expect(resolveSplits({ total: 90000, mode: "equal", participantCount: 3, payerIndex: 0 })).toEqual([
       30000, 30000, 30000,
     ]);
   });
 
-  it("2 — equal, remainder to payer", () => {
+  it("2 - equal, remainder to payer", () => {
     // 100.00 among A(P), B, C -> A absorbs the odd paisa
     expect(resolveSplits({ total: 10000, mode: "equal", participantCount: 3, payerIndex: 0 })).toEqual([
       3334, 3333, 3333,
     ]);
   });
 
-  it("3 — equal, payer not a participant: first in stable order absorbs", () => {
+  it("3 - equal, payer not a participant: first in stable order absorbs", () => {
     // 100.00 among A, B, C; payer D is not a participant
     expect(resolveSplits({ total: 10000, mode: "equal", participantCount: 3, payerIndex: -1 })).toEqual([
       3334, 3333, 3333,
     ]);
   });
 
-  it("4 — exact", () => {
+  it("4 - exact", () => {
     // 1000.00 = A(P) 500.00 + B 300.00 + C 200.00
     expect(
       resolveSplits({
@@ -40,7 +40,7 @@ describe("the twelve worked examples", () => {
     ).toEqual([50000, 30000, 20000]);
   });
 
-  it("4 — exact is rejected when the parts do not sum to the total", () => {
+  it("4 - exact is rejected when the parts do not sum to the total", () => {
     expect(() =>
       resolveSplits({
         total: 100000, // 1000.00
@@ -52,14 +52,14 @@ describe("the twelve worked examples", () => {
     ).toThrow();
   });
 
-  it("5 — shares, exact", () => {
+  it("5 - shares, exact", () => {
     // 1000.00, weights A(P) 2 : B 1 : C 1
     expect(
       resolveSplits({ total: 100000, mode: "shares", participantCount: 3, payerIndex: 0, values: [2, 1, 1] }),
     ).toEqual([50000, 25000, 25000]);
   });
 
-  it("6 — shares with remainder", () => {
+  it("6 - shares with remainder", () => {
     // 100.00, weights 2:1:1 divides cleanly
     expect(
       resolveSplits({ total: 10000, mode: "shares", participantCount: 3, payerIndex: 0, values: [2, 1, 1] }),
@@ -70,48 +70,48 @@ describe("the twelve worked examples", () => {
     ).toEqual([5001, 2500, 2500]);
   });
 
-  it("7 — percent", () => {
+  it("7 - percent", () => {
     // 1000.00, A(P) 60% / B 40%
     expect(
       resolveSplits({ total: 100000, mode: "percent", participantCount: 2, payerIndex: 0, values: [60, 40] }),
     ).toEqual([60000, 40000]);
   });
 
-  it("7 — percent is rejected when percents do not sum to 100", () => {
+  it("7 - percent is rejected when percents do not sum to 100", () => {
     expect(() =>
       resolveSplits({ total: 100000, mode: "percent", participantCount: 2, payerIndex: 0, values: [60, 30] }),
     ).toThrow();
   });
 
-  it("8 — percent with remainder", () => {
+  it("8 - percent with remainder", () => {
     // 100.00, 33% / 33% / 34%
     expect(
       resolveSplits({ total: 10000, mode: "percent", participantCount: 3, payerIndex: 0, values: [33, 33, 34] }),
     ).toEqual([3300, 3300, 3400]);
   });
 
-  it("9 — guest participant is just another member id", () => {
+  it("9 - guest participant is just another member id", () => {
     // 300.00 among A(P), B, G
     expect(resolveSplits({ total: 30000, mode: "equal", participantCount: 3, payerIndex: 0 })).toEqual([
       10000, 10000, 10000,
     ]);
   });
 
-  it("10 — guest payer", () => {
-    // 300.00 among A, B, G(P) — G is participant index 2
+  it("10 - guest payer", () => {
+    // 300.00 among A, B, G(P) - G is participant index 2
     expect(resolveSplits({ total: 30000, mode: "equal", participantCount: 3, payerIndex: 2 })).toEqual([
       10000, 10000, 10000,
     ]);
   });
 
-  it("11 — refund", () => {
+  it("11 - refund", () => {
     // -50.00 between A(P) and B
     expect(resolveSplits({ total: -5000, mode: "equal", participantCount: 2, payerIndex: 0 })).toEqual([
       -2500, -2500,
     ]);
   });
 
-  it("12 — refund with remainder: truncation toward zero, payer takes the larger magnitude", () => {
+  it("12 - refund with remainder: truncation toward zero, payer takes the larger magnitude", () => {
     // -100.00 among A(P), B, C
     const parts = resolveSplits({ total: -10000, mode: "equal", participantCount: 3, payerIndex: 0 });
     expect(parts).toEqual([-3334, -3333, -3333]);

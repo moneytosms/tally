@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Sunken-input wrapper. The label is always present — never a placeholder
+/** Sunken-input wrapper. The label is always present - never a placeholder
  *  standing in for one. Wrapping <label> associates the control implicitly, so
  *  callers need no id plumbing; the error sits inside it and is announced with
  *  the field. */

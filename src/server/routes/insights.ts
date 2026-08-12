@@ -1,9 +1,9 @@
-// Lifetime analytics for the calling user only — never another user's figures.
+// Lifetime analytics for the calling user only - never another user's figures.
 //
 // `spent` / `byCategory` / `byMonth` come from `listExpenseSharesForUser`, one
 // row per split the caller owns. `paid` and `mostSpentWith` need more than that
-// row can say — an expense the caller PAID but did not split, and who ELSE has
-// a split on an expense — so those two walk `listExpenses` per ledger the
+// row can say - an expense the caller PAID but did not split, and who ELSE has
+// a split on an expense - so those two walk `listExpenses` per ledger the
 // caller belongs to (via `listLedgersForUser`), the same per-ledger-loop idiom
 // `GET /balances` already uses in balances.ts. Ledger counts are small in this
 // app (self-hosted, ~20 users), so that loop stays well under the 10ms ceiling.
@@ -15,7 +15,7 @@ import { requireSession } from "~/server/middleware/session";
 
 const insights = new Hono<Env>();
 
-/** UTC month key from epoch ms — a local-timezone bucket would put the same
+/** UTC month key from epoch ms - a local-timezone bucket would put the same
  *  expense in different months for different viewers. */
 function monthKey(epochMs: number) {
   const d = new Date(epochMs);
@@ -113,7 +113,7 @@ insights.get("/insights", requireSession, async (c) => {
       for (const s of e.splits) {
         if (s.memberId === memberId) continue;
         const otherUserId = userIdByMemberId.get(s.memberId);
-        if (!otherUserId) continue; // guest — no userId
+        if (!otherUserId) continue; // guest - no userId
         const stat = coStats.get(otherUserId) ?? { count: 0, total: 0 };
         stat.count += 1;
         stat.total += own.amount;

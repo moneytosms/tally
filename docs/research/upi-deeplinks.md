@@ -1,4 +1,4 @@
-# UPI deep links (`upi://pay`) from a PWA — what works, what doesn't
+# UPI deep links (`upi://pay`) from a PWA - what works, what doesn't
 
 Research for [issue #4](https://github.com/moneytosms/tally/issues/4). Verified 2026-08-11.
 
@@ -49,15 +49,15 @@ Notes that matter **[spec]**:
   published spec. It appears in later NPCI QR/mandate material (IPO/ASBA-style purpose codes),
   not in the P2P deep-link surface. Do not emit it.
 - Spaces must be `%20` (RFC 3986), not bare `%`; apps must accept both for back-compat.
-- Absent tags "can be dropped or passed as null" — do not send the literal string `"null"`.
+- Absent tags "can be dropped or passed as null" - do not send the literal string `"null"`.
 - `sign`, `mode`, `orgid` are marked M in the table but are a **merchant/PSP signing scheme**.
   An unsigned intent is explicitly handled: if the signature "is not present in intent then the
   application should show warning message to user that the 'source of intent could not be
   verified' and shall request for passcode to proceed with the payment." So unsigned works, with
-  a warning and a mandatory PIN — which is what we want anyway.
+  a warning and a mandatory PIN - which is what we want anyway.
 
 **Practical minimum for tally**: `pa`, `pn`, `am`, `cu=INR`, `tn`. Plus `tr` if we want our own
-reference echoed. Skip `mc`, `mid`, `msid`, `mtid`, `tid`, `sign`, `orgid` — those are merchant
+reference echoed. Skip `mc`, `mid`, `msid`, `mtid`, `tid`, `sign`, `orgid` - those are merchant
 identity and we have none.
 
 **Format traps [field]**: `am` must be a plain decimal string (`250.00`), everything must be
@@ -75,7 +75,7 @@ Yes, on Android, in every major app. **[spec]** + **[vendor]**
 - Google Pay for India documents accepting exactly `pa`, `pn`, `mc`, `tr`, `tn`, `am`, `cu`, `url`
   on a `upi://pay` URI and building it with `startActivityForResult`
   ([Google Pay India, in-app payments](https://developers.google.com/pay/india/api/android/in-app-payments)).
-  Notably GPay's docs mention **no** `mode`, `orgid` or `sign` — consistent with unsigned P2P
+  Notably GPay's docs mention **no** `mode`, `orgid` or `sign` - consistent with unsigned P2P
   intents being accepted.
 - Paytm and PhonePe both ship UPI-intent products built on the same URI shape **[vendor]**.
 
@@ -114,7 +114,7 @@ Works, with hard rules **[spec]**:
 - Multiple UPI apps installed → Android shows the app chooser. Normal, fine.
 - One app installed → straight into it.
 
-## 4. Android, installed PWA (standalone) — the case that matters
+## 4. Android, installed PWA (standalone) - the case that matters
 
 **It works.** Chain of evidence **[spec]**:
 
@@ -128,14 +128,14 @@ So a tap on a `upi://pay` link inside the standalone PWA hands off to the UPI ap
 tab. The failures are not in the launch, they are on either side of it:
 
 1. **Silent failure has no UI.** In a tab, a failed external launch at least leaves a visible
-   omnibox and error affordance. In standalone there is no browser chrome — if nothing happens,
+   omnibox and error affordance. In standalone there is no browser chrome - if nothing happens,
    the user just sees the button do nothing. Design for this: show our own "Didn't open your UPI
    app?" fallback (QR + copyable VPA) next to the button, always.
 2. **The return trip is an app switch, not a navigation.** The PWA is backgrounded. Android may
    evict it; on return it can cold-start and re-render from scratch. Any "pending settlement"
    state must be persisted (server or IndexedDB/localStorage) *before* firing the link, never
    held in component state.
-3. **No gesture, no launch** (as above) — same rule applies in standalone.
+3. **No gesture, no launch** (as above) - same rule applies in standalone.
 
 ## 5. iOS
 
@@ -145,12 +145,12 @@ Materially worse, and NPCI itself treats iOS as a special case.
   app registers the same scheme, and Apple positions custom schemes as the weak alternative to
   Universal Links ([Apple: Defining a custom URL scheme for your app](https://developer.apple.com/documentation/xcode/defining-a-custom-url-scheme-for-your-app)).
   Which app answers `upi://` on a given iPhone is therefore not determinable by us **[spec]**.
-- Payment apps on iOS document their own schemes instead — Google Pay's iOS integration uses
+- Payment apps on iOS document their own schemes instead - Google Pay's iOS integration uses
   `gpay://upi/pay?...` with the same query parameters
   ([Google Pay India, iOS](https://developers.google.com/pay/india/api/ios/in-app-payments)) **[vendor]**;
   PhonePe and Paytm likewise use app-specific schemes. A single `upi://` link is not the portable
   answer on iOS that it is on Android.
-- If no app is registered for the scheme, iOS does nothing visible from a web context **[field]** —
+- If no app is registered for the scheme, iOS does nothing visible from a web context **[field]** -
   and in an installed (standalone) home-screen web app there is no browser UI to report it, same
   blind-failure problem as §4.1 but more likely to trigger.
 - Corroboration that the ecosystem considers iOS intent-handoff unreliable: when NPCI mandated
@@ -188,17 +188,17 @@ Mitigations:
 
 **No. Nothing. Confirmed, not hedged.**
 
-The NPCI spec does define response parameters — `txnId`, `responseCode`, `ApprovalRefNo`,
-`Status` (`SUBMITTED`/`SUCCESS`/`FAILURE`), `txnRef` — but they are returned **from the PSP app to
+The NPCI spec does define response parameters - `txnId`, `responseCode`, `ApprovalRefNo`,
+`Status` (`SUBMITTED`/`SUCCESS`/`FAILURE`), `txnRef` - but they are returned **from the PSP app to
 the calling Android app**, via the Android activity result. Google Pay's documented integration is
 `startActivityForResult` → `onActivityResult`
 ([Google Pay India](https://developers.google.com/pay/india/api/android/in-app-payments)). A web
 page has no activity to receive that result, and the spec adds "the bank application may need to
-whitelist the Merchant App URL" — a merchant-onboarding step we have no way to perform.
+whitelist the Merchant App URL" - a merchant-onboarding step we have no way to perform.
 
 The spec's own guidance is that even native callers must not trust the returned value: "As a
 standard practice merchant app must check the final status with their server/PSP server." That
-server-side status check requires a PSP/aggregator relationship, i.e. a payment gateway and KYC —
+server-side status check requires a PSP/aggregator relationship, i.e. a payment gateway and KYC -
 explicitly out of scope for tally.
 
 Conclusion: **after the user taps settle up, tally learns nothing.** Not success, not failure, not
@@ -221,10 +221,10 @@ Yes. **[spec]**, with one recent-rules caveat.
 - We are not a PSP, not a TPAP, not a merchant, and we never touch funds, so the compliance
   regime aimed at those parties (NPCI OC-215 API-usage guidelines of 21 May 2025, effective
   31 July 2025, rate-limiting balance-enquiry/account-listing/status APIs
-  — see [TeamLease RegTech summary](https://www.teamleaseregtech.com/updates/article/42884/npci-issued-guidelines-on-the-usage-of-upi-api/))
+  - see [TeamLease RegTech summary](https://www.teamleaseregtech.com/updates/article/42884/npci-issued-guidelines-on-the-usage-of-upi-api/))
   does not apply to us. It does apply to anyone we'd have to integrate with to get more.
 
-Currency check as of 2026-08-11 — the two changes that landed since the spec and that touch us:
+Currency check as of 2026-08-11 - the two changes that landed since the spec and that touch us:
 
 1. **P2P collect requests abolished from 1 October 2025** (NPCI circular 29 July 2025). Pull
    payments between individuals no longer exist on UPI
@@ -233,7 +233,7 @@ Currency check as of 2026-08-11 — the two changes that landed since the spec a
    → tally can never "request" money in-band. A settle-up is always the *payer* pushing. Design
    the UI around "you owe X, pay now", not around the payee sending a request.
 2. **UPI Collect (manual VPA entry) deprecated for P2M from 28 February 2026**, Android moving to
-   intent-only, desktop to QR-only, iOS exempt **[vendor]**. This does not restrict us — intent
+   intent-only, desktop to QR-only, iOS exempt **[vendor]**. This does not restrict us - intent
    and QR are precisely the two surviving flows and are what we emit.
 
 Neither change removes the `upi://pay` intent. Both push the ecosystem *toward* it.
@@ -247,7 +247,7 @@ payment aggregator: Razorpay ([Validate VPA](https://razorpay.com/docs/payments/
 Cashfree, Juspay ([Verify VPA](https://juspay.io/in/docs/api-reference/docs/express-checkout/verfiy-vpa)),
 Paytm, PhonePe. Every one of them requires an onboarded, KYC'd merchant account and server-side
 credentials. That is exactly the thing tally has decided not to be. Note also that OC-101A's
-"display the banking name" rule is itself implemented *by the payer's app* via ValidateAddress —
+"display the banking name" rule is itself implemented *by the payer's app* via ValidateAddress -
 another reason the payer's confirmation screen is our validation step, not ours.
 
 What tally can do, and should stop at:
@@ -267,7 +267,7 @@ Do not build reverse-penny-drop, do not build a "verify" button that can't verif
 Given §7, there are exactly three options, and every comparable app has landed in the same place.
 
 **How Splitwise does it** ([Splitwise help](https://feedback.splitwise.com/knowledgebase/articles/1088920-how-do-i-use-splitwise)):
-"Settle up" records a payment made outside the app — cash, bank transfer, whatever. It is a
+"Settle up" records a payment made outside the app - cash, bank transfer, whatever. It is a
 self-declared ledger entry. The other party is notified (email/push, visible in Recent Activity)
 but does **not** approve it. There is no accept/reject; that has been an open user request for
 years without being shipped
@@ -282,10 +282,10 @@ The options:
 | Option | What it means | Cost | Failure mode |
 |---|---|---|---|
 | **A. Payer confirms** (Splitwise's model) | Payer taps settle up, fires the link, comes back, taps "I paid". Balance clears immediately. Payee is notified. | Trivial. One boolean, one notification. | Payer marks paid without paying, or in good faith after a failed transaction. Payee finds out later and disputes socially. |
-| **B. Payee confirms** | Payer's tap creates a *pending* settlement; balance only clears when the payee says "received". | Two states, a pending list, a notification the payee must act on. | Payee is slow or never opens the app. Ledger sits wrong in the *other* direction, which is worse — it under-credits someone who actually paid. |
+| **B. Payee confirms** | Payer's tap creates a *pending* settlement; balance only clears when the payee says "received". | Two states, a pending list, a notification the payee must act on. | Payee is slow or never opens the app. Ledger sits wrong in the *other* direction, which is worse - it under-credits someone who actually paid. |
 | **C. Both** | Payer asserts, payee acknowledges, both timestamps recorded; balance clears on payer's assert, payee's ack is a green tick on top. | Middle. One extra nullable timestamp. | Nagging. Two-step ceremony for ₹200. |
 
-**Recommendation: A, with C's data shape.** Clear the balance on the payer's assertion — that is
+**Recommendation: A, with C's data shape.** Clear the balance on the payer's assertion - that is
 what every user of a friend-group app expects and what Splitwise proved is socially sufficient.
 Record `settled_by`, `settled_at`, and a nullable `acknowledged_at`; expose the acknowledgement as
 an optional one-tap "got it" for the payee, and render an un-acknowledged settlement with a subtle
@@ -307,10 +307,10 @@ Implementation notes that fall out of the earlier sections:
 
 ## 11. Non-India fallback (brief)
 
-Same shape, same limitation — a scheme link that pre-fills a payment and returns nothing.
+Same shape, same limitation - a scheme link that pre-fills a payment and returns nothing.
 
 - **Venmo** (US): `venmo://paycharge?txn=pay&recipients=<user>&amount=<n>&note=<s>`, and a web
-  form `https://venmo.com/<user>?txn=pay&amount=&note=`. `txn=charge` requests instead of pays —
+  form `https://venmo.com/<user>?txn=pay&amount=&note=`. `txn=charge` requests instead of pays -
   but note UPI has no equivalent since Oct 2025 (§8).
 - **PayPal.Me**: `paypal.me/<user>/<amount>` pre-fills the amount, and `/25AUD` sets currency.
   No note field. Plain https, so no scheme problem, no PWA problem.
@@ -324,7 +324,7 @@ a convenience on top.
 
 ## Summary for tally
 
-1. Emit `upi://pay?pa&pn&am&cu=INR&tn` (+`tr`). Nothing merchant-shaped. No `purpose` — it isn't real.
+1. Emit `upi://pay?pa&pn&am&cu=INR&tn` (+`tr`). Nothing merchant-shaped. No `purpose` - it isn't real.
 2. Fire it only from a direct tap. Android tab and installed PWA both work; iOS is unreliable.
 3. Always render QR + copyable VPA next to the button. That is the iOS, desktop, no-app, and
    silent-failure path all at once.

@@ -44,10 +44,10 @@ Known gaps and bugs to design around:
 
 | Gap | Detail | Source |
 |---|---|---|
-| Embedded WebViews | `WKWebView` (iOS) and Android `WebView` restrict or omit WebAuthn — iOS limits passkeys to the linked domain; Android WebView needs explicit Credential Manager bridging. Use Custom Tabs / `ASWebAuthenticationSession`, never a raw WebView. | [passkeys.dev iOS](https://passkeys.dev/docs/reference/ios/), [Android](https://passkeys.dev/docs/reference/android/) |
+| Embedded WebViews | `WKWebView` (iOS) and Android `WebView` restrict or omit WebAuthn - iOS limits passkeys to the linked domain; Android WebView needs explicit Credential Manager bridging. Use Custom Tabs / `ASWebAuthenticationSession`, never a raw WebView. | [passkeys.dev iOS](https://passkeys.dev/docs/reference/ios/), [Android](https://passkeys.dev/docs/reference/android/) |
 | In-app browsers | Instagram/TikTok/Facebook/LinkedIn open links in embedded WebViews with no WebAuthn bridge; the passkey button silently fails. **An invite link pasted into a group chat will often open here.** | see §6 |
 | Cross-origin `create()` | Safari does not support `navigator.credentials.create()` cross-origin, so passkey enrolment inside an iframe fails on Safari/iOS. Not relevant if tally enrols on its own top-level origin. | [Corbado (secondary)](https://www.corbado.com/blog/webauthn-errors) |
-| Firefox for Android | No conditional UI through v125 — autofill prompts never appear even with a valid passkey. | [passkeys.dev device support](https://passkeys.dev/device-support/) |
+| Firefox for Android | No conditional UI through v125 - autofill prompts never appear even with a valid passkey. | [passkeys.dev device support](https://passkeys.dev/device-support/) |
 | iOS conditional UI flake | WebKit bug 251817: conditional UI raises `NotAllowedError: Operation Failed` on alternating page reloads. Still open. | [bugs.webkit.org 251817](https://bugs.webkit.org/show_bug.cgi?id=251817) |
 | Android GmsCore | A widespread `NotReadableError`/`NotAllowedError` regression on Android was fixed in GmsCore 25.45.30, rollout completed 2026-01-16. Older/unupdated devices may still hit it. | [issues.chromium.org 476437881](https://issues.chromium.org/issues/476437881) |
 
@@ -65,7 +65,7 @@ Current support ([passkeys.dev](https://passkeys.dev/device-support/)):
 - Android: Chrome 108+, Edge 122+ (**not Firefox**)
 - Windows: Chrome 108+, Firefox 122+, Edge 122+
 
-Conditional *create* (silently upgrade a password login to a passkey) is newer — iOS 18+,
+Conditional *create* (silently upgrade a password login to a passkey) is newer - iOS 18+,
 macOS Safari 18+, Android Chrome 142+, Windows/Ubuntu Chrome 136+. tally has no passwords, so
 conditional create is irrelevant here.
 
@@ -104,7 +104,7 @@ verification data lives in server-side secure enclaves that enforce a **maximum 
 
 **New Android, device-to-device transfer:** keys move across, passkeys are there.
 **New Android, old phone lost/bricked:** the friend must remember their *old phone's* screen lock or
-their GPM PIN. This is the realistic failure mode — a non-technical user who replaced a dead phone
+their GPM PIN. This is the realistic failure mode - a non-technical user who replaced a dead phone
 and never knew there was a separate GPM PIN. **This is the single most likely reason tally will
 need account recovery.**
 
@@ -123,7 +123,7 @@ is the current state of the ecosystem, and any design must assume it happens onc
 a 20-person group.
 
 Mitigation that costs nothing: a passkey stored in a **third-party manager** (1Password, Bitwarden,
-Proton Pass) survives the switch, because the manager is cross-platform. Do not require it — but
+Proton Pass) survives the switch, because the manager is cross-platform. Do not require it - but
 if a friend already uses one, it's the best outcome.
 
 ### Cross-device authentication (QR)
@@ -169,7 +169,7 @@ on this device**. That turns a one-off QR scan into a permanent local credential
 ### The rules
 
 An RP ID must be a domain string that is the current origin's host **or a registrable parent of it**,
-and must be eTLD+1 or higher. IP addresses and bare public suffixes are rejected — setting `rp.id` to
+and must be eTLD+1 or higher. IP addresses and bare public suffixes are rejected - setting `rp.id` to
 a public suffix throws `SecurityError`
 ([web.dev RP ID deep dive](https://web.dev/articles/webauthn-rp-id)).
 
@@ -182,7 +182,7 @@ identified by its RP ID, is able to employ the public key credential in authenti
 **Every passkey. All of them. Irrecoverably.**
 
 The RP ID is baked into the credential at creation time by the authenticator. Change
-`tally.example.com` to `tally.newdomain.com` and every existing credential becomes unusable — the
+`tally.example.com` to `tally.newdomain.com` and every existing credential becomes unusable - the
 browser will not even offer them. There is no migration, no re-signing, no server-side fix. Every
 one of the ~20 friends must re-enrol from scratch.
 
@@ -191,7 +191,7 @@ For a hobby self-host this is a real risk: domains lapse, get moved, or the free
 Two mitigations:
 
 1. **Pick the RP ID once and treat it as permanent infrastructure.** Use the registrable domain
-   (`example.com`), not the subdomain, if there's any chance the app moves between subdomains —
+   (`example.com`), not the subdomain, if there's any chance the app moves between subdomains -
    `example.com` as RP ID works on `tally.example.com`, `app.example.com`, etc. Narrower RP IDs
    are more tightly scoped but less movable. For a single-app self-host the extra scoping buys
    almost nothing; the movability is worth more.
@@ -203,7 +203,7 @@ Two mitigations:
    Supported in Chrome 128/129+ and Safari 18+; **Firefox as of January 2026 has not shipped it**
    ([passkeys.dev](https://passkeys.dev/docs/advanced/related-origins/),
    [Chrome for Developers](https://developer.chrome.com/blog/passkeys-updates-chrome-129)).
-   Note this requires **still controlling the old domain** to serve that file — so it rescues a
+   Note this requires **still controlling the old domain** to serve that file - so it rescues a
    rebrand, not a lapsed registration.
 
 **Recommendation:** buy a cheap domain that will not be given up, use the registrable domain as
@@ -211,7 +211,7 @@ RP ID, and record it in an ADR as a load-bearing constant.
 
 ### Free-tier platform subdomains (`*.fly.dev`)
 
-Verified against the live Public Suffix List on 2026-08-11 — `fly.dev` is on it
+Verified against the live Public Suffix List on 2026-08-11 - `fly.dev` is on it
 ([publicsuffix.org](https://publicsuffix.org/list/public_suffix_list.dat)), along with
 `pages.dev`, `workers.dev`, `deno.dev`, `github.io`, `onrender.com`, `vercel.app`.
 
@@ -224,7 +224,7 @@ Consequences:
 
 So `*.fly.dev` is technically fine for passkeys. The problem is not the PSL, it's **rug-pull risk**:
 the app name is the RP ID. Rename the Fly app, migrate to another host, or lose the name, and you
-have executed the domain-change scenario above — every passkey dead. Same for `*.vercel.app` etc.
+have executed the domain-change scenario above - every passkey dead. Same for `*.vercel.app` etc.
 
 **Recommendation:** a custom domain, from the first deploy. It is the cheapest insurance in this
 entire document.
@@ -238,28 +238,28 @@ options.
 
 Framing: the threat model is a ~20-person friend circle splitting expenses. The attacker is not a
 nation state; it is a plausible-sounding stranger, or a friend's misplaced phone. The cost of a
-false recovery is "someone can see and edit who owes whom money" — embarrassing and annoying, not
+false recovery is "someone can see and edit who owes whom money" - embarrassing and annoying, not
 catastrophic. The cost of *failed* recovery is a friend permanently locked out of a shared ledger,
 which is worse. **Optimise for recoverability, with a human in the loop.**
 
-### Option A — Recovery codes
+### Option A - Recovery codes
 
 Generate N single-use codes at signup, user stores them.
 
-- **Security:** This reintroduces a bearer secret — exactly what "no passwords" was meant to
+- **Security:** This reintroduces a bearer secret - exactly what "no passwords" was meant to
   eliminate. If followed properly (NIST SP 800-63B §lookup secrets: hashed with an approved function,
   salted if under 112 bits, single-use, rate-limited)
   ([NIST SP 800-63B](https://pages.nist.gov/800-63-4/sp800-63b/authenticators/)) it is
-  cryptographically sound. But security in practice equals wherever the friend put the code — which
+  cryptographically sound. But security in practice equals wherever the friend put the code - which
   is a screenshot in their camera roll, synced to the same cloud account as the passkey they lost.
 - **UX cost for a non-technical user:** High and front-loaded, at exactly the wrong moment. Signup is
   when motivation is lowest. Realistically: ~15 of 20 friends will not save the code, and will not
-  know they didn't. Codes then create false confidence — the team believes recovery is handled, and
+  know they didn't. Codes then create false confidence - the team believes recovery is handled, and
   it isn't.
 - **Verdict:** Not as the primary mechanism. Genuinely useful for the *owner's own* account (see
   below).
 
-### Option B — Owner-initiated re-invite
+### Option B - Owner-initiated re-invite
 
 Friend loses phone, messages the owner in the group chat, owner clicks "reset access" on their
 account and sends a fresh single-use invite link.
@@ -267,17 +267,17 @@ account and sends a fresh single-use invite link.
 - **Security:** Verification is out-of-band and social: the owner knows these people, recognises
   their voice, has met them. That is a **stronger** identity check than an emailed link for a
   20-person group. Attack surface reduces to (a) compromising the owner's account, and (b) the
-  invite link in transit — mitigate with short expiry (~15 min), single use, high-entropy token,
+  invite link in transit - mitigate with short expiry (~15 min), single use, high-entropy token,
   hashed at rest, and invalidation of all prior tokens for that user on issue.
 - **UX cost:** Near zero for the friend. They already message the owner about everything else. No
-  artefact to store, nothing to lose, nothing to understand at signup — and it's identical to the
+  artefact to store, nothing to lose, nothing to understand at signup - and it's identical to the
   flow they already used to *join*, so there's nothing new to learn.
 - **Weakness:** owner is a single point of failure and must be reachable. For their own account, the
-  owner needs a different answer — recovery codes (Option A) or direct DB/CLI access, which they
+  owner needs a different answer - recovery codes (Option A) or direct DB/CLI access, which they
   have anyway as the person running the server.
 - **Verdict:** **Recommended.**
 
-### Option C — Second passkey registered at signup
+### Option C - Second passkey registered at signup
 
 Force enrolment of two credentials before the account is usable.
 
@@ -290,15 +290,15 @@ Force enrolment of two credentials before the account is usable.
   gate. Prompt once, allow dismissal, re-prompt occasionally. Nudge in particular after a
   cross-device sign-in, per web.dev.
 
-### Option D — Trusted-friend / social recovery
+### Option D - Trusted-friend / social recovery
 
 M-of-N group members approve a recovery request.
 
 - **Security:** Good on paper; distributes trust away from the owner. In a group where everyone knows
-  everyone, collusion risk is low but so is diligence — people click approve without reading.
+  everyone, collusion risk is low but so is diligence - people click approve without reading.
 - **UX cost:** High to build (quorum state machine, notification/approval surface, expiry, race
   handling, revocation) and moderate to use. And with **no email server there is no notification
-  channel** to tell approvers a request exists — it collapses back into "message the group chat,"
+  channel** to tell approvers a request exists - it collapses back into "message the group chat,"
   which is Option B with extra machinery.
 - **Verdict:** Skip. It is Option B plus a state machine, solving a trust-distribution problem this
   group does not have.
@@ -307,11 +307,11 @@ M-of-N group members approve a recovery request.
 
 **Option B as primary, Option C as an optional nudge.**
 
-1. Owner-initiated re-invite is the recovery mechanism. Reuse the existing invite-link code path —
+1. Owner-initiated re-invite is the recovery mechanism. Reuse the existing invite-link code path -
    recovery is just "issue a new invite bound to an existing user id" rather than a new subsystem.
 2. After a friend's first successful sign-in, prompt once to add a second passkey. Dismissible.
 3. The owner gets recovery codes, or just uses server access. They run the box.
-4. Store multiple credentials per user from day one regardless — that schema decision is expensive
+4. Store multiple credentials per user from day one regardless - that schema decision is expensive
    to reverse and free to make now.
 
 What this deliberately skips: recovery codes for everyone (add when the owner becomes a bottleneck,
@@ -325,7 +325,7 @@ phone that later turns up should not still have access.
 ## 6. In-app browser hazard for invite links
 
 Worth calling out separately because it will bite the very first invite. Invite links pasted into
-WhatsApp/Messenger/Instagram open in an embedded WebView, which frequently has no WebAuthn bridge —
+WhatsApp/Messenger/Instagram open in an embedded WebView, which frequently has no WebAuthn bridge -
 the passkey button fails silently with no useful error (§1). Android `WebView` requires explicit
 Credential Manager wiring; iOS `WKWebView` restricts passkeys to the linked domain
 ([passkeys.dev Android](https://passkeys.dev/docs/reference/android/),
@@ -333,7 +333,7 @@ Credential Manager wiring; iOS `WKWebView` restricts passkeys to the linked doma
 
 Mitigation: feature-detect on the invite landing page
 (`PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()`, plus
-`getClientCapabilities()` where available — [web.dev](https://web.dev/articles/webauthn-client-capabilities))
+`getClientCapabilities()` where available - [web.dev](https://web.dev/articles/webauthn-client-capabilities))
 and, when unsupported, show "Open in your browser" rather than a button that does nothing.
 
 ---
@@ -348,13 +348,13 @@ flows. Status verified via GitHub API on 2026-08-11.
 |---|---|---|---|---|---|
 | TypeScript/Node | [MasterKale/SimpleWebAuthn](https://github.com/MasterKale/SimpleWebAuthn) | v13.3.2 (2026-06-24) | 2026-08-05 | 2.3k | Actively maintained. Split browser/server packages, Node + Deno. Full passkey/discoverable support, `excludeCredentials`, conditional UI helpers. **De facto standard for TS.** |
 | Python | [duo-labs/py_webauthn](https://github.com/duo-labs/py_webauthn) | v3.0.0 (2026-06-29) | 2026-06-29 | 1.1k | Actively maintained, same author as SimpleWebAuthn. Recent major version. Handles discoverable credentials. |
-| Go | [go-webauthn/webauthn](https://github.com/go-webauthn/webauthn) | v0.17.4 (2026-05-22) | 2026-08-09 | 1.3k | Actively maintained (community fork of the abandoned duo-labs Go lib — **do not use `duo-labs/webauthn`**). FIDO2 conformant, explicit passkey/discoverable support. Still pre-1.0, API shifts between minors. |
-| Rust | [kanidm/webauthn-rs](https://github.com/kanidm/webauthn-rs) | v0.5.2 (2025-07-30) | 2026-07-30 | 696 | Maintained (commits current; release cadence slow — no tagged release in ~12 months). Backs the Kanidm IDM product, so it's exercised in production. Opinionated, security-conscious API; supports passkeys/discoverable credentials as a first-class mode. |
+| Go | [go-webauthn/webauthn](https://github.com/go-webauthn/webauthn) | v0.17.4 (2026-05-22) | 2026-08-09 | 1.3k | Actively maintained (community fork of the abandoned duo-labs Go lib - **do not use `duo-labs/webauthn`**). FIDO2 conformant, explicit passkey/discoverable support. Still pre-1.0, API shifts between minors. |
+| Rust | [kanidm/webauthn-rs](https://github.com/kanidm/webauthn-rs) | v0.5.2 (2025-07-30) | 2026-07-30 | 696 | Maintained (commits current; release cadence slow - no tagged release in ~12 months). Backs the Kanidm IDM product, so it's exercised in production. Opinionated, security-conscious API; supports passkeys/discoverable credentials as a first-class mode. |
 
 Notes:
 
-- [`github/webauthn-json`](https://github.com/github/webauthn-json) — the common client-side
-  base64url wrapper — is **archived** (last release v2.1.1, 2023-01). Use the native
+- [`github/webauthn-json`](https://github.com/github/webauthn-json) - the common client-side
+  base64url wrapper - is **archived** (last release v2.1.1, 2023-01). Use the native
   `PublicKeyCredential.toJSON()` / `parseCreationOptionsFromJSON()` (Chrome 129+, Safari 18+) or
   SimpleWebAuthn's browser package instead.
 - Recommendation given the audience and scope: **TypeScript + SimpleWebAuthn**. Best-maintained,
@@ -369,17 +369,17 @@ Primary:
 - [W3C Web Authentication Level 3](https://www.w3.org/TR/webauthn-3/)
 - [NIST SP 800-63B, Authenticators](https://pages.nist.gov/800-63-4/sp800-63b/authenticators/)
 - [Public Suffix List (live, fetched 2026-08-11)](https://publicsuffix.org/list/public_suffix_list.dat)
-- [FIDO Alliance — Credential Exchange Specifications](https://fidoalliance.org/specifications-credential-exchange-specifications/)
-- [passkeys.dev — device support](https://passkeys.dev/device-support/), [iOS](https://passkeys.dev/docs/reference/ios/), [Android](https://passkeys.dev/docs/reference/android/), [known issues](https://passkeys.dev/docs/reference/known-issues/), [bootstrapping](https://passkeys.dev/docs/use-cases/bootstrapping/), [related origins](https://passkeys.dev/docs/advanced/related-origins/)
-- [Apple — Passkeys overview](https://developer.apple.com/passkeys/), [Platform Security: passkey security](https://support.apple.com/guide/security/passkey-security-sec8b0f2f52c/web), [secure iCloud Keychain recovery](https://support.apple.com/guide/security/secure-icloud-keychain-recovery-secdeb202947/web)
-- [Google — Passkeys for developers](https://developers.google.com/identity/passkeys), [Security of Passkeys in Google Password Manager](https://security.googleblog.com/2022/10/SecurityofPasskeysintheGooglePasswordManager.html), [Manage your GPM PIN](https://support.google.com/chrome/answer/16608973)
-- [web.dev — RP ID deep dive](https://web.dev/articles/webauthn-rp-id), [passkey registration](https://web.dev/articles/passkey-registration), [excludeCredentials](https://web.dev/articles/webauthn-exclude-credentials), [deployment checklist](https://web.dev/articles/passkey-checklist), [related origin requests](https://web.dev/articles/webauthn-related-origin-requests), [client capabilities](https://web.dev/articles/webauthn-client-capabilities), [AAGUID](https://web.dev/articles/webauthn-aaguid), [PWA installation](https://web.dev/learn/pwa/installation)
-- [Chrome for Developers — passkeys updates in Chrome 129](https://developer.chrome.com/blog/passkeys-updates-chrome-129)
-- [MDN — CredentialsContainer.get()](https://developer.mozilla.org/en-US/docs/Web/API/CredentialsContainer/get)
+- [FIDO Alliance - Credential Exchange Specifications](https://fidoalliance.org/specifications-credential-exchange-specifications/)
+- [passkeys.dev - device support](https://passkeys.dev/device-support/), [iOS](https://passkeys.dev/docs/reference/ios/), [Android](https://passkeys.dev/docs/reference/android/), [known issues](https://passkeys.dev/docs/reference/known-issues/), [bootstrapping](https://passkeys.dev/docs/use-cases/bootstrapping/), [related origins](https://passkeys.dev/docs/advanced/related-origins/)
+- [Apple - Passkeys overview](https://developer.apple.com/passkeys/), [Platform Security: passkey security](https://support.apple.com/guide/security/passkey-security-sec8b0f2f52c/web), [secure iCloud Keychain recovery](https://support.apple.com/guide/security/secure-icloud-keychain-recovery-secdeb202947/web)
+- [Google - Passkeys for developers](https://developers.google.com/identity/passkeys), [Security of Passkeys in Google Password Manager](https://security.googleblog.com/2022/10/SecurityofPasskeysintheGooglePasswordManager.html), [Manage your GPM PIN](https://support.google.com/chrome/answer/16608973)
+- [web.dev - RP ID deep dive](https://web.dev/articles/webauthn-rp-id), [passkey registration](https://web.dev/articles/passkey-registration), [excludeCredentials](https://web.dev/articles/webauthn-exclude-credentials), [deployment checklist](https://web.dev/articles/passkey-checklist), [related origin requests](https://web.dev/articles/webauthn-related-origin-requests), [client capabilities](https://web.dev/articles/webauthn-client-capabilities), [AAGUID](https://web.dev/articles/webauthn-aaguid), [PWA installation](https://web.dev/learn/pwa/installation)
+- [Chrome for Developers - passkeys updates in Chrome 129](https://developer.chrome.com/blog/passkeys-updates-chrome-129)
+- [MDN - CredentialsContainer.get()](https://developer.mozilla.org/en-US/docs/Web/API/CredentialsContainer/get)
 - Bug trackers: [WebKit 251817](https://bugs.webkit.org/show_bug.cgi?id=251817), [Chromium 476437881](https://issues.chromium.org/issues/476437881)
 
 Secondary (used only where no primary source covered the point, flagged inline):
-- [Corbado — WebAuthn errors in production](https://www.corbado.com/blog/webauthn-errors)
+- [Corbado - WebAuthn errors in production](https://www.corbado.com/blog/webauthn-errors)
 
 ---
 

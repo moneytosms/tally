@@ -8,7 +8,7 @@ export function Fab({ onClick }: { onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label={t("expense.add")}
-      className={`absolute right-4 bottom-[66px] z-30 grid h-[49px] w-[49px] place-items-center rounded-[13px] text-[25px] font-light ${focusRing}`}
+      className={`offset-safe-bottom absolute right-4 z-30 grid h-[49px] w-[49px] place-items-center rounded-[13px] text-[25px] font-light ${focusRing}`}
       style={{ background: "var(--moss)", color: "var(--paper)", boxShadow: "0 4px 14px rgb(60 72 54 / 28%)" }}
     >
       <span aria-hidden="true">+</span>

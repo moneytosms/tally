@@ -23,7 +23,7 @@ How tally is actually put together, and why. For the domain vocabulary see
 ```
 
 One Worker serves both the SPA and the API, so there is one origin and no CORS.
-That is not a convenience — the WebAuthn RP ID is derived from that single host
+That is not a convenience - the WebAuthn RP ID is derived from that single host
 and is frozen forever ([ADR 0002](adr/0002-rp-id-is-permanent.md)).
 
 ## Layers
@@ -32,7 +32,7 @@ and is frozen forever ([ADR 0002](adr/0002-rp-id-is-permanent.md)).
 |---|---|---|
 | Schema | `src/db/schema.ts` | Constraints live in the DB where SQLite allows it |
 | Data access | `src/db/index.ts` | **Soft-delete filtering, structurally** |
-| Pure domain | `src/shared/` | Money, splits, recurrence, NL parsing — no I/O |
+| Pure domain | `src/shared/` | Money, splits, recurrence, NL parsing - no I/O |
 | Derivation | `src/server/balances.ts` | Net positions and transfer plans, never stored |
 | Routes | `src/server/routes/` | Validation, authorisation, wire shapes |
 | Client | `src/client/` | Rendering only; never recomputes money |
@@ -60,7 +60,7 @@ D1 has no cross-request transaction. Three operations must not half-apply:
 - an undo restoring an expense and its splits
 
 All three use `db.batch([...])`. If you add a fourth multi-statement write,
-it goes in a batch too — a half-applied money write is the worst bug this
+it goes in a batch too - a half-applied money write is the worst bug this
 system can have.
 
 ## Money
@@ -69,18 +69,18 @@ system can have.
 float anywhere in this system, and `parseFloat` on a money value is a defect.
 
 Splits are **resolved once, at save time**, and stored. Nothing recomputes a
-stored split from its weights — the `mode` and each participant's raw
+stored split from its weights - the `mode` and each participant's raw
 `inputValue` are kept alongside so the editor reopens exactly as the user left
 it, but the authoritative numbers are the resolved ones.
 
-The **remainder** — the odd paise when a total does not divide evenly — is
+The **remainder** - the odd paise when a total does not divide evenly - is
 absorbed by the payer, or by the first participant in stable order if the payer
 is not a participant. **Stable order is order of addition, never display order.**
 Re-sorting participants would silently change who absorbs the remainder.
 
 **Balances are derived**, never stored or cached. Every net position is computed
 from expenses and settlements on read. This is why the client never patches a
-balance optimistically — it invalidates and refetches.
+balance optimistically - it invalidates and refetches.
 
 ## Authentication
 
@@ -93,7 +93,7 @@ Passkeys only, via SimpleWebAuthn. No passwords, no email.
   environment, which is burned on use.
 - Everyone else arrives through a single-use, 48-hour, hashed **Invite**. An
   invite is also the recovery path, which means a leaked invite is potentially
-  account access — hence the admin panel can list and revoke live ones.
+  account access - hence the admin panel can list and revoke live ones.
 - **Guests are data, never principals.** No code path authenticates as a guest.
   A guest has no `user_id` and cannot hold a VPA.
 
@@ -105,13 +105,13 @@ enforcement point: `serialiseUser(user, sharesLedgerWithViewer)` in
 
 Exactly two things run on a timer, and neither fans out:
 
-1. **Recurring expenses** — one Durable Object (`RecurringAlarm`) holds one
+1. **Recurring expenses** - one Durable Object (`RecurringAlarm`) holds one
    alarm set to the earliest due series.
 2. Nothing else. There is no sweep, no cron across users.
 
 Push has **exactly two triggers, both single-recipient**: someone settled with
 you, and a manual reminder. Notification on split inclusion was deliberately
-dropped — it was the only high-fan-out path, and removing it means tally never
+dropped - it was the only high-fan-out path, and removing it means tally never
 notifies more than one person at a time, which keeps the 10 ms CPU ceiling off
 the risk list.
 
@@ -124,7 +124,7 @@ decreasing order of trust:
    (`src/shared/recurrence.ts`), so a replay asks for the same instants.
 2. `runCatchUp` reads back which instants exist and skips them.
 3. A **unique index on `(series_id, occurrence_at)`** rejects anything that gets
-   past step 2 — a crash between the insert and the cursor advance, or two
+   past step 2 - a crash between the insert and the cursor advance, or two
    alarms racing.
 
 The database is the authority. The check above it only keeps the happy path from
@@ -143,22 +143,22 @@ you change the encryption and that test still passes, the change is safe.
 
 ## Client
 
-React SPA, TanStack Query, React Router. No global state library — the server is
+React SPA, TanStack Query, React Router. No global state library - the server is
 the state.
 
 - `staleTime` is 0 everywhere. Every number is money someone acts on.
 - **No API response is ever cached in the service worker.** A stale balance is
   worse than no balance. The service worker precaches the shell and bundles and
-  has no runtime-caching rule at all — an allowlist that cannot drift.
+  has no runtime-caching rule at all - an allowlist that cannot drift.
 - **Offline shows an explicit state and no numbers.** A wrong number about money
   is worse than no number.
 - **Writes offline fail immediately and visibly.** No queue, no outbox, no retry.
-- **Updates prompt; never auto-reload** — that would destroy a half-filled
+- **Updates prompt; never auto-reload** - that would destroy a half-filled
   expense form. The API therefore tolerates one version of skew: response shapes
   stay additive, and a field is never removed or repurposed.
 - Recharts is lazy-loaded. It is the largest thing in the bundle.
 
-Every user-facing string goes through `t()` from `src/client/i18n.ts` — a plain
+Every user-facing string goes through `t()` from `src/client/i18n.ts` - a plain
 helper over `locales/en.json` plus native `Intl.PluralRules`. English only, but
 the layer ships from line one because retrofitting extraction is the expensive
 path.
@@ -166,7 +166,7 @@ path.
 ## Testing
 
 `pnpm test` runs vitest. Route tests run against **real SQLite** (`node:sqlite`,
-in memory) behind the D1 interface, applying the **actual migration files** —
+in memory) behind the D1 interface, applying the **actual migration files** -
 so they exercise the real data-access layer, the real constraints, and the real
 middleware. See `src/server/routes/_test-harness.ts`.
 

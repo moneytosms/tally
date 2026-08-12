@@ -1,7 +1,7 @@
 // Invites: single-use, 48 hours, revocable, bound to exactly one ledger.
 //
 // An invite enrols a NEW person. Re-enrolling an existing account is a recovery
-// token instead (`recovery_tokens`) — an invite cannot do it without creating a
+// token instead (`recovery_tokens`) - an invite cannot do it without creating a
 // second user and stranding the first one's history.
 //
 // A leaked link is still account access. The token is 256 bits from the platform
@@ -21,7 +21,7 @@ export type InviteStore = {
     createdAt: number;
     expiresAt: number;
   }): PromiseLike<unknown>;
-  /** Unconsumed, unrevoked, unexpired, on a live ledger. Undefined otherwise —
+  /** Unconsumed, unrevoked, unexpired, on a live ledger. Undefined otherwise -
    *  every rejection reason collapses to one, which is what we want on a token
    *  that is effectively a bearer credential. */
   findUsableInvite(
@@ -49,7 +49,7 @@ export type InviteStore = {
 
 export class InviteError extends Error {}
 
-/** Returns the plaintext token — the only time it exists. Never log it. */
+/** Returns the plaintext token - the only time it exists. Never log it. */
 export async function createInvite(
   store: InviteStore,
   args: { ledgerId: string; createdBy: string; now: number },
@@ -72,7 +72,7 @@ export async function createInvite(
  * D1 has no cross-request transaction, so the single-use guarantee rests on the
  * conditional UPDATE alone: whichever concurrent request flips consumed_at away
  * from NULL sees changes === 1 and wins; every other one sees 0 and fails. The
- * (ledger_id, user_id) unique index is the second line — even a claim that
+ * (ledger_id, user_id) unique index is the second line - even a claim that
  * somehow raced cannot produce two memberships.
  */
 export async function acceptInvite(

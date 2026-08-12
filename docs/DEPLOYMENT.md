@@ -13,7 +13,7 @@ secret.
 | Need | Check |
 |---|---|
 | Node 20+ and pnpm 11 | `node --version && pnpm --version` |
-| A Cloudflare account (free tier is enough) | — |
+| A Cloudflare account (free tier is enough) | - |
 | `openssl` | `openssl version` |
 
 ```bash
@@ -82,7 +82,7 @@ npx web-push generate-vapid-keys      # -> VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY
 openssl rand -base64 32               # -> BOOTSTRAP_SECRET
 ```
 
-Write all three to `.dev.vars` (gitignored) so local dev matches production —
+Write all three to `.dev.vars` (gitignored) so local dev matches production -
 `cp .dev.vars.example .dev.vars` and fill it in.
 
 ### What each value is
@@ -90,7 +90,7 @@ Write all three to `.dev.vars` (gitignored) so local dev matches production —
 | Value | Secret? | Where it goes | What breaks without it |
 |---|---|---|---|
 | `<D1_DATABASE_ID>` | No | `wrangler.jsonc` → `d1_databases` | Deploy fails |
-| `<VAPID_PUBLIC_KEY>` | No — browser needs it to subscribe | `wrangler.jsonc` → `vars` | Push silently stays off |
+| `<VAPID_PUBLIC_KEY>` | No - browser needs it to subscribe | `wrangler.jsonc` → `vars` | Push silently stays off |
 | `<VAPID_PRIVATE_KEY>` | **Yes** | `wrangler secret` | Push silently stays off |
 | `<BOOTSTRAP_SECRET>` | **Yes** | `wrangler secret` | Nobody can claim the instance, and **nobody can log in** |
 
@@ -113,7 +113,7 @@ throwing (SPEC §9). Everything else works.
 ```
 
 Commit `wrangler.jsonc` with `database_id` and `VAPID_PUBLIC_KEY` filled in.
-This is the step most often missed — the public key must reach the browser, and
+This is the step most often missed - the public key must reach the browser, and
 `wrangler secret` will not deliver it.
 
 The `RECURRING` Durable Object binding and its `v1` migration tag are already in
@@ -131,7 +131,7 @@ pnpm deploy                  # = pnpm build && wrangler deploy
 ```
 
 `https://<WORKER_NAME>.<CF_SUBDOMAIN>.workers.dev` is now live and 500s on
-anything touching the database. That is expected — migrations come next.
+anything touching the database. That is expected - migrations come next.
 
 ---
 
@@ -170,7 +170,7 @@ npx wrangler d1 execute tally --remote \
 2. Enter `<BOOTSTRAP_SECRET>` once
 3. Create your passkey
 
-The claim is burned on use — a second attempt is rejected regardless of the
+The claim is burned on use - a second attempt is rejected regardless of the
 secret. You are now the Owner: admin panel, guest management, passkey recovery.
 
 Then invite people. Every invite is single-use and expires in 48 hours.
@@ -203,7 +203,7 @@ pnpm deploy
 Schema changed as well:
 
 ```bash
-pnpm db:generate              # read the generated SQL — see OPERATIONS.md
+pnpm db:generate              # read the generated SQL - see OPERATIONS.md
 pnpm test
 pnpm db:migrate:remote
 pnpm deploy
@@ -222,12 +222,12 @@ secret ever need protecting; the rest are recoverable from Cloudflare.
 ```
 CF_ACCOUNT_ID       = <CF_ACCOUNT_ID>        # npx wrangler whoami
 CF_SUBDOMAIN        = <CF_SUBDOMAIN>         # the workers.dev prefix
-WORKER_NAME         = <WORKER_NAME>          # frozen — part of the RP ID
+WORKER_NAME         = <WORKER_NAME>          # frozen - part of the RP ID
 D1_DATABASE_ID      = <D1_DATABASE_ID>       # npx wrangler d1 list
 VAPID_PUBLIC_KEY    = <VAPID_PUBLIC_KEY>     # public by design
-VAPID_PRIVATE_KEY   = <VAPID_PRIVATE_KEY>    # SECRET — unrecoverable, regenerating resets every push subscription
-BOOTSTRAP_SECRET    = <BOOTSTRAP_SECRET>     # SECRET — also signs login challenge cookies
-CLOUDFLARE_API_TOKEN= <CLOUDFLARE_API_TOKEN> # SECRET — only if you deploy from CI
+VAPID_PRIVATE_KEY   = <VAPID_PRIVATE_KEY>    # SECRET - unrecoverable, regenerating resets every push subscription
+BOOTSTRAP_SECRET    = <BOOTSTRAP_SECRET>     # SECRET - also signs login challenge cookies
+CLOUDFLARE_API_TOKEN= <CLOUDFLARE_API_TOKEN> # SECRET - only if you deploy from CI
 ```
 
 Regenerating `VAPID_PRIVATE_KEY` invalidates every existing push subscription;
@@ -252,7 +252,7 @@ No workflow ships in this repo. Local `pnpm deploy` is the supported path.
 ## Known gaps at v1
 
 - **No automated backups.** R2 is deliberately unconfigured. CSV export and
-  `wrangler d1 export` are the escape hatches — see
+  `wrangler d1 export` are the escape hatches - see
   [OPERATIONS.md → Backups](OPERATIONS.md#backups). Rehearse a restore once.
 - **No staging environment.** One instance, ~20 people. `pnpm dev` against local
   D1 is the rehearsal.

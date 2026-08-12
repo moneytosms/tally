@@ -2,7 +2,7 @@
 // the Worker's asset binding, not from here.
 //
 // Response shapes stay additive: an older client must keep working after a
-// deploy (SPEC §10 — people dismiss the update prompt). No version machinery,
+// deploy (SPEC §10 - people dismiss the update prompt). No version machinery,
 // just never remove or repurpose a field.
 import { Hono } from "hono";
 import type { Env } from "~/server/context";
@@ -61,7 +61,7 @@ app.route("/api", admin);
 app.route("/api", activity);
 
 app.notFound((c) => c.json({ error: "not found" }, 404));
-// Never leak an internal message to the client, and never log a request body —
+// Never leak an internal message to the client, and never log a request body -
 // tokens, secrets and challenges travel in them.
 app.onError((_err, c) => c.json({ error: "internal error" }, 500));
 

@@ -12,7 +12,7 @@ export type PushState =
   | { status: "denied" }
   /** iOS: the APIs exist but only work from a Home Screen install. */
   | { status: "needs-install" }
-  /** No VAPID key on this instance — push was never provisioned. */
+  /** No VAPID key on this instance - push was never provisioned. */
   | { status: "unavailable" };
 
 const isIos = () =>
@@ -48,7 +48,7 @@ export async function currentPushState(): Promise<PushState> {
  *
  * The server call happens LAST and its failure unsubscribes again, so the
  * browser and the database never disagree about whether this device is enrolled
- * — a subscription the server does not know about is a device that silently
+ * - a subscription the server does not know about is a device that silently
  * never gets notified.
  */
 export async function enablePush(): Promise<PushState> {

@@ -63,7 +63,7 @@ describe("nextOccurrence", () => {
   it("recovers the anchor day after a clamped month", () => {
     const start = utc("2026-01-31T00:00:00Z");
     const feb = nextOccurrence(monthly(start), start);
-    // Anchored on startAt, not on the clamped previous occurrence — so March is
+    // Anchored on startAt, not on the clamped previous occurrence - so March is
     // the 31st again, not the 28th.
     expect(nextOccurrence(monthly(start), feb)).toBe(utc("2026-03-31T00:00:00Z"));
   });
@@ -73,7 +73,7 @@ describe("nextOccurrence", () => {
     expect(nextOccurrence(monthly(start), start)).toBe(utc("2024-02-29T00:00:00Z"));
   });
 
-  it("is strictly increasing — never returns the instant it was given", () => {
+  it("is strictly increasing - never returns the instant it was given", () => {
     const start = utc("2026-01-31T00:00:00Z");
     let at = start;
     for (let i = 0; i < 40; i++) {

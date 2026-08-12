@@ -41,7 +41,7 @@ describe("GET /insights", () => {
   });
 
   it("counts totals.paid for expenses the caller paid, even ones they didn't split", async () => {
-    // Ada pays for Bob and the guest only — Ada is not a participant.
+    // Ada pays for Bob and the guest only - Ada is not a participant.
     await expense("L1", { total: 8_000, payerMemberId: "m_ada", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] }); // ₹80.00
 
     const i = await insights();

@@ -1,11 +1,11 @@
 // Settle up. SPEC §6: the payer declares, the payee is notified, not asked, and
 // the balance moves on declaration.
 //
-// The manual path is a peer of the UPI path, never behind it — a missing UPI app
+// The manual path is a peer of the UPI path, never behind it - a missing UPI app
 // is a silent, undetectable no-op, so nothing may depend on the link opening.
 import { useState } from "react";
 import { Link, useParams } from "react-router";
-import { Amount, Avatar, Button, EmptyState, Field, Input, Sheet } from "~/client/components/ui";
+import { Amount, Avatar, Button, EmptyState, Field, Input, Rupees, Sheet } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import { WhyTrail } from "~/client/components/WhyTrail";
 import { paiseToRupeeString, rupeesToPaise } from "~/client/components/SplitEditor";
@@ -16,6 +16,7 @@ import {
   useLedger,
   useMe,
   useMembers,
+  useNudge,
 } from "~/client/lib/queries";
 import { ApiError } from "~/client/lib/api";
 import { t } from "~/client/i18n";
@@ -31,7 +32,7 @@ export function settleAmount(raw: string, suggested: number): { paise: number } 
 }
 
 /** `am` is rupees with two decimals, built from the integer paise as a string.
- *  Never `paise / 100` — this is the money path. */
+ *  Never `paise / 100` - this is the money path. */
 export function upiLink(input: { vpa: string; name: string; paise: number; note?: string }): string {
   const q = [
     `pa=${encodeURIComponent(input.vpa)}`,
@@ -44,6 +45,38 @@ export function upiLink(input: { vpa: string; name: string; paise: number; note?
 }
 
 type Transfer = { fromMemberId: string; toMemberId: string; amount: number };
+
+/** A reminder to whoever owes me. The endpoint and its 12-hour server-side rate
+ *  limit already existed; nothing in the UI ever called it. Guests have no user,
+ *  so there is nobody to notify - the button is simply absent for them. */
+function Nudge({ ledgerId, toUserId }: { ledgerId: string; toUserId: string | null }) {
+  const nudge = useNudge();
+  if (toUserId === null) return null;
+
+  const message = nudge.isSuccess
+    ? t("notifications.nudgeSent")
+    : nudge.error instanceof ApiError && nudge.error.code === "too_soon"
+      ? t("notifications.nudgeTooSoon")
+      : nudge.error
+        ? t("error.generic")
+        : "";
+
+  return (
+    <div className="mt-1.5 flex items-center gap-2.5">
+      <Button
+        size="sm"
+        variant="ghost"
+        disabled={nudge.isPending || nudge.isSuccess}
+        onClick={() => nudge.mutate({ ledgerId, toUserId })}
+      >
+        {t("notifications.nudge")}
+      </Button>
+      <span role="status" aria-live="polite" className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        {message}
+      </span>
+    </div>
+  );
+}
 
 export default function SettleUp() {
   const { ledgerId = "" } = useParams();
@@ -121,29 +154,41 @@ export default function SettleUp() {
       {transfers.length === 0 ? (
         <EmptyState title={t("empty.balances")} body={t("settle.nothingBody")} />
       ) : (
-        transfers.map((tr) => (
-          <div
-            key={`${tr.fromMemberId}-${tr.toMemberId}`}
-            className="mb-2 rounded-[7px] border px-3.5 py-3"
-            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-          >
-            <div className="flex items-center justify-between gap-2.5">
-              <div className="flex min-w-0 items-center gap-2.5">
-                <Avatar name={name(tr.fromMemberId)} />
-                <div className="min-w-0">
-                  <div className="truncate text-[14.5px]">
-                    {t("settle.pays", { from: name(tr.fromMemberId), to: name(tr.toMemberId) })}
+        transfers.map((tr) => {
+          const mine = tr.fromMemberId === myMemberId;
+          const owedToMe = tr.toMemberId === myMemberId;
+          return (
+            <div
+              key={`${tr.fromMemberId}-${tr.toMemberId}`}
+              className="mb-2 rounded-[7px] border px-3.5 py-3"
+              style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+            >
+              <div className="flex items-center justify-between gap-2.5">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Avatar name={name(tr.fromMemberId)} />
+                  <div className="min-w-0">
+                    <div className="truncate text-[14.5px]">
+                      {t("settle.pays", { from: name(tr.fromMemberId), to: name(tr.toMemberId) })}
+                    </div>
+                    <Amount paise={tr.amount} label={t("settle.suggested")} tone="neutral" />
                   </div>
-                  <Amount paise={tr.amount} label={t("settle.suggested")} tone="neutral" />
                 </div>
+                <Button size="sm" onClick={() => open(tr)}>
+                  {mine ? t("settle.title") : t("settle.recordOnBehalf")}
+                </Button>
               </div>
-              <Button size="sm" onClick={() => open(tr)}>
-                {tr.fromMemberId === myMemberId ? t("settle.title") : t("settle.recordOnBehalf")}
-              </Button>
+              {/* "Record on their behalf" with no explanation reads like the only
+                  thing you are allowed to do. Say why, and offer the alternative. */}
+              {!mine && (
+                <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                  {t("settle.notYoursHint", { name: name(tr.fromMemberId) })}
+                </p>
+              )}
+              {owedToMe && <Nudge ledgerId={ledgerId} toUserId={member(tr.fromMemberId)?.userId ?? null} />}
+              <WhyTrail ledgerId={ledgerId} fromMemberId={tr.fromMemberId} toMemberId={tr.toMemberId} />
             </div>
-            <WhyTrail ledgerId={ledgerId} fromMemberId={tr.fromMemberId} toMemberId={tr.toMemberId} />
-          </div>
-        ))
+          );
+        })
       )}
 
       <Sheet open={active !== null} onOpenChange={(o) => !o && setActive(null)} title={t("settle.title")}>
@@ -154,7 +199,7 @@ export default function SettleUp() {
             </p>
 
             <Field label={t("settle.amount")} error={parsed && "error" in parsed ? parsed.error : undefined}>
-              <Input inputMode="decimal" value={amountRaw} onChange={(e) => setAmountRaw(e.target.value)} />
+              <Rupees value={amountRaw} onChange={setAmountRaw} />
               <span className="mt-1.5 block text-[11px]" style={{ color: "var(--ink-3)" }}>
                 {t("settle.partialHint")}
               </span>

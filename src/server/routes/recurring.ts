@@ -2,7 +2,7 @@
 // driven by the alarm in ~/server/recurring-do.
 //
 // SPEC §9: "Editing a series affects future occurrences only." Nothing here
-// touches an already-generated expense — an occurrence, once written, is an
+// touches an already-generated expense - an occurrence, once written, is an
 // ordinary expense that any member may edit or delete like any other.
 import { Hono } from "hono";
 import type { Env } from "~/server/context";

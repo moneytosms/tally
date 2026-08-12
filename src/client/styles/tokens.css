@@ -1,6 +1,6 @@
 /* Design tokens. See docs/SPEC.md §10 and prototypes/design-system.html.
    Paper ground, earth tones, moss as structure rather than accent.
-   Semantic pair is moss/clay — muted, and differing in LIGHTNESS as well as hue
+   Semantic pair is moss/clay - muted, and differing in LIGHTNESS as well as hue
    so it survives colour blindness and greyscale. Colour is never the only cue. */
 
 :root {
@@ -81,10 +81,29 @@
   --grain-blend: screen;
 }
 
+/* The app is a fixed frame, never a scrolling page. Without an explicit height
+   chain the document itself scrolls on Android Chrome as the URL bar hides and
+   shows, which pushes the tab bar off-screen. Scrolling belongs to <main>. */
+html,
+body,
+#root {
+  height: 100%;
+}
+
 body {
   background: var(--paper);
   color: var(--ink);
   font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  overscroll-behavior: none;
+}
+
+/* viewport-fit=cover is set, so the gesture bar overlaps the viewport unless
+   something reserves room for it. These are 0px on hardware without insets. */
+.pad-safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.offset-safe-bottom {
+  bottom: calc(66px + env(safe-area-inset-bottom));
 }
 
 /* Screen titles and hero amounts. Zero webfont weight. */

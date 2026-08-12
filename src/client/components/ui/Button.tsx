@@ -17,7 +17,7 @@ export function Button({ variant = "primary", size = "md", className = "", ...pr
     <button
       type="button"
       {...props}
-      // 44px minimum tap target — dense visuals do not mean dense touch targets.
+      // 44px minimum tap target - dense visuals do not mean dense touch targets.
       className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-[6px] border text-[14px] ${
         size === "sm" ? "px-3 font-normal" : "px-4 font-medium"
       } disabled:opacity-50 ${focusRing} ${className}`}

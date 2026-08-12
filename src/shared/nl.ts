@@ -9,7 +9,7 @@ export type NlParse = {
   total: number | null;
   /** cleaned leftover text, "" when nothing remains */
   description: string;
-  /** member ids, in the order they appeared in the input (stable order matters —
+  /** member ids, in the order they appeared in the input (stable order matters -
    *  the remainder rule depends on it) */
   participantIds: string[];
   /** member id of an explicit "paid by X", else null */
@@ -18,11 +18,11 @@ export type NlParse = {
   unmatched: string[];
 };
 
-// ₹450, Rs 450, rs.450, 1,250, 1.2k, 450.50 — captures the numeric part only.
+// ₹450, Rs 450, rs.450, 1,250, 1.2k, 450.50 - captures the numeric part only.
 const AMOUNT_RE = /(?:₹|rs\.?\s*)?(\d[\d,]*(?:\.\d+)?)\s*(k)?/i;
 
 /** Parses a rupee amount string (digits, commas, optional decimal, optional "k")
- *  into integer paise using string/integer arithmetic — never parseFloat. */
+ *  into integer paise using string/integer arithmetic - never parseFloat. */
 function parseAmountToPaise(raw: string, hasK: boolean): number | null {
   const clean = raw.replace(/,/g, "");
   const [rupeeStr, paiseStr = ""] = clean.split(".");
@@ -98,7 +98,7 @@ export function parseExpenseLine(input: string, members: NlMember[]): NlParse {
   // trailing commas can signal "a name goes here" (connector context). A bare
   // word that matches no member (e.g. "dinner") is just left in the
   // description; a word in connector context that matches no member (e.g.
-  // "with zoya") is reported as unmatched — that distinction is the point.
+  // "with zoya") is reported as unmatched - that distinction is the point.
   const rawTokens = working.split(/\s+/).filter(Boolean);
   const seen = new Set<string>();
   const consumedTokens = new Set<string>(); // lowercase tokens consumed as names/connectors

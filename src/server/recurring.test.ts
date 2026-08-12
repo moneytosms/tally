@@ -1,5 +1,5 @@
 // SPEC §11 hazard 5. The headline assertion is that running catch-up twice over
-// the same interval creates the occurrences once — everything else here exists
+// the same interval creates the occurrences once - everything else here exists
 // to make sure that stays true when the ledger changes underneath the series.
 //
 // Amounts are paise, written as integers with the rupee value in a comment.
@@ -17,7 +17,7 @@ beforeEach(async () => {
 const utc = (s: string) => Date.parse(s);
 const START = utc("2026-08-01T00:00:00Z");
 
-/** Insert a series directly — the HTTP route is covered in recurring.routes.test.ts. */
+/** Insert a series directly - the HTTP route is covered in recurring.routes.test.ts. */
 function makeSeries(over: Partial<Series> = {}): Series {
   const s: Series = {
     id: uuidv7(),
@@ -83,14 +83,14 @@ describe("runCatchUp", () => {
   });
 
   // The hazard, stated directly.
-  it("is idempotent — a replay from the same cursor creates nothing new", async () => {
+  it("is idempotent - a replay from the same cursor creates nothing new", async () => {
     const s = makeSeries();
     const now = utc("2026-10-05T00:00:00Z");
 
     const first = await runCatchUp(h.db, s, now);
     expect(first.created).toHaveLength(3);
 
-    // The cursor was never persisted — exactly what a crash after the inserts
+    // The cursor was never persisted - exactly what a crash after the inserts
     // but before the update looks like.
     const replay = await runCatchUp(h.db, s, now);
     expect(replay.created).toEqual([]);
@@ -123,7 +123,7 @@ describe("runCatchUp", () => {
   it("stops at endAt", async () => {
     const s = makeSeries({ endAt: utc("2026-10-01T00:00:00Z") });
     const r = await runCatchUp(h.db, s, utc("2026-12-01T00:00:00Z"));
-    // Aug and Sep only — endAt is exclusive.
+    // Aug and Sep only - endAt is exclusive.
     expect(r.created).toHaveLength(2);
   });
 
@@ -155,7 +155,7 @@ describe("runCatchUp", () => {
 
   it("splits sum to the total exactly when the division is uneven", async () => {
     const s = makeSeries({
-      total: 100001, // ₹1,000.01 — does not divide by 3
+      total: 100001, // ₹1,000.01 - does not divide by 3
       splitTemplate: JSON.stringify([{ memberId: "m_ada" }, { memberId: "m_bob" }, { memberId: "m_guest" }]),
     });
     await runCatchUp(h.db, s, utc("2026-08-05T00:00:00Z"));

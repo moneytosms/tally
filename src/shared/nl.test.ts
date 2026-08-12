@@ -6,7 +6,7 @@ const rahul: NlMember = { id: "m-rahul", name: "Rahul" };
 const priya: NlMember = { id: "m-priya", name: "Priya" };
 const members: NlMember[] = [rahul, priya];
 
-describe("parseExpenseLine — amount formats", () => {
+describe("parseExpenseLine - amount formats", () => {
   it("plain integer", () => {
     expect(parseExpenseLine("450", members).total).toBe(45000); // ₹450
   });
@@ -52,7 +52,7 @@ describe("parseExpenseLine — amount formats", () => {
   });
 
   it("the float trap: 1234.56 is exactly 123456 paise", () => {
-    // parseFloat("1234.56") * 100 === 123455.99999999999 in JS — must not use it.
+    // parseFloat("1234.56") * 100 === 123455.99999999999 in JS - must not use it.
     expect(parseExpenseLine("1234.56", members).total).toBe(123456); // ₹1234.56
   });
 
@@ -62,7 +62,7 @@ describe("parseExpenseLine — amount formats", () => {
   });
 });
 
-describe("parseExpenseLine — description, participants, payer", () => {
+describe("parseExpenseLine - description, participants, payer", () => {
   it("extracts description and both participants in input order", () => {
     const r = parseExpenseLine("450 dinner with rahul and priya", members);
     expect(r.total).toBe(45000); // ₹450
@@ -102,7 +102,7 @@ describe("parseExpenseLine — description, participants, payer", () => {
   });
 });
 
-describe("parseExpenseLine — name matching", () => {
+describe("parseExpenseLine - name matching", () => {
   it("ambiguous first-name match: neither matched, token reported unmatched", () => {
     const twoRahuls: NlMember[] = [
       { id: "m1", name: "Rahul Sharma" },
@@ -137,7 +137,7 @@ describe("parseExpenseLine — name matching", () => {
   });
 });
 
-describe("parseExpenseLine — never throws, returns safe defaults", () => {
+describe("parseExpenseLine - never throws, returns safe defaults", () => {
   it("empty string", () => {
     const r = parseExpenseLine("", members);
     expect(r.total).toBeNull();

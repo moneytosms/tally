@@ -1,4 +1,4 @@
-// Net positions are DERIVED — never stored, never cached. ADR 0004, SPEC §6.
+// Net positions are DERIVED - never stored, never cached. ADR 0004, SPEC §6.
 // Integer paise throughout: every operation here is addition, subtraction or Math.min.
 import type { Paise } from "~/shared/money";
 
@@ -11,7 +11,7 @@ export type Transfer = { fromMemberId: string; toMemberId: string; amount: Paise
  * their resolved split. Splits sum to the total (enforced at write time), so the
  * ledger sums to zero structurally rather than by convention.
  *
- * A refund is an expense with negative splits — the same arithmetic, no branch.
+ * A refund is an expense with negative splits - the same arithmetic, no branch.
  * A guest is just a memberId. A `forgiven` settlement is just a settlement.
  */
 export function netPositions(

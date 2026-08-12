@@ -5,7 +5,7 @@
 //   - ids are UUIDv7 text, generated in app code (src/shared/id.ts)
 //   - timestamps are integer epoch ms, never SQLite date/text types
 //   - deleted_at on every soft-deletable table
-//   - balances are DERIVED — there is no net-position column anywhere
+//   - balances are DERIVED - there is no net-position column anywhere
 import { sql } from "drizzle-orm";
 import {
   check,
@@ -37,7 +37,7 @@ export const credentials = sqliteTable("credentials", {
   userId: text("user_id")
     .notNull()
     .references(() => users.id),
-  // SimpleWebAuthn credential.id — base64url, unique across the instance
+  // SimpleWebAuthn credential.id - base64url, unique across the instance
   credentialId: text("credential_id").notNull().unique(),
   publicKey: text("public_key").notNull(), // base64url COSE key
   counter: integer("counter").notNull().default(0),
@@ -62,7 +62,7 @@ export const sessions = sqliteTable("sessions", {
 });
 
 /**
- * Owner-issued account recovery. Bound to a USER, not a ledger — that is the
+ * Owner-issued account recovery. Bound to a USER, not a ledger - that is the
  * whole difference from an invite, and the reason this is a separate table:
  * an invite enrols a NEW person, a recovery token re-enrols an EXISTING one and
  * must never create a second account (which would orphan their expense history).
@@ -174,7 +174,7 @@ export const expenses = sqliteTable(
     updatedAt: integer("updated_at").notNull(),
     deletedAt: integer("deleted_at"),
     // Set only on generated occurrences. The unique index below is what makes
-    // recurring catch-up idempotent — a retry hits the constraint instead of
+    // recurring catch-up idempotent - a retry hits the constraint instead of
     // creating a second copy (SPEC §11 hazard 5). Do not enforce this in app
     // code; app code forgets and the DB does not.
     seriesId: text("series_id"),
@@ -209,7 +209,7 @@ export const expenseSplits = sqliteTable(
       .references(() => ledgerMembers.id),
     amount: integer("amount").notNull(), // resolved paise; 0 is legal on a refund
     inputValue: integer("input_value"), // raw per-mode input; null for equal
-    sortOrder: integer("sort_order").notNull(), // stable order — rounding depends on it
+    sortOrder: integer("sort_order").notNull(), // stable order - rounding depends on it
   },
   (t) => [
     uniqueIndex("expense_splits_expense_member_uq").on(t.expenseId, t.memberId),
@@ -279,7 +279,7 @@ export const instanceState = sqliteTable("instance_state", {
 });
 
 // A comment on an expense. The activity feed is DERIVED from expenses,
-// settlements and these — there is no activity table, because every row it
+// settlements and these - there is no activity table, because every row it
 // would hold already exists somewhere else.
 export const comments = sqliteTable(
   "comments",
@@ -350,7 +350,7 @@ export const recurringSeries = sqliteTable(
   ],
 );
 
-// A Web Push subscription. One row per browser, not per user — a user with a
+// A Web Push subscription. One row per browser, not per user - a user with a
 // phone and a laptop has two. Push is single-recipient by design (SPEC §9),
 // so this is never fanned out across more than one user's rows.
 export const pushSubscriptions = sqliteTable(

@@ -2,14 +2,14 @@
 //
 // SPEC §9: "one alarm per recurring series, plus one nightly backup alarm. No
 // sweeps, no cron across users." This is a single Durable Object holding one
-// alarm for the whole instance, set to the earliest due series — which is
+// alarm for the whole instance, set to the earliest due series - which is
 // strictly less work than one object per series and, at ~20 users, cannot fall
 // behind. If a single instance ever outgrows that, shard by ledger id; the
 // catch-up logic in ~/server/recurring is already per-series and would not change.
 //
 // Everything interesting is in `runCatchUp`, which is pure of Workers concerns
 // and tested in src/server/recurring.test.ts. This file is the thin shell: it
-// decides WHEN to run and re-arms the alarm. Keep it thin — it is the part that
+// decides WHEN to run and re-arms the alarm. Keep it thin - it is the part that
 // cannot be unit-tested without workerd.
 import type { D1Database, DurableObjectState } from "@cloudflare/workers-types";
 import { createDb } from "~/db";
@@ -39,7 +39,7 @@ export class RecurringAlarm {
     const now = Date.now();
 
     // listDueSeries already excludes paused series, deleted series, and series
-    // on archived or deleted ledgers — an archived ledger cancels its alarms by
+    // on archived or deleted ledgers - an archived ledger cancels its alarms by
     // simply never appearing here.
     const due = await db.listDueSeries(now);
     let drainAgain = false;
@@ -95,7 +95,7 @@ export async function pokeRecurring(ns: DurableObjectNamespace | undefined): Pro
     const id = ns.idFromName("singleton");
     await ns.get(id).fetch("https://recurring.internal/poke");
   } catch {
-    // swallowed deliberately — see above
+    // swallowed deliberately - see above
   }
 }
 
