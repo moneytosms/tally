@@ -87,6 +87,12 @@ function Shell() {
 
   if (me.isPending) return null;
   if (me.error instanceof ApiError && me.error.status === 401) return <Navigate to="/welcome" replace />;
+  // Signed in with no credential means enrolment stopped half-way: register/options
+  // creates the account and the session, and the passkey ceremony then failed.
+  // Letting that land here shows an empty app and hides the real problem - and
+  // the session outlives the tab, so they never see the passkey step again.
+  // /welcome is the recoverable place: the session alone gets them fresh options.
+  if (me.data && me.data.credentials.length === 0) return <Navigate to="/welcome" replace />;
 
   return (
     <div className="paper-ground relative flex h-full flex-col overflow-hidden">
