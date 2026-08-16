@@ -388,6 +388,79 @@ describe("POST /ledgers/:ledgerId/expenses/:expenseId/undo", () => {
   });
 });
 
+describe("POST /ledgers/:ledgerId/expenses/:expenseId/revisions/:revisionId/restore", () => {
+  const patch = (id: string, body: object) =>
+    app.request(req(h, `/api/ledgers/L1/expenses/${id}`, { method: "PATCH", json: { ...base, ...body } }));
+
+  /** v1 -> v2 -> v3, so there is a genuine MIDDLE revision to aim at. */
+  const threeVersions = async () => {
+    const { id } = (await (
+      await create({ description: "v1", mode: "equal", total: 10_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }) // ₹100.00
+    ).json()) as { id: string };
+    await patch(id, { description: "v2", mode: "exact", total: 12_000, participants: [{ memberId: "m_ada", value: 5_000 }, { memberId: "m_bob", value: 7_000 }] }); // ₹120.00
+    await patch(id, { description: "v3", mode: "equal", total: 13_000, participants: [{ memberId: "m_ada" }] }); // ₹130.00
+    return id;
+  };
+
+  const restore = (id: string, revisionId: string, ledgerId = "L1") =>
+    app.request(req(h, `/api/ledgers/${ledgerId}/expenses/${id}/revisions/${revisionId}/restore`, { method: "POST" }));
+
+  it("restores a mid-history revision, splits and total together", async () => {
+    const id = await threeVersions();
+    const revisions = await h.db.listRevisions(id); // newest first: [before v3, before v2]
+    const beforeV2 = revisions[1]!; // the v1 snapshot
+
+    const res = await restore(id, beforeV2.id);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { description: string; total: number; splits: Array<{ amount: number }> };
+    expect(body.description).toBe("v1");
+    expect(body.total).toBe(10_000); // ₹100.00
+    expect(body.splits.map((s) => s.amount)).toEqual([5_000, 5_000]); // ₹50.00 each
+    expect(body.splits.reduce((a, s) => a + s.amount, 0)).toBe(10_000);
+  });
+
+  it("snapshots the current state first, so the restore is itself undoable", async () => {
+    const id = await threeVersions();
+    const beforeV2 = (await h.db.listRevisions(id))[1]!;
+    await restore(id, beforeV2.id);
+
+    const undone = await app.request(req(h, `/api/ledgers/L1/expenses/${id}/undo`, { method: "POST" }));
+    expect(undone.status).toBe(200);
+    const body = (await undone.json()) as { description: string; total: number };
+    expect(body.description).toBe("v3");
+    expect(body.total).toBe(13_000); // ₹130.00
+  });
+
+  it("404s for a revision belonging to another expense", async () => {
+    const mine = await threeVersions();
+    const other = await threeVersions();
+    const foreign = (await h.db.listRevisions(other))[0]!;
+    expect((await restore(mine, foreign.id)).status).toBe(404);
+    // and nothing moved
+    expect((await h.db.findExpense("L1", mine))!.description).toBe("v3");
+  });
+
+  it("404s for a revision reached through the wrong ledger", async () => {
+    const id = await threeVersions();
+    const revision = (await h.db.listRevisions(id))[0]!;
+    // Ada is a member of L2, so this gets past requireMember and has to be
+    // stopped by the snapshot's own ledger id.
+    expect((await restore(id, revision.id, "L2")).status).toBe(404);
+  });
+
+  it("404s for a revision id that does not exist", async () => {
+    const id = await threeVersions();
+    expect((await restore(id, "rev_nope")).status).toBe(404);
+  });
+
+  it("refuses a caller who is not a member of the ledger", async () => {
+    const id = await threeVersions();
+    const revision = (await h.db.listRevisions(id))[0]!;
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = ?").run(Date.now(), "m_ada");
+    expect((await restore(id, revision.id)).status).toBe(403);
+  });
+});
+
 describe("DELETE /ledgers/:ledgerId/expenses/:expenseId", () => {
   it("soft-deletes: the row survives, the read path stops returning it", async () => {
     const { id } = (await (

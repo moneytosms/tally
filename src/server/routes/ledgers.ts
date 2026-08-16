@@ -37,6 +37,7 @@ async function summarise(db: Db, ledger: Ledger, viewerMemberId: string) {
     name: ledger.name,
     endDate: ledger.endDate,
     budget: ledger.budget,
+    invitesEnabled: ledger.invitesEnabled,
     archivedAt: ledger.archivedAt,
     memberCount: members.length,
     net: positions.find((p) => p.memberId === viewerMemberId)?.net ?? 0,
@@ -79,8 +80,16 @@ ledgers.post("/ledgers", async (c) => {
 
   const db = c.var.db;
   const now = Date.now();
-  const { cloneFrom, ...fields } = parsed.data;
-  const ledger = { ...fields, id: uuidv7(), createdBy: c.var.user.id, createdAt: now };
+  const { cloneFrom, invitesEnabled, ...fields } = parsed.data;
+  // Omitted means off - the column default and the create default must agree, or
+  // a ledger's invite path would depend on which client created it.
+  const ledger = {
+    ...fields,
+    invitesEnabled: invitesEnabled ?? false,
+    id: uuidv7(),
+    createdBy: c.var.user.id,
+    createdAt: now,
+  };
   const memberId = uuidv7();
 
   // Clone members: only from a ledger the caller is currently in, otherwise it
@@ -257,8 +266,15 @@ ledgers.post("/ledgers/:ledgerId/leave", async (c) => {
 
 // ---- invites ----------------------------------------------------------------
 
-/** Any member may invite. The token is returned exactly once - never logged. */
+/** Any member may invite, but only on an invite-enabled ledger (ADR 0007). The
+ *  token is returned exactly once - never logged. */
 ledgers.post("/ledgers/:ledgerId/invites", async (c) => {
+  const ledger = await c.var.db.findLedger(c.req.param("ledgerId"));
+  if (!ledger) return c.json({ error: "forbidden" }, 403);
+  if (!ledger.invitesEnabled) {
+    return c.json({ error: "invites are disabled on this ledger", code: "invites_disabled" }, 409);
+  }
+
   const now = Date.now();
   const token = await createInvite(c.var.db, {
     ledgerId: c.req.param("ledgerId"),

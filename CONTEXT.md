@@ -74,6 +74,8 @@ Decisions live in [`docs/adr/`](docs/adr/). The buildable spec is [`docs/SPEC.md
 
 **Invite** - a single-use, 48-hour, hashed token admitting a **new** User. A **ledger invite** also joins them to one Ledger; an **instance invite** (issued by the Owner, no ledger attached) only creates the account. A leaked Invite is potentially account access. There is no public signup - an Invite is the only way an account comes into being (ADR 0006).
 
+**Invite-enabled** - a property of one Ledger: whether it may mint ledger invites at all. Off by default, so a long-standing group has no invite path and a trip turns one on. Turning it off also kills the ledger's already-open Invites - they are bearer credentials, not a standing permission (ADR 0007).
+
 **Recovery token** - a single-use, one-hour, hashed token the Owner issues to re-enrol an **existing** User on a new device. Bound to a User, not a Ledger, and it never creates an account - that is what separates it from an Invite. Revoking a User's last Credential is refused for the same reason.
 
 **Credential** - a way to sign in. Two kinds: a registered **passkey** (a User may hold several; recovery **revokes** the lost one) and a **password**, which is an email plus a PBKDF2 hash and of which a User has at most one. Either kind alone is a complete account (ADR 0006).

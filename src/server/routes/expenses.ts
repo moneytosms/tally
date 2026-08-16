@@ -43,12 +43,16 @@ const PATH = "/ledgers/:ledgerId/expenses";
 const ITEM = `${PATH}/:expenseId` as const;
 const REVISIONS = `${ITEM}/revisions` as const;
 const UNDO = `${ITEM}/undo` as const;
+const RESTORE = `${REVISIONS}/:revisionId/restore` as const;
 
 const expenses = new Hono<Env>();
 expenses.use(PATH, requireSession, requireMember, rejectArchivedWrites);
 expenses.use(ITEM, requireSession, requireMember, rejectArchivedWrites);
 expenses.use(REVISIONS, requireSession, requireMember);
 expenses.use(UNDO, requireSession, requireMember, rejectArchivedWrites);
+// `use` on REVISIONS matches that exact path only, so the restore route needs
+// its own registration or it would run unguarded.
+expenses.use(RESTORE, requireSession, requireMember, rejectArchivedWrites);
 
 type StoredExpense = NonNullable<Awaited<ReturnType<Db["findExpense"]>>>;
 
@@ -285,22 +289,13 @@ expenses.get(REVISIONS, async (c) => {
 });
 
 /**
- * Restores the expense to its most recent revision. Writes a revision of the
- * CURRENT state first - undo is itself undoable, per SPEC. Column update,
- * split clear and split reinsert go in one batch: D1 has no cross-request
- * transaction and a half-applied restore is wrong money.
+ * Puts `target` back. Writes a revision of the CURRENT state first - a restore
+ * is itself undoable, per SPEC. Column update, split clear and split reinsert go
+ * in one batch: D1 has no cross-request transaction and a half-applied restore
+ * is wrong money.
  */
-expenses.post(UNDO, async (c) => {
-  const db = c.var.db;
-  const ledgerId = c.req.param("ledgerId");
-  const expenseId = c.req.param("expenseId");
-
-  const revisions = await db.listRevisions(expenseId);
-  if (revisions.length === 0) return c.json({ error: "nothing to undo" }, 400);
-
-  const target = JSON.parse(revisions[0]!.snapshot) as StoredExpense;
-  if (target.ledgerId !== ledgerId) return c.json({ error: "not found" }, 404);
-
+async function restoreTo(db: Db, args: { ledgerId: string; expenseId: string; target: StoredExpense; userId: string }) {
+  const { ledgerId, expenseId, target } = args;
   const now = Date.now();
   // findExpense excludes soft-deleted rows: if the expense is currently live,
   // that IS the current state to snapshot. If it's soft-deleted, its non-
@@ -314,7 +309,7 @@ expenses.post(UNDO, async (c) => {
       id: uuidv7(),
       expenseId,
       snapshot: JSON.stringify(currentSnapshot),
-      revisedBy: c.var.user.id,
+      revisedBy: args.userId,
       revisedAt: now,
     }),
     db.restoreExpense(expenseId, {
@@ -341,8 +336,44 @@ expenses.post(UNDO, async (c) => {
     ),
   ]);
 
-  const saved = await db.findExpense(ledgerId, expenseId);
-  return c.json(toWire(saved!));
+  return (await db.findExpense(ledgerId, expenseId))!;
+}
+
+/** Restores the expense to its most recent revision. */
+expenses.post(UNDO, async (c) => {
+  const db = c.var.db;
+  const ledgerId = c.req.param("ledgerId");
+  const expenseId = c.req.param("expenseId");
+
+  const revisions = await db.listRevisions(expenseId);
+  if (revisions.length === 0) return c.json({ error: "nothing to undo" }, 400);
+
+  const target = JSON.parse(revisions[0]!.snapshot) as StoredExpense;
+  if (target.ledgerId !== ledgerId) return c.json({ error: "not found" }, 404);
+
+  return c.json(toWire(await restoreTo(db, { ledgerId, expenseId, target, userId: c.var.user.id })));
+});
+
+/**
+ * Restores one SPECIFIC revision, not just the latest - the revision list is a
+ * history, and picking a point in it is the whole reason the snapshots exist.
+ * Same discipline as undo: the current state is snapshotted first, so restoring
+ * a mid-history revision is itself undoable.
+ */
+expenses.post(RESTORE, async (c) => {
+  const db = c.var.db;
+  const ledgerId = c.req.param("ledgerId");
+  const expenseId = c.req.param("expenseId");
+
+  // findRevision is scoped to the expense; the snapshot's own ledgerId is the
+  // second half, because expense_revisions carries no ledger column and a wrong
+  // :ledgerId in the path would otherwise reach another ledger's history.
+  const revision = await db.findRevision(expenseId, c.req.param("revisionId"));
+  if (!revision) return c.json({ error: "not found" }, 404);
+  const target = JSON.parse(revision.snapshot) as StoredExpense;
+  if (target.ledgerId !== ledgerId) return c.json({ error: "not found" }, 404);
+
+  return c.json(toWire(await restoreTo(db, { ledgerId, expenseId, target, userId: c.var.user.id })));
 });
 
 export default expenses;

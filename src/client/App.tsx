@@ -77,8 +77,12 @@ function AddMenu({ onPick }: { onPick: (choice: AddChoice) => void }) {
 }
 
 /** Sub-pages that are about one specific thing (settling, history, a schedule).
- *  A floating "add expense" on top of them is an offer to leave, not an action. */
-const FAB_HIDDEN = /\/(settle|activity|recurring)$|^\/you/;
+ *  A floating "add expense" on top of them is an offer to leave, not an action.
+ *
+ *  A ledger's own screen is here too: three of the four things behind the "+"
+ *  create a ledger, which is meaningless once you are inside one, and the fourth
+ *  already has a named button next to the expenses it adds to. */
+const FAB_HIDDEN = /\/(settle|activity|recurring)$|^\/you|^\/ledgers\/[^/]+$/;
 
 function Shell() {
   const [addOpen, setAddOpen] = useState(false);

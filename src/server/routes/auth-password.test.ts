@@ -34,6 +34,13 @@ function mountAuth(h: Harness) {
  *  the same thing createInvite returns, without needing an owner session. */
 async function seedInvite(h: Harness, ledgerId: string | null): Promise<string> {
   const token = `tok_${uuidv7()}`;
+  // A ledger invite only exists on an invite-enabled ledger (ADR 0007), and an
+  // invite on a ledger that has opted back out is deliberately dead - so seeding
+  // one has to seed that state too, or this tests a combination the mint route
+  // cannot produce.
+  if (ledgerId !== null) {
+    h.sql.prepare("UPDATE ledgers SET invites_enabled = 1 WHERE id = ?").run(ledgerId);
+  }
   h.sql
     .prepare(
       "INSERT INTO invites (id, token_hash, ledger_id, created_by, created_at, expires_at) VALUES (?,?,?,?,?,?)",

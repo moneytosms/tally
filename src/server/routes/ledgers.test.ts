@@ -96,6 +96,55 @@ describe("POST /ledgers/:ledgerId/members", () => {
   });
 });
 
+// Invite links are opt-in per ledger (ADR 0007). The seeded L1 predates the
+// column, so it arrives with the default: off.
+describe("per-ledger invite toggle", () => {
+  const mint = (ledgerId = "L1") =>
+    app.request(req(h, `/api/ledgers/${ledgerId}/invites`, { method: "POST", json: {} }));
+  const patch = (json: object) => app.request(req(h, "/api/ledgers/L1", { method: "PATCH", json }));
+
+  it("refuses to mint an invite while the flag is off", async () => {
+    const res = await mint();
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { code: string }).code).toBe("invites_disabled");
+  });
+
+  it("mints once the flag is on", async () => {
+    expect((await patch({ invitesEnabled: true })).status).toBe(200);
+    const res = await mint();
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as { token: string }).token).toBeTruthy();
+  });
+
+  it("creates a ledger with invites on when asked, off by default", async () => {
+    const on = (await (await create({ name: "Goa", invitesEnabled: true })).json()) as { id: string };
+    expect((await h.db.findLedger(on.id))!.invitesEnabled).toBe(true);
+    const off = (await (await create({ name: "Flat" })).json()) as { id: string };
+    expect((await h.db.findLedger(off.id))!.invitesEnabled).toBe(false);
+  });
+
+  it("reports the flag on GET so the client can render the toggle", async () => {
+    await patch({ invitesEnabled: true });
+    const body = (await (await app.request(req(h, "/api/ledgers/L1"))).json()) as { invitesEnabled: boolean };
+    expect(body.invitesEnabled).toBe(true);
+  });
+
+  it("kills an already-open invite when the flag is turned back off", async () => {
+    await patch({ invitesEnabled: true });
+    const { token } = (await (await mint()).json()) as { token: string };
+    await patch({ invitesEnabled: false });
+    // The token is a bearer credential: opting out has to reach the links
+    // already handed out, not just stop new ones.
+    const accept = await app.request(req(h, `/api/invites/${token}/accept`, { method: "POST", json: {} }));
+    expect(accept.status).toBe(400);
+  });
+
+  it("refuses a caller who is not a member of the ledger", async () => {
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = ?").run(Date.now(), "n_ada");
+    expect((await mint("L2")).status).toBe(403);
+  });
+});
+
 describe("GET /ledgers/:ledgerId/addable-users", () => {
   const addable = async () =>
     (await (await app.request(req(h, "/api/ledgers/L1/addable-users"))).json()) as Array<Record<string, unknown>>;

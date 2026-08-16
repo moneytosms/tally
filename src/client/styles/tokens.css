@@ -184,6 +184,33 @@
   --grain-blend: screen;
 }
 
+/* Dark, warm ember. The third dark palette, and the one that inverts the
+   semantic pair the way "sakura" does in the light set: amber carries moss,
+   a muted teal carries clay. Amber sits well above the teal in luminance, so
+   the pair still separates in greyscale rather than by hue alone. */
+[data-theme="ember"] {
+  --paper: #17120f;
+  --paper-2: #1f1815;
+  --paper-sunk: #110d0b;
+
+  --line: #2f2621;
+  --line-2: #40342c;
+
+  --ink: #f0e7dd;
+  --ink-2: #b3a496;
+  --ink-3: #857769;
+
+  --moss: #e0a355;
+  --moss-2: #eab873;
+  --moss-wash: #2a1f14;
+  --clay: #6f9c95;
+  --clay-wash: #1a2624;
+  --ochre: #c98b5e;
+
+  --grain-opacity: 0.10;
+  --grain-blend: screen;
+}
+
 /* The app is a fixed frame, never a scrolling page. Without an explicit height
    chain the document itself scrolls on Android Chrome as the URL bar hides and
    shows, which pushes the tab bar off-screen. Scrolling belongs to <main>. */

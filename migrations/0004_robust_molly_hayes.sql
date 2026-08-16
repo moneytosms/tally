@@ -1,0 +1,1 @@
+ALTER TABLE `ledgers` ADD `invites_enabled` integer DEFAULT false NOT NULL;

@@ -16,6 +16,7 @@ import type {
   CreateLedger,
   CreateSeries,
   CreateSettlement,
+  UpdateLedger,
   UpdateProfile,
 } from "~/shared/schemas";
 
@@ -38,6 +39,8 @@ export type LedgerSummary = {
   endDate: number | null;
   budget: Paise | null;
   archivedAt: number | null;
+  /** Whether this ledger may mint invite links at all (ADR 0007). Off by default. */
+  invitesEnabled: boolean;
   memberCount: number;
   /** viewer's net position in this ledger. positive = is owed */
   net: Paise;
@@ -312,6 +315,78 @@ export function useCreateLedger() {
   });
 }
 
+/** Rename, end date, budget, invite switch. The response is the whole summary,
+ *  so it seeds the detail cache rather than triggering a second round-trip. */
+export function useUpdateLedger(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: UpdateLedger) =>
+      api<LedgerSummary>(`/api/ledgers/${ledgerId}`, { method: "PATCH", body: JSON.stringify(body) }),
+    onSuccess: (ledger) => {
+      qc.setQueryData(qk.ledger(ledgerId), ledger);
+      qc.invalidateQueries({ queryKey: qk.ledgers });
+    },
+  });
+}
+
+/** Archive and reopen are one hook because they are one route shape and one
+ *  result. Archive is refused (409 `not_settled`) while any net position is
+ *  non-zero - the caller shows that, it is never pre-judged here. */
+export function useLedgerLifecycle(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (action: "archive" | "reopen") =>
+      api<LedgerSummary>(`/api/ledgers/${ledgerId}/${action}`, { method: "POST" }),
+    onSuccess: (ledger) => {
+      qc.setQueryData(qk.ledger(ledgerId), ledger);
+      qc.invalidateQueries({ queryKey: qk.ledgers });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
+    },
+  });
+}
+
+/** Soft-delete, and only the creator may. Everything derived from the ledger
+ *  list goes stale, including the cross-ledger balances it fed. */
+export function useDeleteLedger(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ ok: true }>(`/api/ledgers/${ledgerId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.ledgers });
+      qc.invalidateQueries({ queryKey: qk.crossLedger });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
+    },
+  });
+}
+
+/** Blocked server-side while the leaver's net position is non-zero. */
+export function useLeaveLedger(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ ok: true }>(`/api/ledgers/${ledgerId}/leave`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.members(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.ledgers });
+      qc.invalidateQueries({ queryKey: qk.crossLedger });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
+    },
+  });
+}
+
+/** Owner-only. A guest is a member row with no user id - data, never a
+ *  principal, so nothing here issues a session. */
+export function useAddGuest(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (guestName: string) =>
+      api<Member>(`/api/ledgers/${ledgerId}/guests`, { method: "POST", body: JSON.stringify({ guestName }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.members(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.ledger(ledgerId) });
+    },
+  });
+}
+
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
@@ -417,6 +492,23 @@ export function useUndoExpense(ledgerId: string) {
     mutationFn: (expenseId: string) =>
       api<Expense>(`/api/ledgers/${ledgerId}/expenses/${expenseId}/undo`, { method: "POST" }),
     onSettled: (_d, _e, expenseId) => {
+      invalidateLedger(qc, ledgerId);
+      qc.invalidateQueries({ queryKey: qk.revisions(expenseId) });
+    },
+  });
+}
+
+/** Restores ONE named revision, not merely the latest. A restore rewrites money,
+ *  so it invalidates exactly what undo does - balances are derived and must be
+ *  refetched, never patched from the response. */
+export function useRestoreRevision(ledgerId: string, expenseId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (revisionId: string) =>
+      api<Expense>(`/api/ledgers/${ledgerId}/expenses/${expenseId}/revisions/${revisionId}/restore`, {
+        method: "POST",
+      }),
+    onSettled: () => {
       invalidateLedger(qc, ledgerId);
       qc.invalidateQueries({ queryKey: qk.revisions(expenseId) });
     },

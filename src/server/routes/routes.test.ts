@@ -281,7 +281,10 @@ describe("ledgers", () => {
     const { env, db } = setup();
     const a = await signIn(db, "Ada");
     const b = await signIn(db, "Bob");
-    const created = (await (await post(env, "/api/ledgers", { name: "Goa" }, a.cookie)).json()) as { id: string };
+    // invitesEnabled is opt-in (ADR 0007) - a ledger with it off can mint nothing.
+    const created = (await (
+      await post(env, "/api/ledgers", { name: "Goa", invitesEnabled: true }, a.cookie)
+    ).json()) as { id: string };
 
     const invite = (await (
       await post(env, `/api/ledgers/${created.id}/invites`, {}, a.cookie)

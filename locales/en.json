@@ -77,7 +77,34 @@
     "inviteHint": "Single use, expires in 48 hours. Anyone with this link joins as themselves, so send it to one person over a private channel.",
     "netPosition": "net position",
     "cloneFrom": "Add the same people as",
-    "cloneNone": "Nobody yet, I'll invite them"
+    "cloneNone": "Nobody yet, I'll invite them",
+    "menu": {
+      "open": "Ledger options",
+      "edit": "Edit details",
+      "members": "Members",
+      "invite": "Invite link",
+      "archive": "Archive",
+      "reopen": "Reopen",
+      "delete": "Delete"
+    },
+    "endDateOptional": "End date (optional)",
+    "endDateHint": "Set a date for something that ends, like a trip. Leave it empty for a ledger that just keeps running.",
+    "endDateInvalid": "That isn't a date.",
+    "budgetHint": "Only means anything alongside an end date: tally divides what's left by the days remaining.",
+    "saved": "Saved.",
+    "saveFailed": "Could not save the changes.",
+    "invitesEnabled": "Allow invite links",
+    "invitesOnHint": "On. Any member can create a single-use link that admits one new person straight into this ledger.",
+    "invitesOffHint": "Off. Nobody can create a link to this ledger. That suits a ledger whose people settled long ago; turn it on for a trip, where someone new is always being added.",
+    "invitesRevival": "Turning this off immediately kills every link already handed out. Turning it back on revives the ones that haven't expired yet, so a leaked link is not made safe this way - ask the owner to revoke it in the admin panel.",
+    "invitesToggleFailed": "Could not change the invite setting.",
+    "invitesCreateHint": "Not permanent - change it any time from the ledger's ⋯ menu.",
+    "archiveConfirm": "Archive this ledger? It becomes read-only, and any member can reopen it later.",
+    "archiveBlocked": "Settle up first - archiving needs every net position at zero.",
+    "archiveFailed": "Could not archive this ledger.",
+    "deleteConfirm": "Delete {name}? It disappears for everyone in it.",
+    "deleteBlocked": "Only whoever created this ledger can delete it.",
+    "deleteFailed": "Could not delete this ledger."
   },
   "member": {
     "guest": "guest",
@@ -88,7 +115,18 @@
     "addExistingAction": "Add",
     "addExistingDone": "{name} added.",
     "addExistingFailed": "Could not add them.",
-    "pick": "Pick a person"
+    "pick": "Pick a person",
+    "addGuest": "Add a guest",
+    "addGuestName": "Name",
+    "addGuestAction": "Add",
+    "addGuestHint": "A guest splits and can pay, but never signs in - the owner looks after them.",
+    "addGuestDone": "{name} added.",
+    "addGuestFailed": "Could not add the guest.",
+    "leave": "Leave this ledger",
+    "leaveHint": "You can only leave once your net position is zero. Settle up, or have someone forgive what's outstanding.",
+    "leaveConfirm": "Leave this ledger? Your past expenses stay exactly where they are.",
+    "leaveBlocked": "Your net position isn't zero yet, so you can't leave.",
+    "leaveFailed": "Could not leave this ledger."
   },
   "expense": {
     "add": "Add expense",
@@ -155,6 +193,18 @@
     "undo": "Undo this edit",
     "undone": "Edit undone.",
     "undoFailed": "Could not undo that edit.",
+    "historyHint": "Each entry is how this expense looked before that edit. Restoring one puts it back.",
+    "historyTotal": "total then",
+    "diffNone": "Same as it is now",
+    "diff": {
+      "total": "Different total",
+      "payer": "Paid by {name}",
+      "splits": "Different split"
+    },
+    "restore": "Restore",
+    "restoreConfirm": "Restore \"{description}\"? It rewrites the amount and the split, and every balance follows. This is itself recorded here, so you can come back.",
+    "restored": "Version restored.",
+    "restoreFailed": "Could not restore that version.",
     "deleted": "Expense deleted.",
     "comments": "Comments",
     "commentPlaceholder": "Add a comment",
@@ -263,7 +313,10 @@
     "themeDark": "Dark",
     "themeSakura": "Sakura",
     "themeOcean": "Ocean",
-    "themeMidnight": "Midnight"
+    "themeMidnight": "Midnight",
+    "themeEmber": "Ember",
+    "themeLight": "Light",
+    "themeDarkGroup": "Dark"
   },
   "onboarding": {
     "title": "tally",

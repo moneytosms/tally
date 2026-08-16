@@ -1,8 +1,12 @@
 // Theme is a device preference, not account state - it lives in localStorage and
 // never syncs. Kept free of React so index.html can apply it before first paint.
-export type Theme = "system" | "paper" | "dark" | "sakura" | "ocean" | "midnight";
+export type Theme = "system" | "paper" | "sakura" | "ocean" | "dark" | "midnight" | "ember";
 
-export const THEMES: Theme[] = ["system", "paper", "dark", "sakura", "ocean", "midnight"];
+/** Grouped light-then-dark, which is the order the picker renders them in. */
+export const LIGHT_THEMES: Theme[] = ["paper", "sakura", "ocean"];
+export const DARK_THEMES: Theme[] = ["dark", "midnight", "ember"];
+
+export const THEMES: Theme[] = ["system", ...LIGHT_THEMES, ...DARK_THEMES];
 
 const KEY = "tally-theme";
 

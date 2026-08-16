@@ -27,6 +27,28 @@ export function createDb(d1: D1Database) {
   const liveMember = (ledgerId: string) =>
     and(eq(t.ledgerMembers.ledgerId, ledgerId), isNull(t.ledgerMembers.leftAt), isNull(t.ledgerMembers.deletedAt));
 
+  /**
+   * "This invite could be redeemed right now." Assumes the query has LEFT JOINed
+   * `ledgers` on `invites.ledger_id`.
+   *
+   * The `invites_enabled` clause is why disabling invites on a ledger kills the
+   * links already out there rather than only stopping new ones: an open invite is
+   * a bearer credential, and leaving one live on a ledger that just opted out is
+   * the failure the toggle exists to prevent. The rows are kept, not revoked, so
+   * turning the toggle back on restores them for whatever TTL they have left.
+   * An instance invite (ledgerId null) has no ledger and is unaffected.
+   */
+  const redeemable = (now: number) =>
+    and(
+      isNull(t.invites.consumedAt),
+      isNull(t.invites.revokedAt),
+      gt(t.invites.expiresAt, now),
+      or(
+        isNull(t.invites.ledgerId),
+        and(isNull(t.ledgers.deletedAt), eq(t.ledgers.invitesEnabled, true)),
+      ),
+    );
+
   return {
     /** Run several statements atomically. D1 has no cross-request transaction. */
     batch: <U extends BatchItem<"sqlite">, T extends Readonly<[U, ...U[]]>>(stmts: T) => db.batch(stmts),
@@ -184,15 +206,7 @@ export function createDb(d1: D1Database) {
         .select({ invite: t.invites, ledger: t.ledgers })
         .from(t.invites)
         .leftJoin(t.ledgers, eq(t.ledgers.id, t.invites.ledgerId))
-        .where(
-          and(
-            eq(t.invites.tokenHash, tokenHash),
-            isNull(t.invites.consumedAt),
-            isNull(t.invites.revokedAt),
-            gt(t.invites.expiresAt, now),
-            or(isNull(t.invites.ledgerId), isNull(t.ledgers.deletedAt)),
-          ),
-        )
+        .where(and(eq(t.invites.tokenHash, tokenHash), redeemable(now)))
         .limit(1);
       return row;
     },
@@ -213,14 +227,7 @@ export function createDb(d1: D1Database) {
         .select({ invite: t.invites, ledger: t.ledgers })
         .from(t.invites)
         .leftJoin(t.ledgers, eq(t.ledgers.id, t.invites.ledgerId))
-        .where(
-          and(
-            isNull(t.invites.consumedAt),
-            isNull(t.invites.revokedAt),
-            gt(t.invites.expiresAt, now),
-            or(isNull(t.invites.ledgerId), isNull(t.ledgers.deletedAt)),
-          ),
-        )
+        .where(redeemable(now))
         .orderBy(desc(t.invites.createdAt));
     },
     insertInvite: (v: Insert<typeof t.invites>) => db.insert(t.invites).values(v),
@@ -382,6 +389,16 @@ export function createDb(d1: D1Database) {
         .from(t.expenseRevisions)
         .where(eq(t.expenseRevisions.expenseId, expenseId))
         .orderBy(desc(t.expenseRevisions.revisedAt));
+    },
+    /** One revision, scoped to its expense - the expense id is part of the lookup
+     *  so a revision id from another expense cannot be restored onto this one. */
+    async findRevision(expenseId: string, revisionId: string) {
+      const [row] = await db
+        .select()
+        .from(t.expenseRevisions)
+        .where(and(eq(t.expenseRevisions.id, revisionId), eq(t.expenseRevisions.expenseId, expenseId)))
+        .limit(1);
+      return row;
     },
 
     // ---- settlements -----------------------------------------------------

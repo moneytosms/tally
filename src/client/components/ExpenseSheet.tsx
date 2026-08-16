@@ -1,4 +1,4 @@
-// Expense detail sheet: read-only detail + comments + edit history/undo + delete.
+// Expense detail sheet: read-only detail + comments + edit history/restore + delete.
 // Opened by tapping an expense row in LedgerDetail.
 import { useState } from "react";
 import { Link } from "react-router";
@@ -10,10 +10,11 @@ import {
   useDeleteComment,
   useDeleteExpense,
   useMe,
+  useRestoreRevision,
   useRevisions,
-  useUndoExpense,
   type Expense,
   type Member,
+  type Revision,
 } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
 
@@ -21,6 +22,51 @@ const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short
 const timeFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
 const nameOf = (members: Member[], id: string) => members.find((m) => m.id === id)?.nickname ?? t("member.unknown");
+
+/** What restoring a revision would actually change. A revision row is a whole
+ *  prior expense, and "Edited by Asha" alone never said whether pressing restore
+ *  moves money - this does. */
+export type RevisionChange = "total" | "payer" | "splits";
+
+/** Amount-per-member, order-independent: stable order matters to rounding, not to
+ *  whether two splits are the same money. */
+const splitKey = (splits: Expense["splits"]) =>
+  splits
+    .map((s) => `${s.memberId}:${s.amount}`)
+    .sort()
+    .join("|");
+
+export function revisionDiff(
+  snapshot: Pick<Expense, "total" | "payerMemberId" | "splits">,
+  current: Pick<Expense, "total" | "payerMemberId" | "splits">,
+): RevisionChange[] {
+  const changes: RevisionChange[] = [];
+  if (snapshot.total !== current.total) changes.push("total");
+  if (snapshot.payerMemberId !== current.payerMemberId) changes.push("payer");
+  if (splitKey(snapshot.splits) !== splitKey(current.splits)) changes.push("splits");
+  return changes;
+}
+
+/** Same shape as the confirm dialogs in AdminPanel and LedgerMenu: alertdialog,
+ *  modal, cancel first so the money-rewriting button is never the one under a
+ *  stray tap. Native confirm() blocks the whole tab and cannot be styled. */
+function ConfirmDialog({ message, onCancel, onConfirm }: { message: string; onCancel: () => void; onConfirm: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
+      <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+        <p className="mb-3 text-[14px]">{message}</p>
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onCancel}>
+            {t("action.cancel")}
+          </Button>
+          <Button variant="danger" onClick={onConfirm}>
+            {t("action.confirm")}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -51,8 +97,9 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
   const [commentText, setCommentText] = useState("");
 
   const revisions = useRevisions(ledgerId, expense.id);
-  const undoExpense = useUndoExpense(ledgerId);
-  const [undoStatus, setUndoStatus] = useState<string | null>(null);
+  const restoreRevision = useRestoreRevision(ledgerId, expense.id);
+  const [confirmingRestore, setConfirmingRestore] = useState<Revision | null>(null);
+  const [restoreStatus, setRestoreStatus] = useState<string | null>(null);
 
   const deleteExpense = useDeleteExpense(ledgerId);
 
@@ -71,12 +118,11 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
     deleteComment.mutate(commentId);
   };
 
-  const handleUndo = () => {
-    if (!confirm(`${t("expense.undo")}?`)) return;
-    setUndoStatus(null);
-    undoExpense.mutate(expense.id, {
-      onSuccess: () => setUndoStatus(t("expense.undone")),
-      onError: () => setUndoStatus(t("expense.undoFailed")),
+  const handleRestore = (revisionId: string) => {
+    setRestoreStatus(null);
+    restoreRevision.mutate(revisionId, {
+      onSuccess: () => setRestoreStatus(t("expense.restored")),
+      onError: () => setRestoreStatus(t("expense.restoreFailed")),
     });
   };
 
@@ -86,7 +132,6 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
   };
 
   const sortedComments = [...(comments.data ?? [])].sort((a, b) => a.createdAt - b.createdAt);
-  const hasRevisions = (revisions.data ?? []).length > 0;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange} title={expense.description}>
@@ -171,7 +216,7 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
         </Button>
       </div>
 
-      {/* ---------- history + undo ---------- */}
+      {/* ---------- history + restore ---------- */}
       <details className="mb-6">
         <summary className={`inline-flex min-h-11 cursor-pointer list-none items-center text-[13px] underline ${focusRing}`} style={{ color: "var(--ink-3)" }}>
           {t("expense.history")}
@@ -186,22 +231,68 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
           </p>
         ) : (
           <>
-            <ul className="mt-1 mb-2">
-              {(revisions.data ?? []).map((r) => (
-                <li key={r.id} className="border-b py-1.5 text-[12.5px] last:border-b-0" style={{ borderColor: "var(--line)" }}>
-                  {t("expense.editedBy", { name: r.revisedByName })} · {timeFmt.format(r.revisedAt)}
-                </li>
-              ))}
+            {/* The newest revision IS what undo used to restore, so a per-row
+                restore makes a separate "undo last edit" button a second name for
+                the first row's button. One affordance, no ambiguity. */}
+            <p className="mt-1 mb-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+              {t("expense.historyHint")}
+            </p>
+            <ul className="mb-2">
+              {(revisions.data ?? []).map((r) => {
+                const changes = revisionDiff(r.snapshot, expense);
+                return (
+                  <li key={r.id} className="border-b py-2 last:border-b-0" style={{ borderColor: "var(--line)" }}>
+                    <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                      {t("expense.editedBy", { name: r.revisedByName })} · {timeFmt.format(r.revisedAt)}
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-3">
+                      <span className="min-w-0 flex-1 truncate text-[13.5px]">{r.snapshot.description}</span>
+                      <Amount paise={r.snapshot.total} label={t("expense.historyTotal")} tone="neutral" />
+                    </div>
+                    <div className="mt-1 flex items-center justify-between gap-3">
+                      <span className="min-w-0 flex-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                        {changes.length === 0
+                          ? t("expense.diffNone")
+                          : changes
+                              .map((c) =>
+                                c === "payer"
+                                  ? t("expense.diff.payer", { name: nameOf(members, r.snapshot.payerMemberId) })
+                                  : t(`expense.diff.${c}`),
+                              )
+                              .join(" · ")}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="flex-none"
+                        disabled={restoreRevision.isPending}
+                        onClick={() => setConfirmingRestore(r)}
+                      >
+                        {t("expense.restore")}
+                      </Button>
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
-            <Button size="sm" variant="ghost" onClick={handleUndo} disabled={!hasRevisions || undoExpense.isPending}>
-              {t("expense.undo")}
-            </Button>
             <p role="status" aria-live="polite" className="mt-1.5 text-[12px]" style={{ color: "var(--ink-3)" }}>
-              {undoStatus}
+              {restoreStatus}
             </p>
           </>
         )}
       </details>
+
+      {confirmingRestore && (
+        <ConfirmDialog
+          message={t("expense.restoreConfirm", { description: confirmingRestore.snapshot.description })}
+          onCancel={() => setConfirmingRestore(null)}
+          onConfirm={() => {
+            const revisionId = confirmingRestore.id;
+            setConfirmingRestore(null);
+            handleRestore(revisionId);
+          }}
+        />
+      )}
 
       {/* ---------- edit ---------- */}
       {/* The only way into the editor: the row itself opens this sheet, and a

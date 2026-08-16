@@ -14,6 +14,10 @@ export const createLedgerSchema = z.object({
   name,
   endDate: epochMs.nullable().default(null),
   budget: paise.positive().nullable().default(null),
+  /** Invite links are opt-in per ledger (ADR 0007). Optional rather than
+   *  defaulted so an old client that has never heard of the flag still parses;
+   *  omitted means off, which is the safe direction for a bearer credential. */
+  invitesEnabled: z.boolean().optional(),
   /** Copy the members of a ledger the caller is already in (SPEC §8). Not a
    *  ledger column - the server turns it into member rows and drops it. */
   cloneFrom: id.nullable().default(null),

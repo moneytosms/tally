@@ -4,7 +4,7 @@
 // so nothing here can drift out of sync with the server's idea of a ledger.
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
-import { Button, Field, Input, Rupees, Select } from "~/client/components/ui";
+import { Button, Field, Input, Rupees, Select, focusRing } from "~/client/components/ui";
 import { rupeesToPaise } from "~/client/components/SplitEditor";
 import { useCreateLedger, useLedgers } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
@@ -14,6 +14,12 @@ export type LedgerKind = "trip" | "group" | "pair";
 /** End of the chosen day in LOCAL time - a trip ending "on the 5th" includes
  *  the 5th. Mirrors the local-day rule ExpenseForm uses for paidAt. */
 const endOfLocalDay = (yyyymmdd: string) => new Date(`${yyyymmdd}T23:59:59`).getTime();
+
+/** Invites are off by default server-side (ADR 0007), which is right for a
+ *  standing group - its roster settled long ago and is filled from accounts that
+ *  already exist. A trip or a new pair regularly needs someone who has no account
+ *  yet, so leaving those off makes the very next step a settings hunt. */
+export const invitesDefaultFor = (kind: LedgerKind) => kind !== "group";
 
 export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => void }) {
   const create = useCreateLedger();
@@ -26,6 +32,7 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
   const cloneable = (ledgers.data ?? []).filter((l) => l.memberCount > 1);
   const [endDate, setEndDate] = useState("");
   const [budgetRaw, setBudgetRaw] = useState("");
+  const [invitesEnabled, setInvitesEnabled] = useState(() => invitesDefaultFor(kind));
   const [failure, setFailure] = useState("");
 
   const onSubmit = (e: FormEvent) => {
@@ -52,6 +59,7 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
         endDate: kind === "trip" && endDate !== "" ? endOfLocalDay(endDate) : null,
         budget,
         cloneFrom: cloneFrom === "" ? null : cloneFrom,
+        invitesEnabled,
       },
       {
         onSuccess: (ledger) => {
@@ -101,6 +109,26 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
           </Select>
         </Field>
       )}
+
+      {/* An invite is a bearer credential, so this is a decision, not a default to
+          inherit silently (ADR 0007). Same label and same on/off copy as the
+          ledger's ⋯ menu - one switch, described one way. */}
+      <label className="mb-1.5 flex items-center gap-2.5 text-[14px]">
+        <input
+          type="checkbox"
+          checked={invitesEnabled}
+          onChange={(e) => setInvitesEnabled(e.target.checked)}
+          className={`h-4 w-4 ${focusRing}`}
+          style={{ accentColor: "var(--moss)" }}
+        />
+        {t("ledger.invitesEnabled")}
+      </label>
+      <p className="mb-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        {t(invitesEnabled ? "ledger.invitesOnHint" : "ledger.invitesOffHint")}
+      </p>
+      <p className="mb-3 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        {t("ledger.invitesCreateHint")}
+      </p>
 
       {/* One hint, not two saying overlapping things. */}
       <p className="mb-3 text-[11.5px]" style={{ color: "var(--ink-3)" }}>

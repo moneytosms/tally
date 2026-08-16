@@ -116,6 +116,10 @@ export const ledgers = sqliteTable("ledgers", {
   name: text("name").notNull(),
   endDate: integer("end_date"), // set => trip with burn-rate
   budget: integer("budget"), // paise, set => budget tracking
+  // Opt-in per ledger: an invite link is a bearer credential, so a long-standing
+  // group has none and a trip turns them on. Default FALSE, which is also what
+  // every pre-existing ledger gets - nothing keeps an invite path it never chose.
+  invitesEnabled: integer("invites_enabled", { mode: "boolean" }).notNull().default(false),
   createdBy: text("created_by")
     .notNull()
     .references(() => users.id),

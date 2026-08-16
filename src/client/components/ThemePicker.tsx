@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { focusRing } from "~/client/components/ui/focus";
+import { Select } from "~/client/components/ui";
 import { t } from "~/client/i18n";
-import { getTheme, setTheme, THEMES, type Theme } from "~/client/lib/theme";
+import { DARK_THEMES, getTheme, LIGHT_THEMES, setTheme, type Theme } from "~/client/lib/theme";
 
 const LABEL: Record<Theme, string> = {
   system: "profile.themeSystem",
   paper: "profile.themePaper",
-  dark: "profile.themeDark",
   sakura: "profile.themeSakura",
   ocean: "profile.themeOcean",
+  dark: "profile.themeDark",
   midnight: "profile.themeMidnight",
+  ember: "profile.themeEmber",
 };
 
 // The swatch carries the theme's own data-theme, so the dots read that palette's
@@ -28,29 +29,37 @@ function Swatch({ theme }: { theme: Theme }) {
 export function ThemePicker() {
   const [theme, setCurrent] = useState<Theme>(getTheme);
 
-  function choose(next: Theme) {
-    setTheme(next);
-    setCurrent(next);
-  }
-
   return (
     <div className="rounded-[7px] border px-3.5 py-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
-      <div role="radiogroup" aria-label={t("profile.theme")}>
-        {THEMES.map((id) => (
-          <label key={id} className="flex min-h-11 cursor-pointer items-center gap-3 text-[13px]">
-            <input
-              type="radio"
-              name="tally-theme"
-              value={id}
-              checked={theme === id}
-              onChange={() => choose(id)}
-              className={`size-4 flex-none ${focusRing}`}
-              style={{ accentColor: "var(--moss)" }}
-            />
-            <Swatch theme={id} />
-            <span>{t(LABEL[id])}</span>
-          </label>
-        ))}
+      <div className="flex items-center gap-3">
+        {/* A native <select> cannot render a swatch per option, so the preview
+            sits beside it and follows the selection. */}
+        <Swatch theme={theme} />
+        <Select
+          aria-label={t("profile.theme")}
+          value={theme}
+          onChange={(e) => {
+            const next = e.target.value as Theme;
+            setTheme(next);
+            setCurrent(next);
+          }}
+        >
+          <option value="system">{t(LABEL.system)}</option>
+          <optgroup label={t("profile.themeLight")}>
+            {LIGHT_THEMES.map((id) => (
+              <option key={id} value={id}>
+                {t(LABEL[id])}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label={t("profile.themeDarkGroup")}>
+            {DARK_THEMES.map((id) => (
+              <option key={id} value={id}>
+                {t(LABEL[id])}
+              </option>
+            ))}
+          </optgroup>
+        </Select>
       </div>
       <p className="mt-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
         {t("profile.themeHint")}
