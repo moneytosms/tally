@@ -171,6 +171,27 @@ describe("auth", () => {
     });
     expect(res.status).toBe(403);
   });
+
+  it("logout ends the caller's own session and clears the cookie", async () => {
+    const { env, db } = setup();
+    const user = await signIn(db, "Ada");
+
+    // The session resolves before logout.
+    expect((await get(env, "/api/me", user.cookie)).status).toBe(200);
+
+    const res = await post(env, "/api/auth/logout", undefined, user.cookie);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("set-cookie")).toContain(`${SESSION_COOKIE}=;`);
+
+    // Same cookie no longer resolves to anyone.
+    expect((await get(env, "/api/me", user.cookie)).status).toBe(401);
+  });
+
+  it("logout with no session cookie is a harmless no-op", async () => {
+    const { env } = setup();
+    const res = await post(env, "/api/auth/logout");
+    expect(res.status).toBe(200);
+  });
 });
 
 describe("authorisation", () => {
@@ -360,6 +381,30 @@ describe("account recovery", () => {
     const ok = await del(env, `/api/admin/users/${member.id}/credentials/${only.id}`, cookie);
     expect(ok.status).toBe(200);
     expect(await db.listCredentials(member.id)).toHaveLength(1);
+  });
+
+  it("self-revoke succeeds once a second credential exists, and refuses someone else's", async () => {
+    const { env, db } = setup();
+    const { member } = await ownerAnd(db, "Ada");
+    const other = await signIn(db, "Bob");
+    await addCredential(db, member.id, "device-one");
+    await addCredential(db, member.id, "device-two");
+    const [first, second] = await db.listCredentials(member.id);
+    if (!first || !second) throw new Error("fixture: expected two credentials");
+
+    // Another account cannot revoke a credential that is not its own.
+    const wrongOwner = await del(env, `/api/me/devices/${first.id}`, other.cookie);
+    expect(wrongOwner.status).toBe(404);
+    expect(await db.listCredentials(member.id)).toHaveLength(2);
+
+    const res = await del(env, `/api/me/devices/${first.id}`, member.cookie);
+    expect(res.status).toBe(200);
+    const remaining = await db.listCredentials(member.id);
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0]!.id).toBe(second.id);
+
+    // The last remaining one is still refused.
+    expect((await del(env, `/api/me/devices/${second.id}`, member.cookie)).status).toBe(409);
   });
 
   it("a recovery token re-enrols the SAME user and never creates a second one", async () => {

@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { startRegistration } from "@simplewebauthn/browser";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, EmptyState, Field, Input, ScreenSkeleton } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import { api } from "~/client/lib/api";
-import { qk, useLedgers, useMe, useUpdateProfile } from "~/client/lib/queries";
+import { qk, useLedgers, useLogout, useMe, useRevokeOwnCredential, useUpdateProfile } from "~/client/lib/queries";
 import { currentPushState, disablePush, enablePush, type PushState } from "~/client/lib/push";
 import { PasswordSection } from "~/client/components/PasswordSection";
 import { ThemePicker } from "~/client/components/ThemePicker";
@@ -97,6 +97,108 @@ function AddPasskey({ displayName }: { displayName: string }) {
   );
 }
 
+/** Self-service revoke of one of the caller's own passkeys. Disabled on the
+ *  last remaining one - the server refuses that too (409, `last_credential`),
+ *  but disabling here means the confirm dialog never even offers it. */
+function RevokeCredential({ credentialId, disabled }: { credentialId: string; disabled: boolean }) {
+  const revoke = useRevokeOwnCredential();
+  const [confirming, setConfirming] = useState(false);
+  const [done, setDone] = useState(false);
+
+  if (done) {
+    return (
+      <span role="status" className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        {t("profile.revoked")}
+      </span>
+    );
+  }
+
+  return (
+    <>
+      <Button
+        variant="danger"
+        size="sm"
+        disabled={disabled || revoke.isPending}
+        onClick={() => setConfirming(true)}
+      >
+        {t("profile.revoke")}
+      </Button>
+      {revoke.isError && (
+        <span role="alert" className="text-[11.5px]" style={{ color: "var(--clay)" }}>
+          {t("profile.revokeFailed")}
+        </span>
+      )}
+      {confirming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
+          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+            <p className="mb-3 text-[14px]">{t("profile.revokeConfirm")}</p>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setConfirming(false)}>
+                {t("action.cancel")}
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => {
+                  setConfirming(false);
+                  revoke.mutate(credentialId, { onSuccess: () => setDone(true) });
+                }}
+              >
+                {t("action.confirm")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Ends this session on this device. Every other passkey, the password and
+ *  every other session are untouched - this is the self-serve counterpart to
+ *  the owner's "sign out everywhere" emergency lever. */
+function SignOutSection() {
+  const logout = useLogout();
+  const navigate = useNavigate();
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <div className="rounded-[7px] border px-3.5 py-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <Button variant="danger" size="sm" disabled={logout.isPending} onClick={() => setConfirming(true)}>
+        {t("profile.signOut")}
+      </Button>
+      <p className="mt-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        {t("profile.signOutHint")}
+      </p>
+      {logout.isError && (
+        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+          {t("error.generic")}
+        </p>
+      )}
+      {confirming && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
+          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+            <p className="mb-3 text-[14px]">{t("profile.signOutConfirm")}</p>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setConfirming(false)}>
+                {t("action.cancel")}
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => {
+                  setConfirming(false);
+                  logout.mutate(undefined, { onSuccess: () => navigate("/welcome", { replace: true }) });
+                }}
+              >
+                {t("action.confirm")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 const Section = ({ title }: { title: string }) => (
   <div className="mx-0.5 mt-5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
     {title}
@@ -163,20 +265,28 @@ export function YouTab() {
           </p>
         ) : (
           me.data.credentials.map((c) => (
-            <div key={c.id} className="flex items-center justify-between gap-2 py-2 text-[13px]">
+            <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[13px]">
               <span className="truncate">
                 {t("profile.passkey")}{" "}
                 <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
                   {t("profile.passkeyAdded", { date: dayFormat.format(c.createdAt) })}
                 </span>
               </span>
-              <span className="tnum flex-none text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-                {c.lastUsedAt === null
-                  ? t("profile.passkeyNeverUsed")
-                  : t("profile.passkeyLastUsed", { date: dayFormat.format(c.lastUsedAt) })}
+              <span className="flex items-center gap-2">
+                <span className="tnum flex-none text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                  {c.lastUsedAt === null
+                    ? t("profile.passkeyNeverUsed")
+                    : t("profile.passkeyLastUsed", { date: dayFormat.format(c.lastUsedAt) })}
+                </span>
+                <RevokeCredential credentialId={c.id} disabled={me.data.credentials.length === 1} />
               </span>
             </div>
           ))
+        )}
+        {me.data.credentials.length === 1 && (
+          <p className="pb-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+            {t("profile.lastCredential")}
+          </p>
         )}
         <AddPasskey displayName={me.data.displayName} />
       </div>
@@ -235,6 +345,8 @@ export function YouTab() {
           </Link>
         </>
       )}
+
+      <SignOutSection />
     </>
   );
 }
