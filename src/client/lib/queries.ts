@@ -497,6 +497,24 @@ export function useRevokeCredential() {
   });
 }
 
+/** Owner-only emergency levers. Both end the user's live sessions, so the
+ *  panel's own view of them goes stale either way. */
+export function useSignOutUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => api<{ id: string }>(`/api/admin/users/${userId}/sessions`, { method: "DELETE" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.adminUsers }),
+  });
+}
+
+export function useClearPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) => api<{ id: string }>(`/api/admin/users/${userId}/password`, { method: "DELETE" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.adminUsers }),
+  });
+}
+
 export function useRevokeInvite() {
   const qc = useQueryClient();
   return useMutation({

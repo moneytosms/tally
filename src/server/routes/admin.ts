@@ -138,6 +138,38 @@ admin.post("/admin/users/:userId/recovery", async (c) => {
   return c.json({ token, expiresAt: now + RECOVERY_TTL_MS }, 201);
 });
 
+/**
+ * Emergency sign-out: drop every session for a user.
+ *
+ * The account keeps its passkeys, its password and its history - this only
+ * ends the live sessions, which is the lever for a lost or borrowed device.
+ * Self is allowed: signing your own other devices out is the common case.
+ */
+admin.delete("/admin/users/:userId/sessions", async (c) => {
+  const userId = c.req.param("userId");
+  if (!(await c.var.db.findUserById(userId))) return c.json({ error: "not found" }, 404);
+  await c.var.db.deleteSessionsForUser(userId);
+  return c.json({ id: userId });
+});
+
+/**
+ * Emergency password clear: forget the hash, end the sessions.
+ *
+ * For a password that leaked or was forgotten. Sessions go too, or the person
+ * holding the leaked password keeps the session it already bought them. The
+ * account is not locked out - passkeys still work, and the recovery route
+ * above covers the case where they have none.
+ */
+admin.delete("/admin/users/:userId/password", async (c) => {
+  const userId = c.req.param("userId");
+  if (!(await c.var.db.findUserById(userId))) return c.json({ error: "not found" }, 404);
+  await c.var.db.batch([
+    c.var.db.updateUser(userId, { passwordHash: null }),
+    c.var.db.deleteSessionsForUser(userId),
+  ]);
+  return c.json({ id: userId });
+});
+
 admin.get("/admin/ledgers", async (c) => {
   const ledgers = await c.var.db.listAllLedgers();
   const out = [];

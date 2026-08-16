@@ -9,6 +9,8 @@ import {
   useAdminInstance,
   useCreateRecovery,
   useRevokeCredential,
+  useSignOutUser,
+  useClearPassword,
   useRevokeInvite,
   useCategories,
   useSaveCategory,
@@ -106,6 +108,73 @@ function RecoveryRow({ userId }: { userId: string }) {
         <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
           {t("error.generic")}
         </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The two emergency levers, for a device that walked off or a password that
+ * leaked. Neither deletes anything: sign-out ends sessions, clear-password
+ * forgets the hash. Passkeys and history survive both, so the way back in is
+ * the recovery link above.
+ */
+function EmergencyRow({ userId, hasPassword }: { userId: string; hasPassword: boolean }) {
+  const signOut = useSignOutUser();
+  const clearPassword = useClearPassword();
+  // Clearing a password takes a real sign-in route away, so it confirms first.
+  const [confirmingClear, setConfirmingClear] = useState(false);
+
+  return (
+    <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button variant="ghost" size="sm" disabled={signOut.isPending} onClick={() => signOut.mutate(userId)}>
+          {t("admin.signOutUser")}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={clearPassword.isPending || !hasPassword}
+          onClick={() => setConfirmingClear(true)}
+        >
+          {t("admin.clearPassword")}
+        </Button>
+      </div>
+      <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        {t("admin.emergencyHint")}
+      </p>
+      {signOut.isSuccess && (
+        <p role="status" className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          {t("admin.signOutUserDone")}
+        </p>
+      )}
+      {clearPassword.isSuccess && (
+        <p role="status" className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          {t("admin.clearPasswordDone")}
+        </p>
+      )}
+      {(signOut.isError || clearPassword.isError) && (
+        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+          {t("error.generic")}
+        </p>
+      )}
+      {confirmingClear && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
+          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+            <p className="mb-3 text-[14px]">{t("admin.clearPasswordConfirm")}</p>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setConfirmingClear(false)}>
+                {t("action.cancel")}
+              </Button>
+              <Button
+                variant="danger"
+                onClick={() => (clearPassword.mutate(userId), setConfirmingClear(false))}
+              >
+                {t("action.confirm")}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -220,6 +289,7 @@ function PeopleSection() {
             )}
           </div>
           <RecoveryRow userId={u.id} />
+          <EmergencyRow userId={u.id} hasPassword={u.hasPassword} />
           {!u.isOwner && (
             <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
               <Button

@@ -481,7 +481,13 @@
     "deleteUserFailed": "Could not delete that account.",
     "hasPassword": "Password",
     "noPassword": "No password",
-    "noEmail": "No email"
+    "noEmail": "No email",
+    "signOutUser": "Sign out everywhere",
+    "signOutUserDone": "Signed out on every device.",
+    "clearPassword": "Clear password",
+    "clearPasswordConfirm": "Clear this password? They will need a passkey or a recovery link to get back in.",
+    "clearPasswordDone": "Password cleared.",
+    "emergencyHint": "For a lost device or a leaked password. Neither deletes anything: passkeys and expense history are untouched."
   },
   "activity": {
     "title": "Activity",

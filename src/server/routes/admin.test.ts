@@ -60,6 +60,36 @@ describe("POST /admin/invites", () => {
   });
 });
 
+describe("emergency levers", () => {
+  it("signs a user out of every device without touching the account", async () => {
+    const token = await createSession(h.db, "u_bob", Date.now());
+    expect(await h.db.findSessionByTokenHash(await sha256Hex(token), Date.now())).toBeDefined();
+
+    const res = await app.request(req(h, "/api/admin/users/u_bob/sessions", { method: "DELETE" }));
+    expect(res.status).toBe(200);
+    expect(await h.db.findSessionByTokenHash(await sha256Hex(token), Date.now())).toBeUndefined();
+    // Still a live account - sign-out is not deletion.
+    expect(await h.db.findUserById("u_bob")).toBeDefined();
+  });
+
+  it("clears a password and the sessions it bought", async () => {
+    await h.db.updateUser("u_bob", { email: "bob@example.com", passwordHash: "leaked-hash" });
+    const token = await createSession(h.db, "u_bob", Date.now());
+
+    const res = await app.request(req(h, "/api/admin/users/u_bob/password", { method: "DELETE" }));
+    expect(res.status).toBe(200);
+    expect((await h.db.findUserById("u_bob"))!.passwordHash).toBeNull();
+    expect(await h.db.findSessionByTokenHash(await sha256Hex(token), Date.now())).toBeUndefined();
+  });
+
+  it("rejects a non-owner", async () => {
+    const cookie = `${SESSION_COOKIE}=${await createSession(h.db, "u_bob", Date.now())}`;
+    for (const path of ["/api/admin/users/u_ada/sessions", "/api/admin/users/u_ada/password"]) {
+      expect((await app.request(req(h, path, { method: "DELETE", headers: { cookie } }))).status).toBe(403);
+    }
+  });
+});
+
 describe("DELETE /admin/users/:userId", () => {
   const del = (userId: string, cookie?: string) =>
     app.request(req(h, `/api/admin/users/${userId}`, { method: "DELETE", ...(cookie ? { headers: { cookie } } : {}) }));
