@@ -23,6 +23,7 @@ import { InstallPrompt } from "./components/InstallPrompt";
 const BalancesTab = lazy(() => import("./routes/BalancesTab"));
 const SettleUp = lazy(() => import("./routes/SettleUp"));
 const ExpenseForm = lazy(() => import("./routes/ExpenseForm"));
+const ExpenseEditor = lazy(() => import("./routes/ExpenseEditor"));
 const InsightsTab = lazy(() => import("./routes/InsightsTab"));
 const AdminPanel = lazy(() => import("./routes/AdminPanel"));
 const RecurringTab = lazy(() => import("./routes/RecurringTab"));
@@ -87,12 +88,16 @@ function Shell() {
 
   if (me.isPending) return null;
   if (me.error instanceof ApiError && me.error.status === 401) return <Navigate to="/welcome" replace />;
-  // Signed in with no credential means enrolment stopped half-way: register/options
+  // No passkey AND no password means enrolment stopped half-way: register/options
   // creates the account and the session, and the passkey ceremony then failed.
   // Letting that land here shows an empty app and hides the real problem - and
   // the session outlives the tab, so they never see the passkey step again.
   // /welcome is the recoverable place: the session alone gets them fresh options.
-  if (me.data && me.data.credentials.length === 0) return <Navigate to="/welcome" replace />;
+  // A password account with no passkey is complete, not half-finished - it must
+  // not be bounced, which is the whole reason hasPassword is in this condition.
+  if (me.data && me.data.credentials.length === 0 && !me.data.hasPassword) {
+    return <Navigate to="/welcome" replace />;
+  }
 
   return (
     <div className="paper-ground relative flex h-full flex-col overflow-hidden">
@@ -137,6 +142,9 @@ export function App() {
         <Route element={<Shell />}>
           <Route index element={<LedgersTab />} />
           <Route path="ledgers/:ledgerId" element={<LedgerDetail />} />
+          {/* Editing is a full screen, not the add sheet: it needs an expense
+              loaded from the server before anything can be shown. */}
+          <Route path="ledgers/:ledgerId/expenses/:expenseId" element={<ExpenseEditor />} />
           <Route path="ledgers/:ledgerId/settle" element={<SettleUp />} />
           <Route path="ledgers/:ledgerId/recurring" element={<RecurringTab />} />
           <Route path="ledgers/:ledgerId/activity" element={<ActivityTab />} />

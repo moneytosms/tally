@@ -26,6 +26,9 @@ export type Me = {
   displayName: string;
   vpa: string | null;
   isOwner: boolean;
+  /** Sign-in address. Null on accounts that only ever enrolled a passkey. */
+  email: string | null;
+  hasPassword: boolean;
   credentials: Array<{ id: string; createdAt: number; lastUsedAt: number | null }>;
 };
 
@@ -140,13 +143,17 @@ export type AdminUser = {
   displayName: string;
   isOwner: boolean;
   createdAt: number;
+  email: string | null;
+  hasPassword: boolean;
   credentials: Array<{ id: string; createdAt: number; lastUsedAt: number | null }>;
 };
 
+/** Both ledger fields are null on an INSTANCE invite - one that admits someone
+ *  to tally without putting them in any ledger. */
 export type AdminInvite = {
   id: string;
-  ledgerId: string;
-  ledgerName: string;
+  ledgerId: string | null;
+  ledgerName: string | null;
   createdAt: number;
   expiresAt: number;
 };

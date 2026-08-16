@@ -55,3 +55,62 @@ describe("POST /ledgers with cloneFrom", () => {
     expect(await h.db.listMembers(id)).toHaveLength(1);
   });
 });
+
+// Adding an existing user directly. Cy holds an account and is in L2 only, so
+// he is the one addable user for L1.
+describe("POST /ledgers/:ledgerId/members", () => {
+  const add = (json: object) => app.request(req(h, "/api/ledgers/L1/members", { method: "POST", json }));
+
+  it("adds an existing user as a real member, never a guest", async () => {
+    const res = await add({ userId: "u_cy" });
+    expect(res.status).toBe(201);
+    const cy = (await h.db.listMembers("L1")).find((m) => m.userId === "u_cy");
+    expect(cy?.guestName).toBeNull();
+  });
+
+  it("404s for a user that does not exist", async () => {
+    expect((await add({ userId: "u_nobody" })).status).toBe(404);
+    expect(await h.db.listMembers("L1")).toHaveLength(3);
+  });
+
+  it("409s when they are already a current member", async () => {
+    const res = await add({ userId: "u_bob" });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { code: string }).code).toBe("already_member");
+  });
+
+  it("makes someone who left current again, keeping their member row", async () => {
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = ?").run(Date.now(), "m_bob");
+    const res = await add({ userId: "u_bob" });
+    expect(res.status).toBe(201);
+    // The same member id: expenses reference members, so a new row would orphan
+    // Bob's share of everything already recorded.
+    expect(((await res.json()) as { id: string }).id).toBe("m_bob");
+    expect((await h.db.listMembers("L1")).some((m) => m.id === "m_bob")).toBe(true);
+  });
+
+  it("refuses a caller who is not a member of the ledger", async () => {
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = ?").run(Date.now(), "n_ada");
+    const res = await app.request(req(h, "/api/ledgers/L2/members", { method: "POST", json: { userId: "u_bob" } }));
+    expect(res.status).toBe(403);
+  });
+});
+
+describe("GET /ledgers/:ledgerId/addable-users", () => {
+  const addable = async () =>
+    (await (await app.request(req(h, "/api/ledgers/L1/addable-users"))).json()) as Array<Record<string, unknown>>;
+
+  it("lists only users who are not already current members", async () => {
+    expect((await addable()).map((u) => u.id)).toEqual(["u_cy"]);
+  });
+
+  it("never leaks a VPA - these people are not co-members yet", async () => {
+    const [cy] = await addable();
+    expect(cy).toEqual({ id: "u_cy", displayName: "Cy" });
+  });
+
+  it("offers someone who left the ledger again", async () => {
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = ?").run(Date.now(), "m_bob");
+    expect((await addable()).map((u) => u.id).sort()).toEqual(["u_bob", "u_cy"]);
+  });
+});

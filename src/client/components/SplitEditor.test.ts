@@ -104,7 +104,6 @@ const baseProps = {
   raw: {},
   onModeChange: () => {},
   onRawChange: () => {},
-  onRemove: () => {},
 };
 
 describe("<SplitEditor>", () => {
@@ -132,5 +131,31 @@ describe("<SplitEditor>", () => {
 
   it("says nothing about splits before an amount is typed", () => {
     expect(render({ ...baseProps, total: 0 })).not.toContain('role="alert"');
+  });
+
+  // ₹90.00 over three people divides exactly, so there is one number to say and
+  // the per-person list is noise. This is the collapse the add-expense screen
+  // leans on - if it ever fires on an UNEVEN split it would be showing a wrong
+  // number, which the next test is there to catch.
+  it("collapses an evenly-dividing equal split to a single per-head line", () => {
+    const html = render({ ...baseProps, total: 90_00 }); // ₹90.00
+    expect(html).toContain("₹30.00");
+    expect(html).toContain(t("expense.splitEvenly"));
+    // No list, so no per-person rows and nothing to explain about remainders.
+    expect(html).not.toContain("<ul");
+    expect(html).not.toContain(t("expense.remainderNote"));
+  });
+
+  it("refuses to collapse when the split does not divide exactly", () => {
+    // ₹100.00 over three is 33.34/33.33/33.33 - "₹33.33 each" would be a lie.
+    const html = render(baseProps);
+    expect(html).not.toContain(t("expense.splitEvenly"));
+    expect(html).toContain("<ul");
+    expect(html).toContain(t("expense.remainderNote"));
+  });
+
+  it("offers nothing to type in equal mode, even when the list is shown", () => {
+    expect(render(baseProps)).not.toContain("<input");
+    expect(render({ ...baseProps, mode: "exact" })).toContain("<input");
   });
 });

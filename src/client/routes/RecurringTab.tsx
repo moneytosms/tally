@@ -12,6 +12,7 @@ import {
   splitValues,
   type SplitParticipant,
 } from "~/client/components/SplitEditor";
+import { ParticipantPicker } from "~/client/components/ParticipantPicker";
 import { useCategories, useMembers, useSaveSeries, useSeries, useSeriesAction, type Series } from "~/client/lib/queries";
 import { ApiError } from "~/client/lib/api";
 import { t } from "~/client/i18n";
@@ -139,7 +140,6 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
     const m = byId.get(id);
     return m ? [{ memberId: id, name: m.nickname }] : [];
   });
-  const absent = roster.filter((m) => !participantIds.includes(m.id));
 
   const total = rupeesToPaise(amountRaw);
   const payerIndex = participants.findIndex((p) => p.memberId === payerId);
@@ -223,6 +223,19 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
         <Input value={notes} onChange={(e) => setNotes(e.target.value)} />
       </Field>
 
+      {/* Same picker as the expense form. A series splits between people exactly
+          the way a one-off does, so it must not have a second way of saying so. */}
+      <div className="mb-3">
+        <ParticipantPicker
+          members={roster.map((m) => ({ id: m.id, name: m.nickname }))}
+          selectedIds={participantIds}
+          onChange={(ids) => {
+            setParticipantIds(ids);
+            setRaw((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => ids.includes(id))));
+          }}
+        />
+      </div>
+
       <SplitEditor
         total={total ?? 0}
         mode={mode}
@@ -231,24 +244,7 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
         raw={raw}
         onModeChange={setMode}
         onRawChange={setRaw}
-        onRemove={(id) => setParticipantIds((ids) => ids.filter((x) => x !== id))}
       />
-
-      {absent.length > 0 && (
-        <Field label={t("expense.addParticipant")}>
-          <Select
-            value=""
-            onChange={(e) => e.target.value && setParticipantIds((ids) => [...ids, e.target.value])}
-          >
-            <option value="">{t("expense.addParticipantHint")}</option>
-            {absent.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.nickname}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      )}
 
       <div className="mb-3 flex items-end gap-2.5">
         <span className="flex-1">

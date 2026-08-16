@@ -7,6 +7,8 @@ import { focusRing } from "~/client/components/ui/focus";
 import { api } from "~/client/lib/api";
 import { qk, useLedgers, useMe, useUpdateProfile } from "~/client/lib/queries";
 import { currentPushState, disablePush, enablePush, type PushState } from "~/client/lib/push";
+import { PasswordSection } from "~/client/components/PasswordSection";
+import { ThemePicker } from "~/client/components/ThemePicker";
 import { t } from "~/client/i18n";
 
 // One date format for the whole app: en-IN, day first. Never toLocaleDateString
@@ -178,6 +180,12 @@ export function YouTab() {
         )}
         <AddPasskey displayName={me.data.displayName} />
       </div>
+
+      <Section title={t("profile.password")} />
+      <PasswordSection />
+
+      <Section title={t("profile.theme")} />
+      <ThemePicker />
 
       <Section title={t("profile.archived")} />
       {archived.length === 0 ? (

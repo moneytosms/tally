@@ -13,6 +13,8 @@ import { requireOwner } from "~/server/middleware/owner";
 import { requireSession } from "~/server/middleware/session";
 import { revokeCredential } from "~/server/auth/webauthn";
 import { randomToken, sha256Hex } from "~/server/auth/session";
+import { createInvite, INVITE_TTL_MS } from "~/server/auth/invite";
+import { netPositions } from "~/server/balances";
 import { uuidv7 } from "~/shared/id";
 import { RP_ID } from "~/shared/rp-id";
 
@@ -39,10 +41,56 @@ admin.get("/admin/users", async (c) => {
       displayName: u.displayName,
       isOwner: u.isOwner,
       createdAt: u.createdAt,
+      email: u.email,
+      // Whether a password EXISTS, never the hash. The owner needs to know which
+      // sign-in routes an account has, not to hold the material behind them.
+      hasPassword: u.passwordHash !== null,
       credentials: credentials.map((k) => ({ id: k.id, createdAt: k.createdAt, lastUsedAt: k.lastUsedAt })),
     });
   }
   return c.json(out);
+});
+
+/**
+ * Delete an account. Soft, like everything else (ADR 0004).
+ *
+ * Their expenses, splits and settlements are deliberately untouched: balances
+ * are DERIVED from those rows, so removing them would silently rewrite what
+ * everyone else is owed. The account stops being a principal; the history it
+ * produced stays exactly as recorded.
+ */
+admin.delete("/admin/users/:userId", async (c) => {
+  const db = c.var.db;
+  const userId = c.req.param("userId");
+
+  const target = await db.findUserById(userId);
+  if (!target) return c.json({ error: "not found" }, 404);
+  // Owner first: the unique owner index means a soft-deleted owner leaves the
+  // instance with no one who can administer it, and no route can grant the role.
+  if (target.isOwner) return c.json({ error: "owner", code: "owner" }, 409);
+  if (target.id === c.var.user.id) return c.json({ error: "self", code: "self" }, 409);
+
+  // Same rule as POST /ledgers/:id/leave, applied to every ledger at once: money
+  // is never silently written off. Settle or forgive first.
+  const memberships = await db.listLedgersForUser(userId);
+  for (const { ledger, memberId } of memberships) {
+    const [expenses, settlements] = await Promise.all([db.listExpenses(ledger.id), db.listSettlements(ledger.id)]);
+    const net = netPositions(expenses, settlements).find((p) => p.memberId === memberId)?.net ?? 0;
+    if (net !== 0) return c.json({ error: "net position is not zero", code: "non_zero_position" }, 409);
+  }
+
+  const now = Date.now();
+  const credentials = await db.listCredentials(userId);
+  // One batch: a user marked deleted while still holding a live session or an
+  // un-revoked passkey is an account that is half-gone but still signs in.
+  // D1 has no cross-request transaction, so this is the only atomic tool there is.
+  await db.batch([
+    db.markUserLeftEverywhere(userId, now),
+    db.deleteSessionsForUser(userId),
+    ...credentials.map((k) => db.revokeCredential(k.id, now)),
+    db.softDeleteUser(userId, now),
+  ]);
+  return c.json({ id: userId });
 });
 
 /**
@@ -106,6 +154,20 @@ admin.get("/admin/ledgers", async (c) => {
   return c.json(out);
 });
 
+/**
+ * An INSTANCE invite: ledgerId null, so it admits someone to tally without
+ * putting them in any ledger. That is the only way to add a person who is not
+ * joining a particular trip - ledger invites are minted from the ledger itself.
+ *
+ * The token is returned exactly once and never logged; a leaked link is account
+ * access, which is why the list route below can only revoke, never re-show it.
+ */
+admin.post("/admin/invites", async (c) => {
+  const now = Date.now();
+  const token = await createInvite(c.var.db, { ledgerId: null, createdBy: c.var.user.id, now });
+  return c.json({ token, expiresAt: now + INVITE_TTL_MS }, 201);
+});
+
 admin.get("/admin/invites", async (c) => {
   const rows = await c.var.db.listOpenInvites(Date.now());
   // The token itself is never returned - only its hash is stored, and an invite
@@ -113,8 +175,10 @@ admin.get("/admin/invites", async (c) => {
   return c.json(
     rows.map(({ invite, ledger }) => ({
       id: invite.id,
+      // Both null on an instance invite - it admits someone to tally without
+      // putting them in any ledger.
       ledgerId: invite.ledgerId,
-      ledgerName: ledger.name,
+      ledgerName: ledger?.name ?? null,
       createdAt: invite.createdAt,
       expiresAt: invite.expiresAt,
     })),

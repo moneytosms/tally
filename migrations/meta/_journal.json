@@ -22,6 +22,13 @@
       "when": 1786548814259,
       "tag": "0002_blue_red_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786867728123,
+      "tag": "0003_spicy_prima",
+      "breakpoints": true
     }
   ]
 }

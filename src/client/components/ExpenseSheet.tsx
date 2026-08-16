@@ -1,6 +1,7 @@
 // Expense detail sheet: read-only detail + comments + edit history/undo + delete.
 // Opened by tapping an expense row in LedgerDetail.
 import { useState } from "react";
+import { Link } from "react-router";
 import { Amount, Button, EmptyState, Field, Input, Sheet, focusRing } from "~/client/components/ui";
 import {
   useAddComment,
@@ -201,6 +202,17 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
           </>
         )}
       </details>
+
+      {/* ---------- edit ---------- */}
+      {/* The only way into the editor: the row itself opens this sheet, and a
+          link cannot live inside that row's <button>. */}
+      <Link
+        to={`/ledgers/${ledgerId}/expenses/${expense.id}`}
+        className={`mb-3 inline-flex min-h-11 items-center rounded-[6px] border px-4 text-[14px] font-medium ${focusRing}`}
+        style={{ borderColor: "var(--line-2)", color: "var(--ink)" }}
+      >
+        {t("action.edit")}
+      </Link>
 
       {/* ---------- delete ---------- */}
       <Button variant="danger" onClick={handleDelete} disabled={deleteExpense.isPending}>

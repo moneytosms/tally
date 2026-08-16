@@ -32,8 +32,37 @@
   --grain-blend: multiply;
 }
 
+/* The default palette above is "paper". Naming it explicitly lets the picker
+   select it without relying on the absence of an attribute, which is what
+   "system" means. */
+[data-theme="paper"] {
+  --paper: #f7f4ec;
+  --paper-2: #fffdf7;
+  --paper-sunk: #efeade;
+
+  --line: #e0d9c8;
+  --line-2: #cfc6b1;
+
+  --ink: #23241d;
+  --ink-2: #5c5f52;
+  --ink-3: #8b8d7e;
+
+  --moss: #5c7355;
+  --moss-2: #485c43;
+  --moss-wash: #e6ece0;
+  --clay: #a85f42;
+  --clay-wash: #f2e4dd;
+  --ochre: #b08344;
+
+  --grain-opacity: 0.055;
+  --grain-blend: multiply;
+}
+
+/* Only when nothing is chosen. Guarding on :not([data-theme]) rather than a
+   single excluded value keeps a chosen light theme from being flipped dark by
+   the OS preference. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  :root:not([data-theme]) {
     --paper: #191a15;
     --paper-2: #20221b;
     --paper-sunk: #131410;
@@ -76,6 +105,80 @@
   --clay: #c9836a;
   --clay-wash: #2c211c;
   --ochre: #c99f63;
+
+  --grain-opacity: 0.10;
+  --grain-blend: screen;
+}
+
+/* Blush paper, plum ink. Rose takes the moss role, a muted teal the clay role -
+   and the two are held ~1.4x apart in luminance, not just hue. */
+[data-theme="sakura"] {
+  --paper: #fbf2f4;
+  --paper-2: #fffafb;
+  --paper-sunk: #f3e6ea;
+
+  --line: #ecd8de;
+  --line-2: #dcc0c9;
+
+  --ink: #2b1f26;
+  --ink-2: #5e4a55;
+  --ink-3: #7b6571;
+
+  --moss: #96284f;
+  --moss-2: #7a1f40;
+  --moss-wash: #f8e3ea;
+  --clay: #476f62;
+  --clay-wash: #e3ece8;
+  --ochre: #9c6b3f;
+
+  --grain-opacity: 0.055;
+  --grain-blend: multiply;
+}
+
+/* Cool blue paper. Deep marine takes the moss role, warm rust the clay role. */
+[data-theme="ocean"] {
+  --paper: #f0f4f8;
+  --paper-2: #fbfdff;
+  --paper-sunk: #e4eaf1;
+
+  --line: #d5dfe9;
+  --line-2: #bccbd9;
+
+  --ink: #17222c;
+  --ink-2: #465563;
+  --ink-3: #61707f;
+
+  --moss: #14566e;
+  --moss-2: #0e4457;
+  --moss-wash: #e2eef4;
+  --clay: #b1442b;
+  --clay-wash: #f6e5df;
+  --ochre: #8a6a2e;
+
+  --grain-opacity: 0.055;
+  --grain-blend: multiply;
+}
+
+/* Dark, violet-toned. Same structure as "dark": indigo carries moss, a dimmer
+   rose carries clay, so the pair reads in greyscale too. */
+[data-theme="midnight"] {
+  --paper: #16131f;
+  --paper-2: #1d1929;
+  --paper-sunk: #100e17;
+
+  --line: #2b2540;
+  --line-2: #3a3253;
+
+  --ink: #e6e2f2;
+  --ink-2: #b0a9c8;
+  --ink-3: #8a83a8;
+
+  --moss: #a396e0;
+  --moss-2: #b8adec;
+  --moss-wash: #221d33;
+  --clay: #b96a89;
+  --clay-wash: #2a1c24;
+  --ochre: #c2a06e;
 
   --grain-opacity: 0.10;
   --grain-blend: screen;

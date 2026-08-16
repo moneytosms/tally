@@ -9,7 +9,8 @@ import type { Db } from "~/db";
 import type { Env, SessionUser } from "~/server/context";
 import { requireSession } from "~/server/middleware/session";
 import { revokeCredential } from "~/server/auth/webauthn";
-import { updateProfileSchema } from "~/shared/schemas";
+import { setPasswordSchema, updateProfileSchema } from "~/shared/schemas";
+import { hashPassword, verifyPassword } from "~/server/auth/password";
 
 export type PublicUser = { id: string; displayName: string; vpa: string | null };
 
@@ -38,6 +39,10 @@ export async function meResponse(db: Db, user: SessionUser) {
   return {
     ...serialiseUser(row, true),
     isOwner: row.isOwner,
+    // Own account only. The hash never leaves the server - only whether one exists,
+    // which is what the You tab needs to say "set" versus "change" password.
+    email: row.email ?? null,
+    hasPassword: row.passwordHash !== null,
     credentials: credentials.map((c) => ({
       id: c.id,
       createdAt: c.createdAt,
@@ -63,6 +68,42 @@ me.patch("/me", async (c) => {
   // null out the rest (SPEC §10, one version of skew).
   const patch = Object.fromEntries(Object.entries(parsed.data).filter(([, v]) => v !== undefined));
   if (Object.keys(patch).length > 0) await c.var.db.updateUser(c.var.user.id, patch);
+  const body = await meResponse(c.var.db, c.var.user);
+  return body ? c.json(body) : c.json({ error: "unauthenticated" }, 401);
+});
+
+/**
+ * Set or change the account password.
+ *
+ * Setting one for the first time also claims the sign-in address, which is why
+ * `email` is accepted here and nowhere else - it is an auth operation, not a
+ * profile field. Changing an existing password requires the current one: a
+ * borrowed unlocked phone must not be able to lock the owner out.
+ */
+me.post("/me/password", async (c) => {
+  const parsed = setPasswordSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "invalid request", code: "invalid" }, 400);
+
+  const row = await c.var.db.findUserById(c.var.user.id);
+  if (!row) return c.json({ error: "unauthenticated" }, 401);
+
+  if (row.passwordHash) {
+    const ok = await verifyPassword(parsed.data.currentPassword ?? "", row.passwordHash);
+    if (!ok) return c.json({ error: "wrong password", code: "credentials" }, 403);
+  }
+
+  const email = row.email ?? parsed.data.email ?? null;
+  if (!email) return c.json({ error: "email required", code: "email_required" }, 400);
+  if (!row.email && (await c.var.db.findUserByEmail(email))) {
+    return c.json({ error: "email already registered", code: "email_taken" }, 409);
+  }
+
+  try {
+    await c.var.db.updateUser(row.id, { email, passwordHash: await hashPassword(parsed.data.password) });
+  } catch {
+    // users_email_uq, same as signup - the check above is only for the message.
+    return c.json({ error: "email already registered", code: "email_taken" }, 409);
+  }
   const body = await meResponse(c.var.db, c.var.user);
   return body ? c.json(body) : c.json({ error: "unauthenticated" }, 401);
 });

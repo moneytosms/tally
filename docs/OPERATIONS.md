@@ -92,6 +92,30 @@ pnpm db:migrate:remote # apply migrations to PRODUCTION D1
 pnpm deploy            # wrangler deploy
 ```
 
+### Adding someone to the instance
+
+There is no public signup. Two ways in, both single-use and both expiring in 48
+hours:
+
+- **Instance invite** - You tab → Admin → *Invite to tally*. Creates the account
+  and nothing else; add them to ledgers afterwards. Use this for someone who
+  should be on tally before you know which ledgers they belong in.
+- **Ledger invite** - the *Invite someone* button on a ledger. Creates the
+  account **and** joins that one ledger. Any member can issue one.
+
+Either link opens the sign-up screen, where they pick an email and a password
+(and can add a passkey afterwards from the You tab). A leaked link is account
+access - send it to one person over a private channel, and revoke it from the
+admin panel if it goes astray.
+
+Someone who already has an account does not need an invite at all: any member of
+a ledger can add them to it directly from the ledger screen.
+
+To remove someone: You tab → Admin → their row → *Delete account*. It is refused
+while they still owe or are owed anything. Their past expenses stay, because
+balances are derived from them (ADR 0004) and deleting them would move everyone
+else's numbers.
+
 ### Deploying a schema change
 
 ```bash
@@ -148,6 +172,7 @@ That is accepted knowingly, and CSV export is the answer to it.
 | Limit | Why it matters | Current margin |
 |---|---|---|
 | 10 ms CPU per Worker invocation | Kills expensive aggregation | Push is single-recipient by design; recurring catch-up is capped at 50 occurrences per run |
+| PBKDF2 cost on sign-in | Password hashing is deliberately slow and lands on the same CPU budget | The expensive 600k-iteration pass runs in the BROWSER (`src/shared/password-kdf.ts`); the Worker only does 10k over the result, ~1-3 ms. This is what keeps password auth inside the free plan's ceiling. On the paid plan, raise `ITERATIONS` in `src/server/auth/password.ts` - stored hashes carry their own count and keep verifying |
 | D1 has no cross-request transaction | A half-applied write is wrong money | Every multi-statement write uses `db.batch([...])` |
 | Bundle size | Fights "very fast" | Recharts is lazy-loaded; measure before adding anything large |
 | Free-tier D1 row reads | ~20 users is nowhere near it | Not a live concern at this scale |

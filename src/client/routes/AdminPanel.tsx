@@ -1,5 +1,8 @@
 import { useState, type FormEvent } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Avatar, Button, EmptyState, Field, Input } from "~/client/components/ui";
+import { api, ApiError } from "~/client/lib/api";
+import { qk } from "~/client/lib/queries";
 import {
   useAdminUsers,
   useAdminInvites,
@@ -108,11 +111,35 @@ function RecoveryRow({ userId }: { userId: string }) {
   );
 }
 
+/** Maps the server's refusal codes to a specific reason. A generic "failed"
+ *  here would hide the one message that tells the owner what to do next -
+ *  settle the balance first. */
+function deleteMessage(error: unknown): string {
+  const code = error instanceof ApiError ? error.code : undefined;
+  if (code === "non_zero_position") return t("admin.deleteUserBlocked");
+  if (code === "self") return t("admin.deleteUserSelf");
+  if (code === "owner") return t("admin.deleteUserOwner");
+  return t("admin.deleteUserFailed");
+}
+
 function PeopleSection() {
+  const qc = useQueryClient();
   const users = useAdminUsers();
   const revoke = useRevokeCredential();
   const [revokedId, setRevokedId] = useState<string | null>(null);
   const [confirming, setConfirming] = useState<{ userId: string; credentialId: string } | null>(null);
+  const [deleting, setDeleting] = useState<{ id: string; name: string } | null>(null);
+  const [deleted, setDeleted] = useState(false);
+
+  const removeUser = useMutation({
+    mutationFn: (userId: string) => api<{ id: string }>(`/api/admin/users/${userId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      setDeleted(true);
+      // The panel's own list plus the instance counts both go stale.
+      qc.invalidateQueries({ queryKey: qk.adminUsers });
+      qc.invalidateQueries({ queryKey: qk.adminInstance });
+    },
+  });
 
   if (users.isPending) return null;
   if (users.error || !users.data) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
@@ -125,6 +152,13 @@ function PeopleSection() {
       { onSuccess: () => setRevokedId(credentialId) },
     );
     setConfirming(null);
+  };
+
+  const doDelete = () => {
+    if (!deleting) return;
+    setDeleted(false);
+    removeUser.mutate(deleting.id);
+    setDeleting(null);
   };
 
   return (
@@ -145,6 +179,11 @@ function PeopleSection() {
                 {t("admin.owner")}
               </span>
             )}
+          </div>
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+            <span className="truncate">{u.email ?? t("admin.noEmail")}</span>
+            <span aria-hidden="true">·</span>
+            <span>{t(u.hasPassword ? "admin.hasPassword" : "admin.noPassword")}</span>
           </div>
           <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
             {u.credentials.length === 0 ? (
@@ -181,8 +220,50 @@ function PeopleSection() {
             )}
           </div>
           <RecoveryRow userId={u.id} />
+          {!u.isOwner && (
+            <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
+              <Button
+                variant="danger"
+                size="sm"
+                disabled={removeUser.isPending}
+                onClick={() => (setDeleted(false), removeUser.reset(), setDeleting({ id: u.id, name: u.displayName }))}
+              >
+                {t("admin.deleteUser")}
+              </Button>
+              <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                {t("admin.deleteUserHint")}
+              </p>
+            </div>
+          )}
         </div>
       ))}
+
+      {removeUser.isError && (
+        <p role="alert" className="mx-0.5 mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+          {deleteMessage(removeUser.error)}
+        </p>
+      )}
+      {deleted && (
+        <p role="status" className="mx-0.5 mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          {t("admin.deleteUserDone")}
+        </p>
+      )}
+
+      {deleting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
+          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+            <p className="mb-3 text-[14px]">{t("admin.deleteUserConfirm", { name: deleting.name })}</p>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setDeleting(null)}>
+                {t("action.cancel")}
+              </Button>
+              <Button variant="danger" onClick={doDelete}>
+                {t("action.confirm")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {confirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
@@ -277,6 +358,62 @@ function CategoriesSection() {
   );
 }
 
+/** An INSTANCE invite - it creates an account without joining any ledger.
+ *  Same shape as the ledger InviteRow: the token comes back ONCE and lives in
+ *  component state only, because an invite is a bearer credential and must
+ *  never be re-fetchable. */
+function InstanceInviteCard() {
+  const qc = useQueryClient();
+  const [link, setLink] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const create = useMutation({
+    mutationFn: () => api<{ token: string; expiresAt: number }>("/api/admin/invites", { method: "POST" }),
+    onSuccess: ({ token }) => {
+      setLink(`${window.location.origin}/welcome?invite=${encodeURIComponent(token)}`);
+      setCopied(false);
+      qc.invalidateQueries({ queryKey: qk.adminInvites });
+    },
+  });
+
+  return (
+    <div className="mb-2 rounded-[7px] border px-3.5 py-3.5" style={card}>
+      <div className="mb-2 text-[14px] font-medium">{t("admin.inviteInstance")}</div>
+      {link === null ? (
+        <>
+          <Button variant="ghost" size="sm" disabled={create.isPending} onClick={() => create.mutate()}>
+            {t("admin.inviteInstanceCreate")}
+          </Button>
+          {create.isError && (
+            <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+              {t("admin.inviteFailed")}
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <p className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all" style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}>
+            {link}
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              navigator.clipboard?.writeText(link);
+              setCopied(true);
+            }}
+          >
+            {t(copied ? "admin.inviteCopied" : "admin.inviteCopy")}
+          </Button>
+        </>
+      )}
+      <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        {t("admin.inviteInstanceHint")}
+      </p>
+    </div>
+  );
+}
+
 function InvitesSection() {
   const invites = useAdminInvites();
   const revoke = useRevokeInvite();
@@ -306,7 +443,9 @@ function InvitesSection() {
         return (
           <div key={inv.id} className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-3" style={card}>
             <div className="min-w-0">
-              <div className="truncate text-[14px] font-medium">{inv.ledgerName}</div>
+              {/* Null ledgerName means an instance invite - it joins no ledger,
+                  so its scope has to be spelled out rather than left blank. */}
+              <div className="truncate text-[14px] font-medium">{inv.ledgerName ?? t("admin.inviteScopeInstance")}</div>
               <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
                 {t("admin.expiresIn", { hours })}
               </div>
@@ -360,6 +499,7 @@ export default function AdminPanel() {
       <CategoriesSection />
 
       <Section title={t("admin.invites")} />
+      <InstanceInviteCard />
       <InvitesSection />
     </>
   );

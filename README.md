@@ -29,6 +29,10 @@ Also: guests who never log in, recurring expenses, categories and notes, search
 and filter, comments, lifetime analytics, CSV export, trip budgets with burn
 rate, and push notifications for the two things worth interrupting someone about.
 
+Sign in with an email and password or with a passkey - both work, on the same
+account. Getting in still needs an invite from whoever runs the instance
+(ADR 0006); there is no open door.
+
 ## What it deliberately does not do
 
 Multi-currency · Splitwise import · receipt images · OCR · real payment

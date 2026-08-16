@@ -5,7 +5,10 @@ import { Sheet } from "~/client/components/ui/Sheet";
 import { focusRing } from "~/client/components/ui/focus";
 import { ExpenseSheet } from "~/client/components/ExpenseSheet";
 import { BurnRate, runFor } from "~/client/routes/LedgersTab";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { api } from "~/client/lib/api";
 import {
+  qk,
   useCategories,
   useCreateInvite,
   useExpenseSearch,
@@ -142,6 +145,81 @@ function InviteRow({ ledgerId }: { ledgerId: string }) {
           </p>
         </>
       )}
+    </div>
+  );
+}
+
+/** Adds an EXISTING user straight to the ledger - no invite round-trip. Any
+ *  member may, exactly as any member may mint an invite (ADR 0005).
+ *
+ *  The candidates carry a display name and nothing else: a VPA is visible only
+ *  to co-members, and these people are not co-members yet. */
+function AddExistingMember({ ledgerId }: { ledgerId: string }) {
+  const qc = useQueryClient();
+  const [picked, setPicked] = useState("");
+  const [added, setAdded] = useState("");
+
+  const addable = useQuery({
+    queryKey: [...qk.members(ledgerId), "addable"],
+    queryFn: () => api<Array<{ id: string; displayName: string }>>(`/api/ledgers/${ledgerId}/addable-users`),
+  });
+
+  const add = useMutation({
+    mutationFn: (userId: string) =>
+      api<Member>(`/api/ledgers/${ledgerId}/members`, { method: "POST", body: JSON.stringify({ userId }) }),
+    onSuccess: (member) => {
+      setAdded(t("member.addExistingDone", { name: member.nickname }));
+      setPicked("");
+      qc.invalidateQueries({ queryKey: qk.members(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.ledger(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
+    },
+  });
+
+  const candidates = addable.data ?? [];
+
+  return (
+    <div className="mt-1 border-t pt-2.5" style={{ borderColor: "var(--line)" }}>
+      <div className="mb-1.5 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
+        {t("member.addExisting")}
+      </div>
+      {candidates.length === 0 ? (
+        <p className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          {t("member.addExistingNone")}
+        </p>
+      ) : (
+        <div className="flex items-end gap-2">
+          <span className="min-w-0 flex-1">
+            <Field label={t("member.pick")}>
+              <Select value={picked} onChange={(e) => setPicked(e.target.value)}>
+                <option value="">{t("member.pick")}</option>
+                {candidates.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.displayName}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </span>
+          <Button
+            size="sm"
+            className="mb-3"
+            disabled={!picked || add.isPending}
+            onClick={() => {
+              setAdded("");
+              add.mutate(picked);
+            }}
+          >
+            {t("member.addExistingAction")}
+          </Button>
+        </div>
+      )}
+      <p className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        {t("member.addExistingHint")}
+      </p>
+      <p role="status" aria-live="polite" className="mt-1.5 text-[11.5px]" style={{ color: add.isError ? "var(--clay)" : "var(--moss-2)" }}>
+        {add.isError ? t("member.addExistingFailed") : added}
+      </p>
     </div>
   );
 }
@@ -348,6 +426,7 @@ export function LedgerDetail() {
             )}
           </div>
         ))}
+        <AddExistingMember ledgerId={ledgerId} />
         <InviteRow ledgerId={ledgerId} />
       </div>
 

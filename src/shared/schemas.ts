@@ -51,6 +51,40 @@ export const createSettlementSchema = z.object({
 // a field here that nothing can store.
 export const createInviteSchema = z.object({});
 
+/** Lowercased at parse time - `findUserByEmail` matches case-sensitively and
+ *  the unique index is the only thing stopping a duplicate account. */
+export const emailSchema = z.email().trim().toLowerCase().max(254);
+/** Length only. Composition rules buy nothing; see MIN_PASSWORD_LENGTH. */
+export const passwordSchema = z.string().min(10).max(200);
+
+export const signUpSchema = z.object({
+  inviteToken: z.string().min(1),
+  displayName: name,
+  email: emailSchema,
+  password: passwordSchema,
+});
+
+export const signInSchema = z.object({
+  email: emailSchema,
+  password: z.string().min(1).max(200),
+});
+
+/** `currentPassword` is required only when one is already set - the server
+ *  decides that, because the client cannot be trusted with the question. */
+export const setPasswordSchema = z.object({
+  currentPassword: z.string().min(1).max(200).nullish(),
+  password: passwordSchema,
+  /** Required the first time, when the account has no sign-in address yet
+   *  (the owner, and anyone who enrolled with a passkey only). */
+  email: emailSchema.nullish(),
+});
+
+export const addMemberSchema = z.object({
+  userId: id,
+});
+
+// Email is deliberately NOT patchable here: it is the sign-in identifier and a
+// unique key, so changing it is an auth operation, not a profile edit.
 export const updateProfileSchema = z.object({
   displayName: name.optional(),
   vpa: z

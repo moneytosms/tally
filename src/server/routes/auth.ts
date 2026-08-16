@@ -1,9 +1,12 @@
-// Bootstrap, passkey registration, passkey login, logout.
+// Bootstrap, sign-up, sign-in (password or passkey), logout.
 //
 // There is NO public signup. Registration is reachable exactly two ways:
 //   - the instance is unclaimed and the caller has the bootstrap secret, or
-//   - the caller holds a usable invite (which is bound to one ledger).
+//   - the caller holds a usable invite (instance-wide, or bound to one ledger).
 // A stranger with neither gets 403 and learns nothing.
+//
+// Two credential kinds, one account: a password (email + PBKDF2) and any number
+// of passkeys. Either signs you in; the account is the same row either way.
 //
 // Never log a token, a secret or a challenge - not even while debugging.
 import { Hono } from "hono";
@@ -16,6 +19,7 @@ import {
   SESSION_COOKIE,
   clearSessionCookie,
   createSession,
+  randomToken,
   destroySession,
   resolveSession,
   sessionCookie,
@@ -32,6 +36,9 @@ import {
 } from "~/server/auth/webauthn";
 import { requireSession } from "~/server/middleware/session";
 import { meResponse } from "~/server/routes/me";
+import { hashPassword, verifyPassword } from "~/server/auth/password";
+import { acceptInvite, InviteError } from "~/server/auth/invite";
+import { signInSchema, signUpSchema } from "~/shared/schemas";
 
 /** instance_state key recording that the bootstrap secret has been spent. */
 export const BOOTSTRAP_BURNED = "bootstrap_burned";
@@ -95,6 +102,96 @@ auth.post("/bootstrap", async (c) => {
   c.header("set-cookie", sessionCookie(token), { append: true });
   const body = await meResponse(db, { id: owner.id, displayName: owner.displayName, isOwner: true });
   return c.json(body, 201);
+});
+
+// ---- password sign-up / sign-in ---------------------------------------------
+
+/** A hash of a value nobody knows, used to spend the same CPU on an unknown
+ *  email as on a known one. Without it, response time answers "does this
+ *  address have an account here?" for anyone who asks.
+ *
+ *  Built lazily and once per isolate: hashing at module scope would burn the
+ *  PBKDF2 cost during cold start, on requests that have nothing to do with auth. */
+let dummyHash: Promise<string> | null = null;
+function dummyPasswordHash(): Promise<string> {
+  dummyHash ??= hashPassword(randomToken());
+  return dummyHash;
+}
+
+/**
+ * Create an account from an invite, with an email and a password.
+ *
+ * The invite is the only gate - there is still no open signup. An instance
+ * invite admits them to tally; a ledger invite also joins that ledger. The
+ * order matters: the user row must exist before the invite is consumed, or a
+ * crash in between burns the invite and creates nobody.
+ */
+auth.post("/signup", async (c) => {
+  const db = c.var.db;
+  const parsed = signUpSchema.safeParse(await json(c));
+  if (!parsed.success) return c.json({ error: "invalid request", code: "invalid" }, 400);
+  const { inviteToken, displayName: name, email, password } = parsed.data;
+
+  const now = Date.now();
+  // Checked before the account is created so a bad invite never leaves a row
+  // behind. It is consumed further down, after the user exists.
+  if (!(await db.findUsableInvite(await sha256Hex(inviteToken), now))) {
+    return c.json({ error: "forbidden", code: "invite" }, 403);
+  }
+  if (await db.findUserByEmail(email)) {
+    return c.json({ error: "email already registered", code: "email_taken" }, 409);
+  }
+
+  const id = uuidv7();
+  try {
+    await db.insertUser({
+      id,
+      displayName: name,
+      email,
+      passwordHash: await hashPassword(password),
+      isOwner: false,
+      createdAt: now,
+    });
+  } catch {
+    // users_email_uq is the real guard against two concurrent signups on one
+    // address; the check above is only there to give a nicer message.
+    return c.json({ error: "email already registered", code: "email_taken" }, 409);
+  }
+
+  let ledgerId: string | null = null;
+  try {
+    ({ ledgerId } = await acceptInvite(db, { token: inviteToken, userId: id, now }));
+  } catch (e) {
+    if (!(e instanceof InviteError)) throw e;
+    // Raced with another claim of the same single-use invite. The account is
+    // already written, so the honest outcome is to fail the signup loudly
+    // rather than hand out an account the invite did not pay for.
+    await db.softDeleteUser(id, now);
+    return c.json({ error: "forbidden", code: "invite" }, 403);
+  }
+
+  const token = await createSession(db, id, now, c.req.header("user-agent") ?? null);
+  c.header("set-cookie", sessionCookie(token), { append: true });
+  const body = await meResponse(db, { id, displayName: name, isOwner: false });
+  return c.json({ ...body, ledgerId }, 201);
+});
+
+/** Email + password. Every failure is the same 401 with the same shape and
+ *  roughly the same cost - "no such account" and "wrong password" must not be
+ *  distinguishable. */
+auth.post("/signin", async (c) => {
+  const db = c.var.db;
+  const parsed = signInSchema.safeParse(await json(c));
+  if (!parsed.success) return c.json({ error: "invalid request", code: "invalid" }, 400);
+
+  const row = await db.findUserByEmail(parsed.data.email);
+  const ok = await verifyPassword(parsed.data.password, row?.passwordHash ?? (await dummyPasswordHash()));
+  if (!row || !ok) return c.json({ error: "authentication failed", code: "credentials" }, 401);
+
+  const now = Date.now();
+  const token = await createSession(db, row.id, now, c.req.header("user-agent") ?? null);
+  c.header("set-cookie", sessionCookie(token), { append: true });
+  return c.json(await meResponse(db, { id: row.id, displayName: row.displayName, isOwner: row.isOwner }));
 });
 
 // ---- registration -----------------------------------------------------------

@@ -3,9 +3,20 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f7f4ec" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#191a15" media="(prefers-color-scheme: dark)" />
+    <!-- One un-scoped tag: with six themes the light/dark media split can no
+         longer stand in for the chosen ground. Filled from --paper below. -->
+    <meta name="theme-color" content="#f7f4ec" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <script>
+      // Before first paint, or the wrong theme flashes on every cold start.
+      var tallyTheme = localStorage.getItem("tally-theme");
+      if (tallyTheme && tallyTheme !== "system") document.documentElement.setAttribute("data-theme", tallyTheme);
+      // --paper only resolves once the stylesheet has parsed.
+      addEventListener("DOMContentLoaded", function () {
+        var m = document.querySelector('meta[name="theme-color"]');
+        if (m) m.content = getComputedStyle(document.documentElement).getPropertyValue("--paper").trim();
+      });
+    </script>
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <title>tally</title>
     <link rel="stylesheet" href="/src/client/styles/index.css" />

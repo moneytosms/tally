@@ -13,7 +13,7 @@ import { requireSession } from "~/server/middleware/session";
 import { requireMember } from "~/server/middleware/membership";
 import { isLedgerCreator, requireOwner } from "~/server/middleware/owner";
 import { uuidv7 } from "~/shared/id";
-import { addGuestSchema, createLedgerSchema, updateLedgerSchema } from "~/shared/schemas";
+import { addGuestSchema, addMemberSchema, createLedgerSchema, updateLedgerSchema } from "~/shared/schemas";
 
 type Ledger = NonNullable<Awaited<ReturnType<Db["findLedger"]>>>;
 
@@ -176,6 +176,54 @@ ledgers.get("/ledgers/:ledgerId/members", async (c) => {
   ]);
   const displayNames = new Map(users.map((u) => [u.id, u.displayName]));
   return c.json(members.map((m) => serialiseMember(m, displayNames)));
+});
+
+/**
+ * Every live user who is NOT already a current member - the candidate list for
+ * the route below.
+ *
+ * Deliberately NOT `serialiseUser`: these people are by definition not
+ * co-members of this ledger, so their VPA must not cross the wire (SPEC §7).
+ * Only id and display name, which is all a picker needs.
+ */
+ledgers.get("/ledgers/:ledgerId/addable-users", async (c) => {
+  const [users, members] = await Promise.all([
+    c.var.db.listUsers(),
+    c.var.db.listMembers(c.req.param("ledgerId")),
+  ]);
+  const already = new Set(members.map((m) => m.userId));
+  return c.json(
+    users.filter((u) => !already.has(u.id)).map((u) => ({ id: u.id, displayName: u.displayName })),
+  );
+});
+
+/**
+ * Add an EXISTING user straight to the ledger - an invite without the round
+ * trip. Any member may, exactly as any member may mint an invite (ADR 0005).
+ *
+ * Only ever a real user id: guests are data, and the guest route is the one
+ * place a guest row is born.
+ */
+ledgers.post("/ledgers/:ledgerId/members", async (c) => {
+  const parsed = addMemberSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "invalid member", code: "invalid" }, 400);
+
+  const db = c.var.db;
+  const ledgerId = c.req.param("ledgerId");
+  const user = await db.findUserById(parsed.data.userId);
+  if (!user) return c.json({ error: "no such user", code: "no_user" }, 404);
+
+  // listMembers is current-members-only, so someone who LEFT falls through to
+  // insertMember's upsert and becomes current again - which is the point.
+  if ((await db.listMembers(ledgerId)).some((m) => m.userId === user.id)) {
+    return c.json({ error: "already a member", code: "already_member" }, 409);
+  }
+
+  await db.insertMember({ id: uuidv7(), ledgerId, userId: user.id, joinedAt: Date.now() });
+  // Read back rather than echo: on the re-join path the upsert keeps the OLD
+  // member row, and expenses reference member ids, so the id above is not it.
+  const saved = (await db.listMembers(ledgerId)).find((m) => m.userId === user.id)!;
+  return c.json(serialiseMember(saved, new Map([[user.id, user.displayName]])), 201);
 });
 
 /** Guests are DATA, never principals: a guest row has no user id, no credential

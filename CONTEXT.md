@@ -14,7 +14,7 @@ Decisions live in [`docs/adr/`](docs/adr/). The buildable spec is [`docs/SPEC.md
 
 **Member** - a participant in a Ledger. Either a **User** or a **Guest**. Identified by `ledger_members.id`, not by user id - expenses reference members, not users, because guests have no user.
 
-**User** - a real person with an account, a passkey, and a profile. Users are principals: they authenticate and act.
+**User** - a real person with an account, at least one **Credential**, and a profile. Users are principals: they authenticate and act.
 
 **Guest** - a named participant who never logs in, managed by the ledger owner. Guests split like anyone and can be a payer. **Guests are data, never principals** - no code path authenticates as a guest.
 
@@ -72,11 +72,11 @@ Decisions live in [`docs/adr/`](docs/adr/). The buildable spec is [`docs/SPEC.md
 
 **Owner** - the person who runs the Instance. Claims it with the **bootstrap secret**, holds the admin panel, manages Guests, and performs passkey recovery.
 
-**Invite** - a single-use, 48-hour, hashed token binding a **new** member to a Ledger. A leaked Invite is potentially account access.
+**Invite** - a single-use, 48-hour, hashed token admitting a **new** User. A **ledger invite** also joins them to one Ledger; an **instance invite** (issued by the Owner, no ledger attached) only creates the account. A leaked Invite is potentially account access. There is no public signup - an Invite is the only way an account comes into being (ADR 0006).
 
 **Recovery token** - a single-use, one-hour, hashed token the Owner issues to re-enrol an **existing** User on a new device. Bound to a User, not a Ledger, and it never creates an account - that is what separates it from an Invite. Revoking a User's last Credential is refused for the same reason.
 
-**Credential** - a registered passkey. A User may hold several. Recovery **revokes** the lost one.
+**Credential** - a way to sign in. Two kinds: a registered **passkey** (a User may hold several; recovery **revokes** the lost one) and a **password**, which is an email plus a PBKDF2 hash and of which a User has at most one. Either kind alone is a complete account (ADR 0006).
 
 **RP ID** - the WebAuthn Relying Party identifier. Permanently `tally.<account>.workers.dev`. A frozen constant. Never derived at runtime.
 

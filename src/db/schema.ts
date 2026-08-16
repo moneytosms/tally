@@ -22,6 +22,12 @@ export const users = sqliteTable(
     id: text("id").primaryKey(),
     displayName: text("display_name").notNull(),
     vpa: text("vpa"),
+    // Always stored lowercased - the unique index is the only thing preventing
+    // two accounts on the same address, and SQLite's = is case-sensitive.
+    // Null for accounts that only ever enrolled a passkey.
+    email: text("email"),
+    // PBKDF2 string from src/server/auth/password.ts. Null = passkey-only account.
+    passwordHash: text("password_hash"),
     isOwner: integer("is_owner", { mode: "boolean" }).notNull().default(false),
     createdAt: integer("created_at").notNull(),
     deletedAt: integer("deleted_at"),
@@ -29,6 +35,8 @@ export const users = sqliteTable(
   (t) => [
     // exactly one instance owner
     uniqueIndex("users_owner_uq").on(t.isOwner).where(sql`${t.isOwner} = 1`),
+    // SQLite treats NULLs as distinct, so passkey-only accounts don't collide.
+    uniqueIndex("users_email_uq").on(t.email),
   ],
 );
 
@@ -89,9 +97,10 @@ export const recoveryTokens = sqliteTable("recovery_tokens", {
 export const invites = sqliteTable("invites", {
   id: text("id").primaryKey(),
   tokenHash: text("token_hash").notNull().unique(), // never store the plaintext token
-  ledgerId: text("ledger_id")
-    .notNull()
-    .references(() => ledgers.id),
+  // NULL = an INSTANCE invite: it admits someone to tally itself without
+  // putting them in any ledger. Non-null = the original ledger invite, which
+  // also joins that one ledger. Both are single-use bearer tokens.
+  ledgerId: text("ledger_id").references(() => ledgers.id),
   createdBy: text("created_by")
     .notNull()
     .references(() => users.id),

@@ -47,9 +47,32 @@ export function createDb(d1: D1Database) {
         .limit(1);
       return row;
     },
+    /** Email is stored lowercased; callers must lowercase before looking up. */
+    async findUserByEmail(email: string) {
+      const [row] = await db
+        .select()
+        .from(t.users)
+        .where(and(eq(t.users.email, email), isNull(t.users.deletedAt)))
+        .limit(1);
+      return row;
+    },
     insertUser: (v: Insert<typeof t.users>) => db.insert(t.users).values(v),
     updateUser: (id: string, v: Partial<Insert<typeof t.users>>) =>
       db.update(t.users).set(v).where(and(eq(t.users.id, id), isNull(t.users.deletedAt))),
+    /** Soft-delete. The email is released so the address can be re-invited; the
+     *  display name stays, because every expense they touched still names them. */
+    softDeleteUser: (id: string, at: number) =>
+      db
+        .update(t.users)
+        .set({ deletedAt: at, email: null, passwordHash: null })
+        .where(and(eq(t.users.id, id), isNull(t.users.deletedAt))),
+    /** Every membership they hold becomes "left". Their splits are untouched -
+     *  balances are derived from splits, not from membership. */
+    markUserLeftEverywhere: (userId: string, at: number) =>
+      db
+        .update(t.ledgerMembers)
+        .set({ leftAt: at })
+        .where(and(eq(t.ledgerMembers.userId, userId), isNull(t.ledgerMembers.leftAt))),
 
     // ---- credentials -----------------------------------------------------
     async findCredential(credentialId: string) {
@@ -88,6 +111,9 @@ export function createDb(d1: D1Database) {
     touchSession: (id: string, at: number, expiresAt: number) =>
       db.update(t.sessions).set({ lastSeenAt: at, expiresAt }).where(eq(t.sessions.id, id)),
     deleteSessionByTokenHash: (tokenHash: string) => db.delete(t.sessions).where(eq(t.sessions.tokenHash, tokenHash)),
+    /** Signs a user out everywhere. Used when the owner deletes an account -
+     *  a soft-deleted user still holds live session rows otherwise. */
+    deleteSessionsForUser: (userId: string) => db.delete(t.sessions).where(eq(t.sessions.userId, userId)),
 
     // ---- ledgers ---------------------------------------------------------
     /** Every live ledger the user is a current member of. */
@@ -150,19 +176,21 @@ export function createDb(d1: D1Database) {
       db.update(t.ledgerMembers).set(v).where(and(eq(t.ledgerMembers.id, memberId), isNull(t.ledgerMembers.deletedAt))),
 
     // ---- invites ---------------------------------------------------------
-    /** Unconsumed, unrevoked, unexpired invite on a live ledger. */
+    /** Unconsumed, unrevoked, unexpired. A ledger invite additionally needs its
+     *  ledger to be live; an instance invite (ledgerId null) has no ledger to
+     *  check, which is why this is a LEFT join and not an inner one. */
     async findUsableInvite(tokenHash: string, now: number) {
       const [row] = await db
         .select({ invite: t.invites, ledger: t.ledgers })
         .from(t.invites)
-        .innerJoin(t.ledgers, eq(t.ledgers.id, t.invites.ledgerId))
+        .leftJoin(t.ledgers, eq(t.ledgers.id, t.invites.ledgerId))
         .where(
           and(
             eq(t.invites.tokenHash, tokenHash),
             isNull(t.invites.consumedAt),
             isNull(t.invites.revokedAt),
             gt(t.invites.expiresAt, now),
-            isNull(t.ledgers.deletedAt),
+            or(isNull(t.invites.ledgerId), isNull(t.ledgers.deletedAt)),
           ),
         )
         .limit(1);
@@ -184,13 +212,13 @@ export function createDb(d1: D1Database) {
       return db
         .select({ invite: t.invites, ledger: t.ledgers })
         .from(t.invites)
-        .innerJoin(t.ledgers, eq(t.ledgers.id, t.invites.ledgerId))
+        .leftJoin(t.ledgers, eq(t.ledgers.id, t.invites.ledgerId))
         .where(
           and(
             isNull(t.invites.consumedAt),
             isNull(t.invites.revokedAt),
             gt(t.invites.expiresAt, now),
-            isNull(t.ledgers.deletedAt),
+            or(isNull(t.invites.ledgerId), isNull(t.ledgers.deletedAt)),
           ),
         )
         .orderBy(desc(t.invites.createdAt));

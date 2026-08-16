@@ -16,7 +16,7 @@ export type InviteStore = {
   insertInvite(row: {
     id: string;
     tokenHash: string;
-    ledgerId: string;
+    ledgerId: string | null;
     createdBy: string;
     createdAt: number;
     expiresAt: number;
@@ -27,7 +27,7 @@ export type InviteStore = {
   findUsableInvite(
     tokenHash: string,
     now: number,
-  ): Promise<{ invite: { id: string; ledgerId: string } } | undefined>;
+  ): Promise<{ invite: { id: string; ledgerId: string | null } } | undefined>;
   /** Conditional UPDATE: `SET consumed_at = ? WHERE id = ? AND consumed_at IS
    *  NULL`. `meta.changes` is the whole concurrency story. */
   consumeInvite(
@@ -52,7 +52,7 @@ export class InviteError extends Error {}
 /** Returns the plaintext token - the only time it exists. Never log it. */
 export async function createInvite(
   store: InviteStore,
-  args: { ledgerId: string; createdBy: string; now: number },
+  args: { ledgerId: string | null; createdBy: string; now: number },
 ): Promise<string> {
   const token = randomToken();
   await store.insertInvite({
@@ -78,13 +78,21 @@ export async function createInvite(
 export async function acceptInvite(
   store: InviteStore,
   args: { token: string; userId: string; now: number },
-): Promise<{ ledgerId: string; memberId: string }> {
+): Promise<{ ledgerId: string | null; memberId: string | null }> {
   const row = await store.findUsableInvite(
     await sha256Hex(args.token),
     args.now,
   );
   if (!row) throw new InviteError("invite is not usable");
   const { id, ledgerId } = row.invite;
+
+  // An instance invite admits them to tally and nothing more - there is no
+  // ledger to join, so consuming it is the entire operation.
+  if (ledgerId === null) {
+    const claimed = await store.consumeInvite(id, args.userId, args.now);
+    if (claimed.meta.changes !== 1) throw new InviteError("invite is not usable");
+    return { ledgerId: null, memberId: null };
+  }
 
   const existing = await store.findMember(ledgerId, args.userId);
   if (existing) return { ledgerId, memberId: existing.id };
