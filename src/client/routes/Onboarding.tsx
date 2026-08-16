@@ -72,6 +72,17 @@ function OpenInBrowser({ title }: { title: string }) {
   );
 }
 
+/** Invites are shared as a full link (`…/welcome?invite=<token>`), so a pasted
+ *  link has to work in the same field as a bare token. */
+function extractInviteToken(raw: string): string {
+  const trimmed = raw.trim();
+  try {
+    return new URL(trimmed).searchParams.get("invite") ?? trimmed;
+  } catch {
+    return trimmed;
+  }
+}
+
 /** The "or" rule between a primary path and its alternative. */
 const Or = () => (
   <div className="my-4 flex items-center gap-3 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
@@ -101,6 +112,9 @@ export function Onboarding() {
   const [password, setPassword] = useState("");
   const [secret, setSecret] = useState("");
   const [vpa, setVpa] = useState("");
+  // The URL param is only a prefill - sign-up is reachable without ever
+  // following a link, so the code itself has to be a typed, editable field.
+  const [inviteCode, setInviteCode] = useState(inviteToken ?? "");
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<AuthFailure | null>(null);
 
@@ -126,20 +140,22 @@ export function Onboarding() {
   const registerPasskey = async () => {
     setBusy(true);
     setFailure(null);
+    // Empty for the owner-bootstrap and recovery paths - neither spends an invite.
+    const invite = owner || recoveryToken ? undefined : extractInviteToken(inviteCode) || undefined;
     try {
       if (owner) await api("/api/auth/bootstrap", { method: "POST", body: JSON.stringify({ secret, displayName }) });
       const optionsJSON = await api<RegistrationOptions>("/api/auth/register/options", {
         method: "POST",
         // displayName is ignored by the server on the recovery path - the
         // account already has one - but the schema still requires a string.
-        body: JSON.stringify({ displayName: displayName || "-", inviteToken, recoveryToken }),
+        body: JSON.stringify({ displayName: displayName || "-", inviteToken: invite, recoveryToken }),
       });
       const attestation = await startRegistration({ optionsJSON });
       await api("/api/auth/register/verify", {
         method: "POST",
-        body: JSON.stringify({ displayName, inviteToken, response: attestation }),
+        body: JSON.stringify({ displayName, inviteToken: invite, response: attestation }),
       });
-      if (inviteToken) await api(`/api/invites/${inviteToken}/accept`, { method: "POST" });
+      if (invite) await api(`/api/invites/${invite}/accept`, { method: "POST" });
       // Step BEFORE the invalidate: refetching `me` re-runs the redirect guard above.
       setView("vpa");
       await qc.invalidateQueries({ queryKey: qk.me });
@@ -205,8 +221,9 @@ export function Onboarding() {
 
   const onSignUp = async (e: FormEvent) => {
     e.preventDefault();
-    if (!inviteToken) return setFailure(plainFailure("onboarding.inviteRequired"));
+    const invite = extractInviteToken(inviteCode);
     const problem =
+      (invite === "" ? "onboarding.inviteRequired" : null) ??
       (displayName.trim() === "" ? "onboarding.nameRequired" : null) ??
       emailProblem(email) ??
       newPasswordProblem(password);
@@ -215,7 +232,7 @@ export function Onboarding() {
     setBusy(true);
     setFailure(null);
     try {
-      const created = await signUp({ inviteToken, displayName: displayName.trim(), email, password });
+      const created = await signUp({ inviteToken: invite, displayName: displayName.trim(), email, password });
       setPassword("");
       // Signup already consumed the invite and set the session cookie, so there
       // is no accept call here. Navigate BEFORE invalidating `me`: the redirect
@@ -326,13 +343,9 @@ export function Onboarding() {
               {t("onboarding.contactAdmin")}
             </p>
 
-            {/* An invite is what makes an account possible, so the offer to make
-                one only exists when there is a token to spend. */}
-            {inviteToken && (
-              <Button variant="ghost" size="sm" className="mt-3 w-full" onClick={() => go("signup")}>
-                {t("onboarding.needAccount")}
-              </Button>
-            )}
+            <Button variant="ghost" size="sm" className="mt-3 w-full" onClick={() => go("signup")}>
+              {t("onboarding.needAccount")}
+            </Button>
             {!inviteToken && !owner && (
               <Button
                 variant="ghost"
@@ -355,8 +368,11 @@ export function Onboarding() {
             <p className="mb-4 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
               {t("onboarding.signUpBody")}
             </p>
+            <Field label={t("onboarding.inviteCodeLabel")}>
+              <Input value={inviteCode} onChange={(e) => setInviteCode(e.target.value)} autoComplete="off" autoFocus />
+            </Field>
             <Field label={t("profile.displayName")}>
-              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={80} autoFocus />
+              <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} maxLength={80} />
             </Field>
             <Field label={t("onboarding.emailLabel")}>
               <Input
