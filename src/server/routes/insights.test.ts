@@ -116,6 +116,46 @@ describe("GET /insights", () => {
     expect(i.byMonth).toEqual([{ month: "2026-03", spent: 4_000 }]);
   });
 
+  it("`to` excludes newer expenses, inclusive of the boundary instant", async () => {
+    const jan = Date.UTC(2026, 0, 15);
+    const feb = Date.UTC(2026, 1, 15);
+    const mar = Date.UTC(2026, 2, 15);
+    await expense("L1", { total: 2_000, paidAtEpochMs: jan, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] }); // ₹20.00
+    await expense("L1", { total: 4_000, paidAtEpochMs: feb, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] }); // ₹40.00
+    await expense("L1", { total: 8_000, paidAtEpochMs: mar, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] }); // ₹80.00
+
+    const i = await insights(`?to=${feb}`);
+    expect(i.totals.spent).toBe(6_000); // jan + feb, not mar
+    expect(i.byMonth).toEqual([
+      { month: "2026-01", spent: 2_000 },
+      { month: "2026-02", spent: 4_000 },
+    ]);
+  });
+
+  it("`from` and `to` together select an inclusive window", async () => {
+    const jan = Date.UTC(2026, 0, 15);
+    const feb = Date.UTC(2026, 1, 15);
+    const mar = Date.UTC(2026, 2, 15);
+    await expense("L1", { total: 2_000, paidAtEpochMs: jan, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] }); // ₹20.00
+    await expense("L1", { total: 4_000, paidAtEpochMs: feb, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] }); // ₹40.00
+    await expense("L1", { total: 8_000, paidAtEpochMs: mar, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] }); // ₹80.00
+
+    const i = await insights(`?from=${feb}&to=${feb}`);
+    expect(i.totals.spent).toBe(4_000); // feb only
+    expect(i.byMonth).toEqual([{ month: "2026-02", spent: 4_000 }]);
+  });
+
+  it("`to` also bounds totals.paid and mostSpentWith", async () => {
+    const feb = Date.UTC(2026, 1, 15);
+    const mar = Date.UTC(2026, 2, 15);
+    await expense("L1", { total: 10_000, paidAtEpochMs: feb, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // Ada: ₹50.00
+    await expense("L1", { total: 6_000, paidAtEpochMs: mar, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // Ada: ₹30.00
+
+    const i = await insights(`?to=${feb}`);
+    expect(i.totals.paid).toBe(10_000);
+    expect(i.mostSpentWith).toEqual([{ userId: "u_bob", displayName: "Bob", sharedExpenseCount: 1, sharedTotal: 5_000 }]);
+  });
+
   it("401s without a session", async () => {
     expect((await app.request(new Request("http://tally.test/api/insights"))).status).toBe(401);
   });

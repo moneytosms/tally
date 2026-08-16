@@ -46,12 +46,16 @@ insights.get("/insights", requireSession, async (c) => {
   const userId = c.var.user.id;
   const fromParam = c.req.query("from");
   const fromMs = fromParam ? Number(fromParam) : undefined;
+  const toParam = c.req.query("to");
+  const toMs = toParam ? Number(toParam) : undefined;
 
   const [sharesAll, ledgersForUser] = await Promise.all([
     db.listExpenseSharesForUser(userId),
     db.listLedgersForUser(userId),
   ]);
-  const shares = fromMs === undefined ? sharesAll : sharesAll.filter((r) => r.paidAt >= fromMs);
+  const shares = sharesAll.filter(
+    (r) => (fromMs === undefined || r.paidAt >= fromMs) && (toMs === undefined || r.paidAt <= toMs),
+  );
 
   let spent = 0;
   const expenseIds = new Set<string>();
@@ -101,6 +105,7 @@ insights.get("/insights", requireSession, async (c) => {
 
     for (const e of expenses) {
       if (fromMs !== undefined && e.paidAt < fromMs) continue;
+      if (toMs !== undefined && e.paidAt > toMs) continue;
 
       if (e.payerMemberId === memberId) {
         paid += e.total;

@@ -19,6 +19,9 @@ import type {
   UpdateLedger,
   UpdateProfile,
 } from "~/shared/schemas";
+import type { LEDGER_COLOR_VALUES } from "~/shared/schemas";
+
+export type LedgerColor = (typeof LEDGER_COLOR_VALUES)[number];
 
 /* ---------- wire types (server DTOs) ---------- */
 
@@ -41,6 +44,12 @@ export type LedgerSummary = {
   archivedAt: number | null;
   /** Whether this ledger may mint invite links at all (ADR 0007). Off by default. */
   invitesEnabled: boolean;
+  /** Cover accent (issue #27). Fixed palette; null renders text-only, as ever. */
+  color: LedgerColor | null;
+  emoji: string | null;
+  /** The VIEWER's own home-screen pin (issue #26) - one person's preference,
+   *  not shared ledger state. */
+  pinned: boolean;
   memberCount: number;
   /** viewer's net position in this ledger. positive = is owed */
   net: Paise;
@@ -189,7 +198,7 @@ export const qk = {
   balances: (ledgerId: string) => ["ledgers", ledgerId, "balances"] as const,
   crossLedger: ["balances"] as const,
   categories: ["categories"] as const,
-  insights: (from: number | null) => ["insights", from] as const,
+  insights: (from: number | null, to: number | null) => ["insights", from, to] as const,
   comments: (expenseId: string) => ["expenses", expenseId, "comments"] as const,
   revisions: (expenseId: string) => ["expenses", expenseId, "revisions"] as const,
   series: (ledgerId: string) => ["ledgers", ledgerId, "recurring"] as const,
@@ -260,10 +269,16 @@ export const useExpenseSearch = (ledgerId: string, filters: ExpenseFilters) =>
 export const useCategories = () =>
   useQuery({ queryKey: qk.categories, queryFn: () => api<Category[]>("/api/categories"), staleTime: 5 * 60_000 });
 
-export const useInsights = (from: number | null) =>
+export const useInsights = (from: number | null, to: number | null = null) =>
   useQuery({
-    queryKey: qk.insights(from),
-    queryFn: () => api<Insights>(`/api/insights${from === null ? "" : `?from=${from}`}`),
+    queryKey: qk.insights(from, to),
+    queryFn: () => {
+      const p = new URLSearchParams();
+      if (from !== null) p.set("from", String(from));
+      if (to !== null) p.set("to", String(to));
+      const qs = p.toString();
+      return api<Insights>(`/api/insights${qs ? `?${qs}` : ""}`);
+    },
   });
 
 export const useComments = (ledgerId: string, expenseId: string) =>
@@ -329,6 +344,32 @@ export function useUpdateLedger(ledgerId: string) {
   });
 }
 
+/** Toggle the viewer's own home-screen pin (issue #26). Optimistic, since it is
+ *  purely local preference and never worth a spinner - and rolled back on
+ *  failure so the list can't drift from the server's idea of the order. */
+export function useTogglePin(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (pinned: boolean) =>
+      api<LedgerSummary>(`/api/ledgers/${ledgerId}/pin`, { method: "POST", body: JSON.stringify({ pinned }) }),
+    onMutate: async (pinned) => {
+      await qc.cancelQueries({ queryKey: qk.ledgers });
+      const prev = qc.getQueryData<LedgerSummary[]>(qk.ledgers);
+      qc.setQueryData<LedgerSummary[]>(qk.ledgers, (rows) =>
+        rows?.map((r) => (r.id === ledgerId ? { ...r, pinned } : r)),
+      );
+      return { prev };
+    },
+    onError: (_err, _pinned, ctx) => {
+      if (ctx?.prev) qc.setQueryData(qk.ledgers, ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: qk.ledgers });
+      qc.invalidateQueries({ queryKey: qk.ledger(ledgerId) });
+    },
+  });
+}
+
 /** Archive and reopen are one hook because they are one route shape and one
  *  result. Archive is refused (409 `not_settled`) while any net position is
  *  non-zero - the caller shows that, it is never pre-judged here. */
@@ -387,11 +428,50 @@ export function useAddGuest(ledgerId: string) {
   });
 }
 
+/** Owner-only. Blocked server-side (409 `non_zero_position`) while the member's
+ *  net position is non-zero - same guard as self-leave, just aimed by the
+ *  owner at someone who has gone inactive elsewhere. */
+export function useRemoveMember(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (memberId: string) =>
+      api<{ ok: true }>(`/api/ledgers/${ledgerId}/members/${memberId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.members(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.ledger(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.ledgers });
+      qc.invalidateQueries({ queryKey: qk.crossLedger });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
+    },
+  });
+}
+
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: UpdateProfile) => api<Me>("/api/me", { method: "PATCH", body: JSON.stringify(body) }),
     onSuccess: (me) => qc.setQueryData(qk.me, me),
+  });
+}
+
+/** Ends the caller's own session. Clears the whole cache rather than just `me` -
+ *  a stale ledger or balance from the outgoing session must not survive into
+ *  whoever signs in next on this device. Shell's 401 handler does the redirect. */
+export function useLogout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<{ ok: true }>("/api/auth/logout", { method: "POST" }),
+    onSuccess: () => qc.clear(),
+  });
+}
+
+/** Self-service passkey revoke. The server refuses the caller's last credential
+ *  (409, `last_credential`) - the same guard the admin route applies to others. */
+export function useRevokeOwnCredential() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (credentialId: string) => api<{ ok: true }>(`/api/me/devices/${credentialId}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: qk.me }),
   });
 }
 

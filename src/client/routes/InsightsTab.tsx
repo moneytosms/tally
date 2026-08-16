@@ -14,7 +14,19 @@ const reduceMotion =
 // here, never the only cue (the lists next to each chart carry the real data).
 const CHART_COLORS = ["var(--moss)", "var(--ochre)", "var(--clay)", "var(--moss-2)"];
 
-type Range = "all" | "12m" | "30d";
+type Range = "all" | "12m" | "30d" | "custom";
+
+/** "YYYY-MM-DD" inputs -> inclusive [from, to] epoch bounds, local calendar
+ *  days. `null` when either input is empty/unparseable or the end date is
+ *  before the start date - callers treat that as "not ready to filter yet",
+ *  not as an error to throw. */
+export function parseCustomRange(fromInput: string, toInput: string): { from: number; to: number } | null {
+  if (!fromInput || !toInput) return null;
+  const from = new Date(`${fromInput}T00:00:00`).getTime();
+  const to = new Date(`${toInput}T23:59:59.999`).getTime();
+  if (!Number.isFinite(from) || !Number.isFinite(to) || to < from) return null;
+  return { from, to };
+}
 
 // Both charts share one `import("recharts")` module id, so Rollup emits a
 // single extra chunk regardless of how many lazy() call sites reference it -
@@ -159,13 +171,20 @@ function InsightsBody({ data }: { data: Insights }) {
 
 export function InsightsTab() {
   const [range, setRange] = useState<Range>("all");
-  const from = useMemo(() => {
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
+
+  const customBounds = useMemo(() => parseCustomRange(customFrom, customTo), [customFrom, customTo]);
+  const customInvalid = range === "custom" && customFrom !== "" && customTo !== "" && customBounds === null;
+
+  const { from, to } = useMemo(() => {
     const now = Date.now();
-    if (range === "12m") return now - 365 * DAY;
-    if (range === "30d") return now - 30 * DAY;
-    return null;
-  }, [range]);
-  const insights = useInsights(from);
+    if (range === "12m") return { from: now - 365 * DAY, to: null };
+    if (range === "30d") return { from: now - 30 * DAY, to: null };
+    if (range === "custom") return customBounds ?? { from: null, to: null };
+    return { from: null, to: null };
+  }, [range, customBounds]);
+  const insights = useInsights(from, to);
 
   return (
     <>
@@ -179,6 +198,7 @@ export function InsightsTab() {
             ["all", "insights.rangeAll"],
             ["12m", "insights.range12m"],
             ["30d", "insights.range30d"],
+            ["custom", "insights.rangeCustom"],
           ] as const
         ).map(([r, key]) => (
           <button
@@ -197,7 +217,45 @@ export function InsightsTab() {
         ))}
       </div>
 
-      {insights.isPending ? null : insights.error ? (
+      {range === "custom" && (
+        <div className="mb-4">
+          <div className="flex gap-2">
+            <label className="flex-1 text-[13px]">
+              <span className="mb-1 block" style={{ color: "var(--ink-3)" }}>
+                {t("insights.customFrom")}
+              </span>
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo || undefined}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="min-h-11 w-full rounded-[6px] border px-2 text-[13px]"
+                style={{ borderColor: "var(--line)", background: "var(--paper-2)", color: "var(--ink-2)" }}
+              />
+            </label>
+            <label className="flex-1 text-[13px]">
+              <span className="mb-1 block" style={{ color: "var(--ink-3)" }}>
+                {t("insights.customTo")}
+              </span>
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom || undefined}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="min-h-11 w-full rounded-[6px] border px-2 text-[13px]"
+                style={{ borderColor: "var(--line)", background: "var(--paper-2)", color: "var(--ink-2)" }}
+              />
+            </label>
+          </div>
+          {customInvalid && (
+            <p className="mt-1.5 text-[12px]" style={{ color: "var(--clay)" }}>
+              {t("insights.invalidRange")}
+            </p>
+          )}
+        </div>
+      )}
+
+      {range === "custom" && !customBounds ? null : insights.isPending ? null : insights.error ? (
         <EmptyState title={t("error.generic")} body={t("error.network")} />
       ) : insights.data.totals.expenseCount === 0 ? (
         <EmptyState title={t("empty.insights")} body={t("empty.insightsBody")} />
