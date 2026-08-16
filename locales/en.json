@@ -83,6 +83,7 @@
       "edit": "Edit details",
       "members": "Members",
       "invite": "Invite link",
+      "duplicate": "Duplicate",
       "archive": "Archive",
       "reopen": "Reopen",
       "delete": "Delete"
@@ -104,7 +105,11 @@
     "archiveFailed": "Could not archive this ledger.",
     "deleteConfirm": "Delete {name}? It disappears for everyone in it.",
     "deleteBlocked": "Only whoever created this ledger can delete it.",
-    "deleteFailed": "Could not delete this ledger."
+    "deleteFailed": "Could not delete this ledger.",
+    "duplicateName": "New ledger name",
+    "duplicateHint": "Copies the current members. Categories are already shared instance-wide, so there's nothing to copy there. Starts with no expenses.",
+    "duplicateAction": "Create",
+    "duplicateFailed": "Could not duplicate this ledger."
   },
   "member": {
     "guest": "guest",
@@ -126,7 +131,11 @@
     "leaveHint": "You can only leave once your net position is zero. Settle up, or have someone forgive what's outstanding.",
     "leaveConfirm": "Leave this ledger? Your past expenses stay exactly where they are.",
     "leaveBlocked": "Your net position isn't zero yet, so you can't leave.",
-    "leaveFailed": "Could not leave this ledger."
+    "leaveFailed": "Could not leave this ledger.",
+    "remove": "Remove",
+    "removeConfirm": "Remove {name} from this ledger? Their past expenses stay exactly where they are.",
+    "removeBlocked": "{name}'s net position isn't zero yet, so they can't be removed.",
+    "removeFailed": "Could not remove them."
   },
   "expense": {
     "add": "Add expense",
@@ -452,6 +461,10 @@
     "rangeAll": "All time",
     "range12m": "Last 12 months",
     "range30d": "Last 30 days",
+    "rangeCustom": "Custom",
+    "customFrom": "From",
+    "customTo": "To",
+    "invalidRange": "End date must be on or after the start date.",
     "chartLoading": "Loading chart"
   },
   "recurring": {
