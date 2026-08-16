@@ -406,6 +406,13 @@
     "network": "Couldn't reach the server.",
     "unauthorized": "Sign in to continue."
   },
+  "sort": {
+    "label": "Sort expenses",
+    "newest": "Newest first",
+    "oldest": "Oldest first",
+    "amountHigh": "Amount: high to low",
+    "amountLow": "Amount: low to high"
+  },
   "search": {
     "label": "Search expenses",
     "placeholder": "Search description or notes",
@@ -555,7 +562,24 @@
     "joined": "{name} joined",
     "left": "{name} left",
     "amountLabel": "amount",
-    "expenseLabel": "total"
+    "expenseLabel": "total",
+    "filterMember": "Person",
+    "anyMember": "Anyone",
+    "filterType": "Type",
+    "anyType": "Any type",
+    "results": "{count} of {total} events",
+    "clear": "Clear filters",
+    "noneFiltered": "Nothing matches those filters.",
+    "kindLabel": {
+      "added": "Expense added",
+      "edited": "Expense edited",
+      "deleted": "Expense deleted",
+      "settled": "Settlement",
+      "forgave": "Debt forgiven",
+      "commented": "Comment",
+      "joined": "Member joined",
+      "left": "Member left"
+    }
   },
   "export": {
     "title": "Export",

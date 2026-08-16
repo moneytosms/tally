@@ -24,6 +24,19 @@ const ExpenseForm = lazy(() => import("~/client/routes/ExpenseForm"));
 
 const memberName = (m: Member | undefined) => m?.nickname ?? t("member.unknown");
 
+export type ExpenseSort = "newest" | "oldest" | "amountHigh" | "amountLow";
+
+const sortComparators: Record<ExpenseSort, (a: Expense, b: Expense) => number> = {
+  newest: (a, b) => b.paidAt - a.paidAt,
+  oldest: (a, b) => a.paidAt - b.paidAt,
+  amountHigh: (a, b) => b.total - a.total,
+  amountLow: (a, b) => a.total - b.total,
+};
+
+export function sortExpenses(expenses: Expense[], sort: ExpenseSort): Expense[] {
+  return [...expenses].sort(sortComparators[sort]);
+}
+
 
 // yyyy-mm-dd <-> epoch ms for native date inputs. `to` is end-of-day so the
 // picked day is inclusive.
@@ -99,6 +112,7 @@ export function LedgerDetail() {
   const me = useMe();
 
   const [filters, setFilters] = useState<ExpenseFilters>({});
+  const [sort, setSort] = useState<ExpenseSort>("newest");
   const [selected, setSelected] = useState<Expense | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -113,7 +127,7 @@ export function LedgerDetail() {
 
   const byId = new Map((members.data ?? []).map((m) => [m.id, m]));
   const myMemberId = (members.data ?? []).find((m) => m.userId === me.data?.id)?.id;
-  const rows = [...(expenses.data ?? [])].sort((a, b) => b.paidAt - a.paidAt);
+  const rows = sortExpenses(expenses.data ?? [], sort);
 
   const patch = (p: Partial<ExpenseFilters>) => setFilters((f) => ({ ...f, ...p }));
 
@@ -163,6 +177,14 @@ export function LedgerDetail() {
           {t("ledger.expenses")}
         </span>
         <span className="flex items-center gap-3">
+          <a
+            href={`/api/ledgers/${ledgerId}/export.csv`}
+            download
+            className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
+            style={{ color: "var(--moss)" }}
+          >
+            {t("export.ledgerCsv")}
+          </a>
           <Link
             to={`/ledgers/${ledgerId}/activity`}
             className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
@@ -179,6 +201,22 @@ export function LedgerDetail() {
           </Link>
         </span>
       </div>
+
+      {(all.data?.length ?? 0) > 1 && (
+        <div className="mx-0.5 mb-2 flex items-center justify-end">
+          <Select
+            aria-label={t("sort.label")}
+            value={sort}
+            onChange={(e) => setSort(e.target.value as ExpenseSort)}
+            className="w-auto min-h-9 py-0 text-[12.5px]"
+          >
+            <option value="newest">{t("sort.newest")}</option>
+            <option value="oldest">{t("sort.oldest")}</option>
+            <option value="amountHigh">{t("sort.amountHigh")}</option>
+            <option value="amountLow">{t("sort.amountLow")}</option>
+          </Select>
+        </div>
+      )}
 
       {/* Nothing to filter until there is a list worth filtering. Five controls
           above an empty state is furniture, not help. */}
