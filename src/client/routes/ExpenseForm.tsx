@@ -1,8 +1,7 @@
-// Add or edit an expense. SPEC §10: natural-language line first, structured form
-// directly beneath, always visible, never behind a toggle.
-//
-// The parser's grammar is explicitly undecided (SPEC §13), so the line renders
-// disabled with a caption. The structured form below it is the whole feature.
+// Add or edit an expense. SPEC §10: category chips up front, structured form,
+// always visible, never behind a toggle. The natural-language quick-add line
+// (issue #33) is gone - its grammar was never specified (SPEC §13) and it
+// mostly got in the way rather than saving taps.
 //
 // One form, two modes: pass `expense` and it PATCHes instead of POSTing. A
 // second copy of this file would be a second place for the rounding rule and
@@ -31,7 +30,6 @@ import {
 } from "~/client/lib/queries";
 import { ApiError } from "~/client/lib/api";
 import { t } from "~/client/i18n";
-import { parseExpenseLine } from "~/shared/nl";
 import type { Paise, SplitMode } from "~/shared/money";
 
 /** A stored expense as the editor needs it: the wire carries each split's raw
@@ -81,11 +79,9 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
   const [mode, setMode] = useState<SplitMode>(expense?.mode ?? "equal");
   const [raw, setRaw] = useState<Record<string, string>>(expense ? rawFromSplits(expense) : {});
   // Open when editing: an expense being corrected is likelier to be one whose
-  // date or category is the thing that was wrong.
+  // date is the thing that was wrong.
   const [showDetails, setShowDetails] = useState(Boolean(expense));
   const [failure, setFailure] = useState("");
-  const [nlText, setNlText] = useState("");
-  const [nlUnmatched, setNlUnmatched] = useState<string[]>([]);
 
   const roster = useMemo(() => (members.data ?? []).filter((m) => m.leftAt === null), [members.data]);
   const rosterKey = roster.map((m) => m.id).join(",");
@@ -99,36 +95,6 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
     setRaw({});
     setPayerId(roster.find((m) => m.userId === me.data?.id)?.id ?? roster[0]?.id ?? "");
   }, [rosterKey, me.data?.id, expense]);
-
-  // Parses as the user types; applies only the fields the parser actually
-  // resolved so it assists hand-typed input instead of clobbering it.
-  function handleNlChange(text: string) {
-    setNlText(text);
-    const parse = parseExpenseLine(
-      text,
-      roster.map((m) => ({ id: m.id, name: m.nickname })),
-    );
-    setNlUnmatched(parse.unmatched);
-    if (parse.total !== null) setAmountRaw(paiseToRupeeString(parse.total));
-    if (parse.description !== "") setDescription(parse.description);
-    if (parse.payerId !== null) setPayerId(parse.payerId);
-    if (parse.participantIds.length > 0) {
-      setParticipantIds((ids) => [...ids, ...parse.participantIds.filter((id) => !ids.includes(id))]);
-    }
-  }
-
-  // The example has to be typable ON THIS LEDGER. The old hardcoded one named
-  // people who were never members, so following it produced "could not match".
-  const example = useMemo(() => {
-    const names = roster.flatMap((m) => {
-      const first = m.nickname.trim().toLowerCase().split(/\s+/)[0];
-      return first ? [first] : [];
-    });
-    const [a, b] = names;
-    if (a && b) return t("nl.exampleTwo", { a, b });
-    if (a) return t("nl.exampleOne", { a });
-    return t("nl.exampleBare");
-  }, [rosterKey]);
 
   const byId = new Map(roster.map((m) => [m.id, m]));
   const participants: SplitParticipant[] = participantIds.flatMap((id) => {
@@ -170,24 +136,6 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
 
   return (
     <form onSubmit={submit} noValidate>
-      {/* The line composes a NEW expense from nothing. On an edit it would
-          overwrite fields that are already correct, so it isn't offered. */}
-      {!expense && (
-        <Field label={t("expense.naturalLanguage")}>
-          <Input
-            value={nlText}
-            onChange={(e) => handleNlChange(e.target.value)}
-            placeholder={example}
-            autoComplete="off"
-          />
-          {/* The placeholder IS the example; a caption repeating it verbatim was
-              just a second line saying the same thing. */}
-          <p role="status" aria-live="polite" className="mt-1.5 block text-[11px]" style={{ color: "var(--clay)" }}>
-            {nlUnmatched.length > 0 ? t("nl.unmatched", { names: nlUnmatched.join(", ") }) : ""}
-          </p>
-        </Field>
-      )}
-
       {/* Opened from inside a ledger, the answer is already known. The picker is
           only worth asking for when the form was opened from the FAB. */}
       {!params.ledgerId && (
@@ -216,6 +164,44 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
       <Field label={t("expense.description")}>
         <Input value={description} onChange={(e) => setDescription(e.target.value)} autoComplete="off" />
       </Field>
+
+      {/* Always visible, never behind a toggle (SPEC §10) - the category Select
+          this replaced lived behind "more details" and mostly went unset. A
+          tappable chip is one tap instead of a dropdown open-scroll-pick. */}
+      <div className="mb-3">
+        <span className="mb-1.5 block text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          {t("expense.category")}
+        </span>
+        <ul className="-mx-1 flex snap-x gap-1 overflow-x-auto px-1 pb-1">
+          {[{ id: null, name: t("expense.categoryNone"), icon: "—" }, ...(categories.data ?? [])].map((c) => {
+            const on = categoryId === c.id;
+            const key = c.id ?? "none";
+            return (
+              <li key={key} className="snap-start">
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setCategoryId(c.id)}
+                  className={`flex w-[68px] flex-col items-center gap-1 rounded-[8px] border px-1 py-2 ${focusRing}`}
+                  style={{
+                    background: on ? "var(--moss-wash)" : "transparent",
+                    borderColor: on ? "var(--moss)" : "var(--line)",
+                    opacity: on ? 1 : 0.7,
+                  }}
+                >
+                  <span className="text-[20px] leading-none">{c.icon}</span>
+                  <span
+                    className="w-full truncate text-center text-[11px]"
+                    style={{ color: on ? "var(--ink)" : "var(--ink-3)" }}
+                  >
+                    {c.name}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
 
       <Field label={t("expense.paidBy")}>
         <Select value={payerId} onChange={(e) => setPayerId(e.target.value)}>
@@ -251,9 +237,9 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
         onRawChange={setRaw}
       />
 
-      {/* Date, category and notes are right nearly every time - today,
-          uncategorised, nothing to add. Behind one tap they cost nothing; in the
-          main flow they are three fields between the amount and Save. */}
+      {/* Date and notes are right nearly every time - today, nothing to add.
+          Category moved out to a chip row above (SPEC §10); these two stay
+          behind one tap since they cost nothing there. */}
       <div className="mb-3">
         <button
           type="button"
@@ -269,17 +255,6 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
           <div className="mt-1.5">
             <Field label={t("expense.date")}>
               <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-            </Field>
-
-            <Field label={t("expense.category")}>
-              <Select value={categoryId ?? ""} onChange={(e) => setCategoryId(e.target.value || null)}>
-                <option value="">{t("expense.categoryNone")}</option>
-                {(categories.data ?? []).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.icon} {c.name}
-                  </option>
-                ))}
-              </Select>
             </Field>
 
             <Field label={t("expense.notes")}>

@@ -257,7 +257,7 @@ Balances is deliberately its own tab - "what do I owe Rahul overall" is a differ
 
 ### Add expense
 
-**Natural-language line first, structured form directly beneath - always visible, never behind a toggle.** Target: three taps from cold.
+**Category chip row up front, structured form, always visible - never behind a toggle.** The natural-language quick-add line shipped in v1 and was dropped ([#33](https://github.com/moneytosms/tally/issues/33)): its grammar was never specified and in practice it got in the way more than it saved taps. Target: three taps from cold - open the FAB, tap a category chip, tap Save (amount and description are typed, not tapped, either way).
 
 ### Visual system
 
@@ -341,7 +341,6 @@ Named deliberately. These are where the bugs will be.
 
 Not blockers, but nobody has done this work:
 
-- **The natural-language parser's grammar.** It's in v1 and the UI leads with it, but the accepted syntax, name resolution, ambiguity handling, and whether it supports shares were never specified.
 - **The default category set.** Categories feed every chart; the list was never picked.
 
 Deferred facts, not decisions:
