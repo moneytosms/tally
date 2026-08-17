@@ -6,7 +6,7 @@
 // may ever cache an API response (SPEC §10).
 import { useMutation, useQuery, useQueryClient, QueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
-import { api } from "./api";
+import { api, ApiError } from "./api";
 import { markActed } from "~/client/components/InstallPrompt";
 import { uuidv7 } from "~/shared/id";
 import type { Paise, SplitMode } from "~/shared/money";
@@ -121,6 +121,15 @@ export type LedgerInsights = {
   byMonth: Array<{ month: string; spent: Paise }>;
   byMember: Array<{ memberId: string; nickname: string; paid: Paise; share: Paise }>;
 };
+
+export type ImportRow = {
+  title: string;
+  amountPaise: Paise;
+  dateMs: number;
+  payerName: string;
+  shares: Array<{ name: string; sharePaise: Paise }>;
+};
+export type ImportParseResult = { sourceNames: string[]; rows: ImportRow[]; warnings: string[] };
 
 export type Series = {
   id: string;
@@ -732,6 +741,38 @@ export function useNudge() {
       api<{ ok: true }>("/api/push/nudge", { method: "POST", body: JSON.stringify(body) }),
   });
 }
+
+/** File upload, so this bypasses `api()` (which always sets a JSON
+ *  content-type) - the browser must set its own multipart boundary. */
+export const useImportPreview = (ledgerId: string) =>
+  useMutation({
+    mutationFn: async (file: File): Promise<ImportParseResult> => {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(`/api/ledgers/${ledgerId}/import/preview`, {
+        method: "POST",
+        credentials: "same-origin",
+        body: form,
+      });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) throw new ApiError(res.status, (body as { error?: string } | null)?.error ?? res.statusText);
+      return body as ImportParseResult;
+    },
+  });
+
+export const useImportCommit = (ledgerId: string) => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { rows: ImportRow[]; mapping: Record<string, string>; newGuests: Record<string, string> }) =>
+      api<{ created: number }>(`/api/ledgers/${ledgerId}/import/commit`, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.expenses(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.members(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.balances(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
+    },
+  });
+};
 
 /* ---------- connectivity ---------- */
 
