@@ -159,6 +159,59 @@ describe("POST /ledgers/:ledgerId/import/commit", () => {
     expect(members.some((m) => m.guestName === "Charlie")).toBe(true);
   });
 
+  it("400s when a share has a zero or negative sharePaise instead of silently clamping to 1", async () => {
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/commit", {
+        method: "POST",
+        headers: { cookie: h.cookie, "content-type": "application/json" },
+        body: JSON.stringify(
+          commitBody({
+            rows: [
+              {
+                title: "Bad share",
+                amountPaise: 10_000,
+                dateMs: 1_760_000_000_000,
+                payerName: "Ada",
+                shares: [
+                  { name: "Ada", sharePaise: 10_000 },
+                  { name: "Bob", sharePaise: 0 },
+                ],
+              },
+            ],
+          }),
+        ),
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("400s when two source names in a row map to the same member (would otherwise 500 on the unique index)", async () => {
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/commit", {
+        method: "POST",
+        headers: { cookie: h.cookie, "content-type": "application/json" },
+        body: JSON.stringify(
+          commitBody({
+            rows: [
+              {
+                title: "Dup mapping",
+                amountPaise: 10_000,
+                dateMs: 1_760_000_000_000,
+                payerName: "Ada",
+                shares: [
+                  { name: "Ada", sharePaise: 5_000 },
+                  { name: "Bob", sharePaise: 5_000 },
+                ],
+              },
+            ],
+            mapping: { Ada: "m_ada", Bob: "m_ada" }, // Bob resolves to the same member as Ada
+          }),
+        ),
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
   it("409s on an archived ledger", async () => {
     // Archive L1 directly via SQL - the lifecycle route lives in ledgers.ts and
     // isn't exercised here; only its effect (archived_at set) matters for this test.

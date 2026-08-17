@@ -117,6 +117,16 @@ importRouter.post(`${PATH}/commit`, async (c) => {
     const payerIndex = participantNames.indexOf(row.payerName);
     if (payerIndex === -1) return c.json({ error: `"${row.title}": payer is not among the row's participants` }, 400);
 
+    // Same duplicate-participant guard checkMembers() applies in expenses.ts -
+    // two source names resolving to the same member id would otherwise violate
+    // expense_splits_expense_member_uq and 500 instead of a clean 400.
+    const participantMemberIds = participantNames.map(memberIdOf);
+    const seenMemberIds = new Set<string>();
+    for (const memberId of participantMemberIds) {
+      if (seenMemberIds.has(memberId)) return c.json({ error: `"${row.title}": a participant appears twice` }, 400);
+      seenMemberIds.add(memberId);
+    }
+
     let amounts: number[];
     try {
       amounts = resolveSplits({
@@ -124,7 +134,7 @@ importRouter.post(`${PATH}/commit`, async (c) => {
         mode: "shares",
         participantCount: participantNames.length,
         payerIndex,
-        values: row.shares.map((s) => Math.max(1, s.sharePaise)), // shares mode requires positive weights
+        values: row.shares.map((s) => s.sharePaise),
       });
     } catch (e) {
       return c.json({ error: `"${row.title}": ${(e as Error).message}` }, 400);
