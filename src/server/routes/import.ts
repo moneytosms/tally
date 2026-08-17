@@ -4,6 +4,7 @@
 // (see the commit route added alongside this one).
 import { Hono } from "hono";
 import { z } from "zod";
+import type { Db } from "~/db";
 import type { Env } from "~/server/context";
 import { rejectArchivedWrites } from "~/server/routes/expenses";
 import { requireMember } from "~/server/middleware/membership";
@@ -13,8 +14,13 @@ import { parseSplidXls } from "~/shared/import/splid";
 import { parseSplitwiseCsv } from "~/shared/import/splitwise";
 import type { ParseResult } from "~/shared/import/types";
 import { resolveSplits } from "~/shared/money";
+import { name as guestNameSchema } from "~/shared/schemas";
+
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const PATH = "/ledgers/:ledgerId/import";
+
+type Stmt = ReturnType<Db["insertMember"]> | ReturnType<Db["insertExpense"]> | ReturnType<Db["insertSplits"]>;
 
 const importRouter = new Hono<Env>();
 importRouter.use(`${PATH}/*`, requireSession, requireMember);
@@ -23,6 +29,7 @@ importRouter.post(`${PATH}/preview`, async (c) => {
   const form = await c.req.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File)) return c.json({ error: "no file uploaded" }, 400);
+  if (file.size > MAX_UPLOAD_BYTES) return c.json({ error: "file too large" }, 400);
 
   const name = file.name.toLowerCase();
   let result: ParseResult;
@@ -48,9 +55,10 @@ const commitSchema = z.object({
         shares: z.array(z.object({ name: z.string().min(1), sharePaise: z.int() })).min(1),
       }),
     )
-    .min(1),
+    .min(1)
+    .max(500),
   mapping: z.record(z.string(), z.string()),
-  newGuests: z.record(z.string(), z.string()),
+  newGuests: z.record(z.string(), guestNameSchema),
 });
 
 importRouter.use(`${PATH}/commit`, rejectArchivedWrites);
@@ -80,11 +88,14 @@ importRouter.post(`${PATH}/commit`, async (c) => {
   }
 
   const now = Date.now();
+
+  // A name only gets a guest row if it's actually referenced by a row AND not
+  // already resolved via `mapping` - mapping wins on a name present in both,
+  // and a newGuests key nothing references creates nothing.
+  const namesNeedingGuests = [...allNames].filter((n) => !(n in mapping) && n in newGuests);
+
   const guestIds = new Map<string, string>();
-  for (const [sourceName, guestName] of Object.entries(newGuests)) {
-    guestIds.set(sourceName, uuidv7());
-    void guestName;
-  }
+  for (const sourceName of namesNeedingGuests) guestIds.set(sourceName, uuidv7());
   const memberIdOf = (sourceName: string) => mapping[sourceName] ?? guestIds.get(sourceName)!;
 
   // Guard against a member id from another ledger sneaking in via `mapping` -
@@ -94,14 +105,14 @@ importRouter.post(`${PATH}/commit`, async (c) => {
     if (!liveMembers.has(memberId)) return c.json({ error: "a mapped member is not in this ledger" }, 400);
   }
 
-  const statements = [];
-  for (const [sourceName, guestName] of Object.entries(newGuests)) {
+  const statements: Stmt[] = [];
+  for (const sourceName of namesNeedingGuests) {
     statements.push(
       db.insertMember({
         id: guestIds.get(sourceName)!,
         ledgerId,
         userId: null,
-        guestName,
+        guestName: newGuests[sourceName]!,
         nickname: null,
         joinedAt: now,
         leftAt: null,
@@ -170,8 +181,7 @@ importRouter.post(`${PATH}/commit`, async (c) => {
     );
   }
 
-  // @ts-expect-error - statements is built incrementally with mixed insert kinds; batch's tuple type wants a literal, this is the same pattern other multi-row batches in this codebase fall back to.
-  await db.batch(statements);
+  await db.batch(statements as [Stmt, ...Stmt[]]);
 
   return c.json({ created: rows.length });
 });

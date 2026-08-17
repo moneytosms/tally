@@ -45,16 +45,13 @@ describe("POST /ledgers/:ledgerId/import/preview", () => {
     expect(res.status).toBe(400);
   });
 
-  it("403s a non-member", async () => {
+  it("403s an unknown ledger", async () => {
     const csv = "Date,Description,Category,Cost,Currency,Ada,Bob\n2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00";
     const form = new FormData();
     form.append("file", csvFile(csv));
 
-    const res = await app.request(new Request("http://tally.test/api/ledgers/L2/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
-    // Ada IS a member of L2 in the harness (n_ada) - use a nonexistent ledger instead.
-    void res;
-    const res2 = await app.request(new Request("http://tally.test/api/ledgers/does-not-exist/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
-    expect(res2.status).toBe(403);
+    const res = await app.request(new Request("http://tally.test/api/ledgers/does-not-exist/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
+    expect(res.status).toBe(403);
   });
 });
 
@@ -157,6 +154,44 @@ describe("POST /ledgers/:ledgerId/import/commit", () => {
 
     const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{ nickname: string; guestName: string | null }>;
     expect(members.some((m) => m.guestName === "Charlie")).toBe(true);
+  });
+
+  it("does not create a guest for a name mapped to an existing member, even if also listed in newGuests", async () => {
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/commit", {
+        method: "POST",
+        headers: { cookie: h.cookie, "content-type": "application/json" },
+        body: JSON.stringify(
+          commitBody({
+            mapping: { Ada: "m_ada", Bob: "m_bob" },
+            newGuests: { Bob: "Bob (imported)" }, // Bob is already mapped - mapping wins
+          }),
+        ),
+      }),
+    );
+    expect(res.status).toBe(200);
+
+    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{ guestName: string | null }>;
+    expect(members.some((m) => m.guestName === "Bob (imported)")).toBe(false);
+  });
+
+  it("does not create a guest for a newGuests key no row references", async () => {
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/commit", {
+        method: "POST",
+        headers: { cookie: h.cookie, "content-type": "application/json" },
+        body: JSON.stringify(
+          commitBody({
+            mapping: { Ada: "m_ada", Bob: "m_bob" },
+            newGuests: { Charlie: "Charlie" }, // no row mentions Charlie
+          }),
+        ),
+      }),
+    );
+    expect(res.status).toBe(200);
+
+    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{ guestName: string | null }>;
+    expect(members.some((m) => m.guestName === "Charlie")).toBe(false);
   });
 
   it("400s when a share has a zero or negative sharePaise instead of silently clamping to 1", async () => {

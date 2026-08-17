@@ -13,7 +13,7 @@ export const LEDGER_COLOR_VALUES = ["moss", "clay", "ochre", "plum", "sky", "ros
 const id = z.string().min(1).max(64);
 const paise = z.int().min(-MAX_PAISE).max(MAX_PAISE);
 const epochMs = z.int().min(0);
-const name = z.string().trim().min(1).max(80);
+export const name = z.string().trim().min(1).max(80);
 const text = z.string().trim().max(2000);
 
 export const createLedgerSchema = z.object({

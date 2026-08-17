@@ -570,7 +570,17 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
     if (!parsed) return;
     commit.mutate(
       { rows: parsed.rows, mapping, newGuests: newGuestNames },
-      { onSuccess: (r) => setDone(r.created) },
+      {
+        onSuccess: (r) => {
+          setDone(r.created);
+          // Clear the parsed rows so the panel returns to its file-picker
+          // state - a stale "confirm" otherwise re-posts the same payload
+          // and duplicates every expense (and any new guests) on a second tap.
+          setParsed(null);
+          setMapping({});
+          setNewGuestNames({});
+        },
+      },
     );
   };
 
@@ -589,6 +599,7 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
 
       {preview.isPending && <p className="text-[12.5px]" style={hint}>{t("import.parsing")}</p>}
       {preview.isError && <p role="alert" className="text-[12.5px]" style={{ color: "var(--clay)" }}>{t("import.parseFailed")}</p>}
+      {done !== null && <p role="status" aria-live="polite" className="mb-2 text-[12.5px]" style={{ color: "var(--moss-2)" }}>{t("import.done", { count: done })}</p>}
 
       {parsed && (
         <>
@@ -624,7 +635,6 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
           </div>
 
           {commit.isError && <p role="alert" className="mb-2 text-[12.5px]" style={{ color: "var(--clay)" }}>{t("import.failed")}</p>}
-          {done !== null && <p role="status" aria-live="polite" className="mb-2 text-[12.5px]" style={{ color: "var(--moss-2)" }}>{t("import.done", { count: done })}</p>}
 
           <Button className="w-full" disabled={!canConfirm || commit.isPending} onClick={onConfirm}>
             {commit.isPending ? t("import.confirming") : t("import.confirm")}

@@ -9,6 +9,8 @@ import { useSyncExternalStore } from "react";
 import { api, ApiError } from "./api";
 import { markActed } from "~/client/components/InstallPrompt";
 import { uuidv7 } from "~/shared/id";
+import type { ParsedImportRow as ImportRow, ParseResult as ImportParseResult } from "~/shared/import/types";
+export type { ImportRow, ImportParseResult };
 import type { Paise, SplitMode } from "~/shared/money";
 import type {
   CreateCategory,
@@ -121,15 +123,6 @@ export type LedgerInsights = {
   byMonth: Array<{ month: string; spent: Paise }>;
   byMember: Array<{ memberId: string; nickname: string; paid: Paise; share: Paise }>;
 };
-
-export type ImportRow = {
-  title: string;
-  amountPaise: Paise;
-  dateMs: number;
-  payerName: string;
-  shares: Array<{ name: string; sharePaise: Paise }>;
-};
-export type ImportParseResult = { sourceNames: string[]; rows: ImportRow[]; warnings: string[] };
 
 export type Series = {
   id: string;
@@ -770,6 +763,9 @@ export const useImportCommit = (ledgerId: string) => {
       qc.invalidateQueries({ queryKey: qk.members(ledgerId) });
       qc.invalidateQueries({ queryKey: qk.balances(ledgerId) });
       qc.invalidateQueries({ queryKey: qk.recentActivity });
+      qc.invalidateQueries({ queryKey: qk.ledgers });
+      qc.invalidateQueries({ queryKey: qk.ledger(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.crossLedger });
     },
   });
 };
