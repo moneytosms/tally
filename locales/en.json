@@ -84,6 +84,7 @@
       "members": "Members",
       "invite": "Invite link",
       "duplicate": "Duplicate",
+      "import": "Import",
       "archive": "Archive",
       "reopen": "Reopen",
       "delete": "Delete",
@@ -620,6 +621,25 @@
     "ledgerCsv": "Export this ledger",
     "allCsv": "Export everything",
     "body": "Plain CSV, opens in any spreadsheet. This is the escape hatch, and it does not depend on this instance staying up."
+  },
+  "import": {
+    "menuLabel": "Import",
+    "title": "Import expenses",
+    "fileLabel": "Splid (.xls) or Splitwise (.csv) export",
+    "parsing": "Reading file…",
+    "parseFailed": "Could not read that file.",
+    "rowCount": {
+      "one": "{count} expense found",
+      "other": "{count} expenses found"
+    },
+    "warnings": "{count} rows were skipped",
+    "mapping": "Match each name to a member",
+    "mapUnmapped": "Not mapped",
+    "createGuest": "Create guest \"{name}\"",
+    "confirm": "Import",
+    "confirming": "Importing…",
+    "done": "Imported {count} expenses.",
+    "failed": "Import failed."
   },
   "pwa": {
     "updateTitle": "A new version is ready",

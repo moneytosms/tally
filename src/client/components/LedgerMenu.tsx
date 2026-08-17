@@ -20,11 +20,14 @@ import {
   useCreateLedger,
   useDeleteLedger,
   useLeaveLedger,
+  useImportCommit,
+  useImportPreview,
   useLedgerLifecycle,
   useMe,
   useMembers,
   useRemoveMember,
   useUpdateLedger,
+  type ImportParseResult,
   type LedgerSummary,
   type Member,
 } from "~/client/lib/queries";
@@ -510,6 +513,128 @@ function DuplicatePanel({ ledger, onDone }: { ledger: LedgerSummary; onDone: (le
   );
 }
 
+/** Splid/Splitwise import: parse -> map source names to members (or, Owner
+ *  only, new guests) -> commit. The parsed rows are held in state between
+ *  preview and commit - no server-side session, no re-upload. */
+function ImportPanel({ ledgerId }: { ledgerId: string }) {
+  const me = useMe();
+  const members = useMembers(ledgerId);
+  const preview = useImportPreview(ledgerId);
+  const commit = useImportCommit(ledgerId);
+  const [parsed, setParsed] = useState<ImportParseResult | null>(null);
+  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [newGuestNames, setNewGuestNames] = useState<Record<string, string>>({});
+  const [done, setDone] = useState<number | null>(null);
+
+  const memberList = members.data ?? [];
+
+  const onFile = (file: File) => {
+    setParsed(null);
+    setMapping({});
+    setNewGuestNames({});
+    setDone(null);
+    preview.mutate(file, {
+      onSuccess: (result) => {
+        setParsed(result);
+        // Guess a mapping from a case-insensitive nickname match.
+        const guess: Record<string, string> = {};
+        for (const name of result.sourceNames) {
+          const match = memberList.find((m) => m.nickname.trim().toLowerCase() === name.trim().toLowerCase());
+          if (match) guess[name] = match.id;
+        }
+        setMapping(guess);
+      },
+    });
+  };
+
+  const setMemberMapping = (sourceName: string, memberId: string) => {
+    setMapping((m) => ({ ...m, [sourceName]: memberId }));
+    setNewGuestNames((g) => {
+      const { [sourceName]: _drop, ...rest } = g;
+      return rest;
+    });
+  };
+
+  const setGuestMapping = (sourceName: string) => {
+    setMapping((m) => {
+      const { [sourceName]: _drop, ...rest } = m;
+      return rest;
+    });
+    setNewGuestNames((g) => ({ ...g, [sourceName]: sourceName }));
+  };
+
+  const unmapped = (parsed?.sourceNames ?? []).filter((n) => !(n in mapping) && !(n in newGuestNames));
+  const canConfirm = parsed !== null && unmapped.length === 0 && parsed.rows.length > 0;
+
+  const onConfirm = () => {
+    if (!parsed) return;
+    commit.mutate(
+      { rows: parsed.rows, mapping, newGuests: newGuestNames },
+      { onSuccess: (r) => setDone(r.created) },
+    );
+  };
+
+  return (
+    <div>
+      <Field label={t("import.fileLabel")}>
+        <input
+          type="file"
+          accept=".xls,.csv"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) onFile(file);
+          }}
+        />
+      </Field>
+
+      {preview.isPending && <p className="text-[12.5px]" style={hint}>{t("import.parsing")}</p>}
+      {preview.isError && <p role="alert" className="text-[12.5px]" style={{ color: "var(--clay)" }}>{t("import.parseFailed")}</p>}
+
+      {parsed && (
+        <>
+          <p className="mb-2 text-[12.5px]" style={hint}>
+            {t("import.rowCount", { count: parsed.rows.length })}
+            {parsed.warnings.length > 0 && ` · ${t("import.warnings", { count: parsed.warnings.length })}`}
+          </p>
+
+          <div className="mb-3 border-t pt-2.5" style={rule}>
+            <div className="mb-1.5 text-[10.5px] tracking-[0.13em] uppercase" style={hint}>
+              {t("import.mapping")}
+            </div>
+            {parsed.sourceNames.map((name) => (
+              <div key={name} className="mb-2 flex items-center gap-2">
+                <span className="min-w-0 flex-1 truncate text-[13.5px]">{name}</span>
+                <Select
+                  value={mapping[name] ?? (name in newGuestNames ? "__guest__" : "")}
+                  onChange={(e) => {
+                    if (e.target.value === "__guest__") setGuestMapping(name);
+                    else if (e.target.value) setMemberMapping(name, e.target.value);
+                  }}
+                >
+                  <option value="">{t("import.mapUnmapped")}</option>
+                  {memberList.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nickname}
+                    </option>
+                  ))}
+                  {me.data?.isOwner && <option value="__guest__">{t("import.createGuest", { name })}</option>}
+                </Select>
+              </div>
+            ))}
+          </div>
+
+          {commit.isError && <p role="alert" className="mb-2 text-[12.5px]" style={{ color: "var(--clay)" }}>{t("import.failed")}</p>}
+          {done !== null && <p role="status" aria-live="polite" className="mb-2 text-[12.5px]" style={{ color: "var(--moss-2)" }}>{t("import.done", { count: done })}</p>}
+
+          <Button className="w-full" disabled={!canConfirm || commit.isPending} onClick={onConfirm}>
+            {commit.isPending ? t("import.confirming") : t("import.confirm")}
+          </Button>
+        </>
+      )}
+    </div>
+  );
+}
+
 /** Same shape as the confirm dialogs in AdminPanel: alertdialog, modal, cancel
  *  first so the destructive button is never the one under a stray tap. */
 function ConfirmDialog({
@@ -538,7 +663,7 @@ function ConfirmDialog({
   );
 }
 
-type Panel = "edit" | "members" | "invite" | "duplicate";
+type Panel = "edit" | "members" | "invite" | "duplicate" | "import";
 
 export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
   const navigate = useNavigate();
@@ -620,6 +745,9 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
               <button type="button" role="menuitem" className={item} onClick={() => pick("duplicate")}>
                 {t("ledger.menu.duplicate")}
               </button>
+              <button type="button" role="menuitem" className={item} onClick={() => pick("import")}>
+                {t("import.menuLabel")}
+              </button>
               <a
                 href={`/api/ledgers/${ledger.id}/export.csv`}
                 download
@@ -679,6 +807,9 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
             navigate(`/ledgers/${newLedgerId}`);
           }}
         />
+      </Sheet>
+      <Sheet open={panel === "import"} onOpenChange={() => setPanel(null)} title={t("import.title")}>
+        <ImportPanel ledgerId={ledger.id} />
       </Sheet>
 
       {(lifecycle.isError || remove.isError) && (
