@@ -57,3 +57,120 @@ describe("POST /ledgers/:ledgerId/import/preview", () => {
     expect(res2.status).toBe(403);
   });
 });
+
+describe("POST /ledgers/:ledgerId/import/commit", () => {
+  const commitBody = (overrides: object = {}) => ({
+    rows: [
+      {
+        title: "Auto",
+        amountPaise: 10_000,
+        dateMs: 1_760_000_000_000,
+        payerName: "Ada",
+        shares: [
+          { name: "Ada", sharePaise: 5_000 },
+          { name: "Bob", sharePaise: 5_000 },
+        ],
+      },
+    ],
+    mapping: { Ada: "m_ada", Bob: "m_bob" },
+    newGuests: {},
+    ...overrides,
+  });
+
+  it("creates the expense and splits from mapped names, in one batch, for an existing member", async () => {
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/commit", {
+        method: "POST",
+        headers: { cookie: h.cookie, "content-type": "application/json" },
+        body: JSON.stringify(commitBody()),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { created: number };
+    expect(body.created).toBe(1);
+
+    const expenses = (await (await app.request(req(h, "/api/ledgers/L1/expenses"))).json()) as Array<{
+      description: string;
+      total: number;
+      payerMemberId: string;
+      splits: Array<{ memberId: string; amount: number }>;
+    }>;
+    expect(expenses).toHaveLength(1);
+    expect(expenses[0]).toMatchObject({ description: "Auto", total: 10_000, payerMemberId: "m_ada" });
+    const total = expenses[0]!.splits.reduce((a, s) => a + s.amount, 0);
+    expect(total).toBe(10_000); // resolveSplits guarantees exact sum
+  });
+
+  it("400s when a source name in rows has no mapping and no new guest", async () => {
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/commit", {
+        method: "POST",
+        headers: { cookie: h.cookie, "content-type": "application/json" },
+        body: JSON.stringify(commitBody({ mapping: { Ada: "m_ada" } })), // Bob unmapped
+      }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("403s a non-owner who supplies newGuests", async () => {
+    // Bob is not the owner in the harness (only u_ada is_owner=1).
+    const { createSession, SESSION_COOKIE } = await import("~/server/auth/session");
+    const bobToken = await createSession(h.db, "u_bob", Date.now());
+    const bobCookie = `${SESSION_COOKIE}=${bobToken}`;
+
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/commit", {
+        method: "POST",
+        headers: { cookie: bobCookie, "content-type": "application/json" },
+        body: JSON.stringify(commitBody({ mapping: { Ada: "m_ada" }, newGuests: { Bob: "Bob (imported)" } })),
+      }),
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("creates a new guest (owner) and uses it as a participant", async () => {
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/commit", {
+        method: "POST",
+        headers: { cookie: h.cookie, "content-type": "application/json" },
+        body: JSON.stringify(
+          commitBody({
+            rows: [
+              {
+                title: "Snacks",
+                amountPaise: 2_000,
+                dateMs: 1_760_000_000_000,
+                payerName: "Ada",
+                shares: [
+                  { name: "Ada", sharePaise: 1_000 },
+                  { name: "Charlie", sharePaise: 1_000 },
+                ],
+              },
+            ],
+            mapping: { Ada: "m_ada" },
+            newGuests: { Charlie: "Charlie" },
+          }),
+        ),
+      }),
+    );
+    expect(res.status).toBe(200);
+
+    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{ nickname: string; guestName: string | null }>;
+    expect(members.some((m) => m.guestName === "Charlie")).toBe(true);
+  });
+
+  it("409s on an archived ledger", async () => {
+    // Archive L1 directly via SQL - the lifecycle route lives in ledgers.ts and
+    // isn't exercised here; only its effect (archived_at set) matters for this test.
+    await h.sql.exec(`UPDATE ledgers SET archived_at = 1760000000000 WHERE id = 'L1'`);
+
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/commit", {
+        method: "POST",
+        headers: { cookie: h.cookie, "content-type": "application/json" },
+        body: JSON.stringify(commitBody()),
+      }),
+    );
+    expect(res.status).toBe(409);
+  });
+});
