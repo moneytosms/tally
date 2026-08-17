@@ -22,6 +22,7 @@ import recurring from "~/server/routes/recurring";
 import push from "~/server/routes/push";
 import admin from "~/server/routes/admin";
 import activity from "~/server/routes/activity";
+import importRouter from "~/server/routes/import";
 
 const app = new Hono<Env>();
 
@@ -59,6 +60,7 @@ app.route("/api", recurring);
 app.route("/api", push);
 app.route("/api", admin);
 app.route("/api", activity);
+app.route("/api", importRouter);
 
 app.notFound((c) => c.json({ error: "not found" }, 404));
 // Never leak an internal message to the client, and never log a request body -
