@@ -4,6 +4,12 @@
 import { z } from "zod";
 import { MAX_PAISE } from "~/shared/money";
 
+// Fixed accent palette for a ledger's cover colour (issue #27) - not a free hex,
+// so every card stays legible across all seven paper themes. Client swatch
+// values live in LedgersTab.tsx; this is the shape the DB check constraint
+// (src/db/schema.ts) and the client both agree on.
+export const LEDGER_COLOR_VALUES = ["moss", "clay", "ochre", "plum", "sky", "rose"] as const;
+
 const id = z.string().min(1).max(64);
 const paise = z.int().min(-MAX_PAISE).max(MAX_PAISE);
 const epochMs = z.int().min(0);
@@ -21,11 +27,21 @@ export const createLedgerSchema = z.object({
   /** Copy the members of a ledger the caller is already in (SPEC §8). Not a
    *  ledger column - the server turns it into member rows and drops it. */
   cloneFrom: id.nullable().default(null),
+  /** Cover accent (issue #27). Fixed palette, purely visual - never the only
+   *  cue for anything money-related. */
+  color: z.enum(LEDGER_COLOR_VALUES).nullable().default(null),
+  /** A single glyph, kept short so it can only ever be an emoji-ish label, not
+   *  a second name field in disguise. */
+  emoji: z.string().trim().max(8).nullable().default(null),
 });
 
 // `cloneFrom` only means anything at creation: members join or leave afterwards,
 // they are never re-cloned.
 export const updateLedgerSchema = createLedgerSchema.omit({ cloneFrom: true }).partial();
+
+/** Per-viewer home-screen pin (issue #26). Its own tiny schema because it is
+ *  the one ledger field that belongs to the member row, not the ledger. */
+export const pinLedgerSchema = z.object({ pinned: z.boolean() });
 
 export const createExpenseSchema = z.object({
   description: name,

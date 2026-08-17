@@ -13,7 +13,13 @@ import { requireSession } from "~/server/middleware/session";
 import { requireMember } from "~/server/middleware/membership";
 import { isLedgerCreator, requireOwner } from "~/server/middleware/owner";
 import { uuidv7 } from "~/shared/id";
-import { addGuestSchema, addMemberSchema, createLedgerSchema, updateLedgerSchema } from "~/shared/schemas";
+import {
+  addGuestSchema,
+  addMemberSchema,
+  createLedgerSchema,
+  pinLedgerSchema,
+  updateLedgerSchema,
+} from "~/shared/schemas";
 
 type Ledger = NonNullable<Awaited<ReturnType<Db["findLedger"]>>>;
 
@@ -38,6 +44,11 @@ async function summarise(db: Db, ledger: Ledger, viewerMemberId: string) {
     endDate: ledger.endDate,
     budget: ledger.budget,
     invitesEnabled: ledger.invitesEnabled,
+    color: ledger.color,
+    emoji: ledger.emoji,
+    // The VIEWER's own pin, read off their own member row - never another
+    // member's, or one person's home screen would rearrange everyone's.
+    pinned: members.find((m) => m.id === viewerMemberId)?.pinned ?? false,
     archivedAt: ledger.archivedAt,
     memberCount: members.length,
     net: positions.find((p) => p.memberId === viewerMemberId)?.net ?? 0,
@@ -176,6 +187,17 @@ ledgers.post("/ledgers/:ledgerId/reopen", async (c) => {
   return c.json(await summarise(c.var.db, ledger, c.var.member.id));
 });
 
+/** Pin/unpin on the caller's own membership row (issue #26) - never another
+ *  member's, so one person's home-screen order can't rearrange anyone else's. */
+ledgers.post("/ledgers/:ledgerId/pin", async (c) => {
+  const parsed = pinLedgerSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "invalid pin", code: "invalid" }, 400);
+  const db = c.var.db;
+  await db.updateMember(c.var.member.id, { pinned: parsed.data.pinned });
+  const ledger = await db.findLedger(c.req.param("ledgerId"));
+  return c.json(await summarise(db, ledger!, c.var.member.id));
+});
+
 // ---- members ----------------------------------------------------------------
 
 ledgers.get("/ledgers/:ledgerId/members", async (c) => {
@@ -249,6 +271,7 @@ ledgers.post("/ledgers/:ledgerId/guests", requireOwner, async (c) => {
     joinedAt: Date.now(),
     leftAt: null,
     deletedAt: null,
+    pinned: false,
   };
   await c.var.db.insertMember(member);
   return c.json(serialiseMember(member, new Map()), 201);
@@ -261,6 +284,24 @@ ledgers.post("/ledgers/:ledgerId/leave", async (c) => {
   const net = positions.find((p) => p.memberId === c.var.member.id)?.net ?? 0;
   if (net !== 0) return c.json({ error: "net position is not zero", code: "non_zero_position" }, 409);
   await c.var.db.updateMember(c.var.member.id, { leftAt: Date.now() });
+  return c.json({ ok: true });
+});
+
+/** Owner removes someone else - for a member who has gone inactive or left the
+ *  group outside the app. Same zero-balance guard as self-leave (SPEC §4): the
+ *  owner cannot write off a balance by removing the member who holds it. */
+ledgers.delete("/ledgers/:ledgerId/members/:memberId", requireOwner, async (c) => {
+  const ledgerId = c.req.param("ledgerId");
+  const memberId = c.req.param("memberId");
+
+  const member = (await c.var.db.listMembers(ledgerId)).find((m) => m.id === memberId);
+  if (!member) return c.json({ error: "no such member", code: "no_member" }, 404);
+
+  const { positions } = await positionsOf(c.var.db, ledgerId);
+  const net = positions.find((p) => p.memberId === memberId)?.net ?? 0;
+  if (net !== 0) return c.json({ error: "net position is not zero", code: "non_zero_position" }, 409);
+
+  await c.var.db.updateMember(memberId, { leftAt: Date.now() });
   return c.json({ ok: true });
 });
 

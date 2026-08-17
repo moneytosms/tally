@@ -138,10 +138,12 @@ export function createDb(d1: D1Database) {
     deleteSessionsForUser: (userId: string) => db.delete(t.sessions).where(eq(t.sessions.userId, userId)),
 
     // ---- ledgers ---------------------------------------------------------
-    /** Every live ledger the user is a current member of. */
+    /** Every live ledger the user is a current member of. Pinned ones (the
+     *  viewer's own preference, issue #26) sort first; ties fall back to the
+     *  existing newest-first order. */
     async listLedgersForUser(userId: string) {
       return db
-        .select({ ledger: t.ledgers, memberId: t.ledgerMembers.id })
+        .select({ ledger: t.ledgers, memberId: t.ledgerMembers.id, pinned: t.ledgerMembers.pinned })
         .from(t.ledgers)
         .innerJoin(t.ledgerMembers, eq(t.ledgerMembers.ledgerId, t.ledgers.id))
         .where(
@@ -152,7 +154,7 @@ export function createDb(d1: D1Database) {
             isNull(t.ledgers.deletedAt),
           ),
         )
-        .orderBy(desc(t.ledgers.createdAt));
+        .orderBy(desc(t.ledgerMembers.pinned), desc(t.ledgers.createdAt));
     },
     async findLedger(ledgerId: string) {
       const [row] = await db

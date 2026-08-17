@@ -4,8 +4,8 @@ import { Amount, Button, EmptyState, Skeleton } from "~/client/components/ui";
 import { Sheet } from "~/client/components/ui/Sheet";
 import { focusRing } from "~/client/components/ui/focus";
 import { ActivityRow } from "~/client/components/ActivityRow";
-import { LedgerForm, type LedgerKind } from "~/client/components/LedgerForm";
-import { useLedgers, useMe, useRecentActivity, type LedgerSummary } from "~/client/lib/queries";
+import { LedgerForm, LEDGER_COLOR_SWATCH, type LedgerKind } from "~/client/components/LedgerForm";
+import { useLedgers, useMe, useRecentActivity, useTogglePin, type LedgerSummary } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
 
 const DAY = 86_400_000;
@@ -47,16 +47,55 @@ export function BurnRate({ ledger }: { ledger: LedgerSummary }) {
   );
 }
 
+/** Pin toggle (issue #26). Sits on top of the card's own Link, so it needs its
+ *  own stopped click - otherwise "pin" also navigates into the ledger. */
+function PinButton({ ledger }: { ledger: LedgerSummary }) {
+  const togglePin = useTogglePin(ledger.id);
+  return (
+    <button
+      type="button"
+      aria-label={t(ledger.pinned ? "ledger.unpin" : "ledger.pin")}
+      aria-pressed={ledger.pinned}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        togglePin.mutate(!ledger.pinned);
+      }}
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${focusRing}`}
+      style={{ color: ledger.pinned ? "var(--ochre)" : "var(--ink-3)" }}
+    >
+      {/* A plain filled/outline star - colour alone is never the only cue, the
+          fill state carries it too. */}
+      <svg width="16" height="16" viewBox="0 0 24 24" fill={ledger.pinned ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.75">
+        <path d="M12 2.5l2.9 6.6 7.1.7-5.4 4.8 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2.1 9.8l7.1-.7z" strokeLinejoin="round" />
+      </svg>
+    </button>
+  );
+}
+
 function LedgerCard({ ledger }: { ledger: LedgerSummary }) {
   return (
     <Link
       to={`/ledgers/${ledger.id}`}
       className={`mb-2 block rounded-[7px] border px-3.5 py-3 ${focusRing}`}
-      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      style={{
+        background: "var(--paper-2)",
+        borderColor: "var(--line)",
+        // The cover accent (issue #27) is a left rule, not a fill - it stays
+        // legible in every theme without fighting the card's own text colour.
+        borderLeft: ledger.color ? `3px solid ${LEDGER_COLOR_SWATCH[ledger.color]}` : undefined,
+      }}
     >
       <div className="flex items-center justify-between gap-2.5">
-        <div className="min-w-0">
-          <div className="truncate text-[14.5px] font-medium">{ledger.name}</div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-1.5">
+            {ledger.emoji && (
+              <span className="shrink-0" aria-hidden="true">
+                {ledger.emoji}
+              </span>
+            )}
+            <div className="truncate text-[14.5px] font-medium">{ledger.name}</div>
+          </div>
           <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
             {t("expense.member", { count: ledger.memberCount })}
             {" · "}
@@ -64,6 +103,7 @@ function LedgerCard({ ledger }: { ledger: LedgerSummary }) {
           </div>
         </div>
         <Amount paise={ledger.net} label={t("ledger.yourPosition")} />
+        <PinButton ledger={ledger} />
       </div>
       <BurnRate ledger={ledger} />
     </Link>

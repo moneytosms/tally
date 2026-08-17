@@ -6,10 +6,23 @@ import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { Button, Field, Input, Rupees, Select, focusRing } from "~/client/components/ui";
 import { rupeesToPaise } from "~/client/components/SplitEditor";
-import { useCreateLedger, useLedgers } from "~/client/lib/queries";
+import { useCreateLedger, useLedgers, type LedgerColor } from "~/client/lib/queries";
+import { LEDGER_COLOR_VALUES } from "~/shared/schemas";
 import { t } from "~/client/i18n";
 
 export type LedgerKind = "trip" | "group" | "pair";
+
+/** Swatch hex per accent (issue #27). Deliberately fixed, not a CSS token -
+ *  themes redefine --moss/--clay/--ochre globally, so a per-ledger accent needs
+ *  colours that hold their identity no matter which theme is active. */
+export const LEDGER_COLOR_SWATCH: Record<LedgerColor, string> = {
+  moss: "#5c7355",
+  clay: "#a85f42",
+  ochre: "#b08344",
+  plum: "#7d5a8c",
+  sky: "#3f7ea6",
+  rose: "#b3557a",
+};
 
 /** End of the chosen day in LOCAL time - a trip ending "on the 5th" includes
  *  the 5th. Mirrors the local-day rule ExpenseForm uses for paidAt. */
@@ -33,6 +46,8 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
   const [endDate, setEndDate] = useState("");
   const [budgetRaw, setBudgetRaw] = useState("");
   const [invitesEnabled, setInvitesEnabled] = useState(() => invitesDefaultFor(kind));
+  const [color, setColor] = useState<LedgerColor | null>(null);
+  const [emoji, setEmoji] = useState("");
   const [failure, setFailure] = useState("");
 
   const onSubmit = (e: FormEvent) => {
@@ -60,6 +75,8 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
         budget,
         cloneFrom: cloneFrom === "" ? null : cloneFrom,
         invitesEnabled,
+        color,
+        emoji: emoji.trim() === "" ? null : emoji.trim(),
       },
       {
         onSuccess: (ledger) => {
@@ -83,6 +100,39 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
           required
           maxLength={80}
           autoFocus
+        />
+      </Field>
+
+      <Field label={t("ledger.colorOptional")}>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            aria-label={t("ledger.colorNone")}
+            aria-pressed={color === null}
+            onClick={() => setColor(null)}
+            className={`h-7 w-7 rounded-full border-2 ${focusRing}`}
+            style={{ borderColor: color === null ? "var(--ink)" : "var(--line)", background: "var(--paper-sunk)" }}
+          />
+          {LEDGER_COLOR_VALUES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              aria-label={c}
+              aria-pressed={color === c}
+              onClick={() => setColor(c)}
+              className={`h-7 w-7 rounded-full border-2 ${focusRing}`}
+              style={{ borderColor: color === c ? "var(--ink)" : "transparent", background: LEDGER_COLOR_SWATCH[c] }}
+            />
+          ))}
+        </div>
+      </Field>
+
+      <Field label={t("ledger.emojiOptional")}>
+        <Input
+          value={emoji}
+          onChange={(e) => setEmoji(e.target.value)}
+          placeholder={t("ledger.emojiPlaceholder")}
+          maxLength={8}
         />
       </Field>
 

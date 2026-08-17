@@ -17,11 +17,13 @@ import {
   qk,
   useAddGuest,
   useCreateInvite,
+  useCreateLedger,
   useDeleteLedger,
   useLeaveLedger,
   useLedgerLifecycle,
   useMe,
   useMembers,
+  useRemoveMember,
   useUpdateLedger,
   type LedgerSummary,
   type Member,
@@ -295,9 +297,16 @@ function LeaveLedger({ ledgerId }: { ledgerId: string }) {
   );
 }
 
+/** Owner-only removal of someone else - for a member who has gone inactive or
+ *  left the group outside the app. Same zero-balance guard as self-leave, just
+ *  aimed by the owner (SPEC §4): the server, not a client guess, has the last
+ *  word on whether the position is actually zero. */
 function MembersPanel({ ledgerId }: { ledgerId: string }) {
   const members = useMembers(ledgerId);
   const me = useMe();
+  const removeMember = useRemoveMember(ledgerId);
+  const [confirmingRemove, setConfirmingRemove] = useState<Member | null>(null);
+  const [removeFailure, setRemoveFailure] = useState("");
 
   return (
     <>
@@ -310,11 +319,51 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
               {t("member.guest")}
             </span>
           )}
+          {me.data?.isOwner && m.userId !== me.data.id && (
+            <button
+              type="button"
+              className={`px-1.5 py-1 text-[11.5px] ${focusRing}`}
+              style={{ color: "var(--clay)" }}
+              disabled={removeMember.isPending}
+              onClick={() => {
+                setRemoveFailure("");
+                setConfirmingRemove(m);
+              }}
+            >
+              {t("member.remove")}
+            </button>
+          )}
         </div>
       ))}
       <AddExistingMember ledgerId={ledgerId} />
       {me.data?.isOwner && <AddGuest ledgerId={ledgerId} />}
       <LeaveLedger ledgerId={ledgerId} />
+
+      {removeFailure && (
+        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+          {removeFailure}
+        </p>
+      )}
+
+      {confirmingRemove && (
+        <ConfirmDialog
+          message={t("member.removeConfirm", { name: confirmingRemove.nickname })}
+          onCancel={() => setConfirmingRemove(null)}
+          onConfirm={() => {
+            const target = confirmingRemove;
+            setConfirmingRemove(null);
+            removeMember.mutate(target.id, {
+              onError: (e) => {
+                setRemoveFailure(
+                  e instanceof ApiError && e.code === "non_zero_position"
+                    ? t("member.removeBlocked", { name: target.nickname })
+                    : t("member.removeFailed"),
+                );
+              },
+            });
+          }}
+        />
+      )}
     </>
   );
 }
@@ -415,6 +464,52 @@ function InvitePanel({ ledger }: { ledger: LedgerSummary }) {
   );
 }
 
+/** Repeat trip groups: same people, new dates. Prompts for a name and creates a
+ *  new ledger cloning this one's CURRENT members - the same mechanism
+ *  LedgerForm's "clone from" uses at creation (SPEC §8), just reached from an
+ *  existing ledger instead of a blank form. Categories are shared
+ *  instance-wide already (never ledger-scoped), so there is nothing to copy
+ *  there - the duplicate sees the same category list automatically. The new
+ *  ledger starts with zero expenses, by construction. */
+function DuplicatePanel({ ledger, onDone }: { ledger: LedgerSummary; onDone: (ledgerId: string) => void }) {
+  const create = useCreateLedger();
+  const [name, setName] = useState(`${ledger.name} copy`);
+  const [failure, setFailure] = useState("");
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    const trimmed = name.trim();
+    if (!trimmed) return setFailure(t("ledger.nameRequired"));
+    setFailure("");
+    create.mutate(
+      { name: trimmed, cloneFrom: ledger.id, endDate: null, budget: null, color: null, emoji: null },
+      {
+        onSuccess: (created) => onDone(created.id),
+        onError: () => setFailure(t("ledger.duplicateFailed")),
+      },
+    );
+  };
+
+  return (
+    <form onSubmit={onSubmit} noValidate>
+      <Field label={t("ledger.duplicateName")}>
+        <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} autoFocus />
+      </Field>
+      <p className="mb-3 text-[11.5px]" style={hint}>
+        {t("ledger.duplicateHint")}
+      </p>
+      {failure && (
+        <p role="alert" className="mb-3 text-[12.5px]" style={{ color: "var(--clay)" }}>
+          {failure}
+        </p>
+      )}
+      <Button type="submit" className="w-full" disabled={create.isPending}>
+        {t("ledger.duplicateAction")}
+      </Button>
+    </form>
+  );
+}
+
 /** Same shape as the confirm dialogs in AdminPanel: alertdialog, modal, cancel
  *  first so the destructive button is never the one under a stray tap. */
 function ConfirmDialog({
@@ -443,7 +538,7 @@ function ConfirmDialog({
   );
 }
 
-type Panel = "edit" | "members" | "invite";
+type Panel = "edit" | "members" | "invite" | "duplicate";
 
 export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
   const navigate = useNavigate();
@@ -522,6 +617,9 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
               <button type="button" role="menuitem" className={item} onClick={() => pick("invite")}>
                 {t("ledger.menu.invite")}
               </button>
+              <button type="button" role="menuitem" className={item} onClick={() => pick("duplicate")}>
+                {t("ledger.menu.duplicate")}
+              </button>
               <div className="my-1 border-t" style={rule} />
               <button
                 type="button"
@@ -563,6 +661,15 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
       </Sheet>
       <Sheet open={panel === "invite"} onOpenChange={() => setPanel(null)} title={t("ledger.menu.invite")}>
         <InvitePanel ledger={ledger} />
+      </Sheet>
+      <Sheet open={panel === "duplicate"} onOpenChange={() => setPanel(null)} title={t("ledger.menu.duplicate")}>
+        <DuplicatePanel
+          ledger={ledger}
+          onDone={(newLedgerId) => {
+            setPanel(null);
+            navigate(`/ledgers/${newLedgerId}`);
+          }}
+        />
       </Sheet>
 
       {(lifecycle.isError || remove.isError) && (

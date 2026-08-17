@@ -15,6 +15,7 @@ import {
   text,
   uniqueIndex,
 } from "drizzle-orm/sqlite-core";
+import { LEDGER_COLOR_VALUES } from "~/shared/schemas";
 
 export const users = sqliteTable(
   "users",
@@ -111,22 +112,36 @@ export const invites = sqliteTable("invites", {
   revokedAt: integer("revoked_at"),
 });
 
-export const ledgers = sqliteTable("ledgers", {
-  id: text("id").primaryKey(),
-  name: text("name").notNull(),
-  endDate: integer("end_date"), // set => trip with burn-rate
-  budget: integer("budget"), // paise, set => budget tracking
-  // Opt-in per ledger: an invite link is a bearer credential, so a long-standing
-  // group has none and a trip turns them on. Default FALSE, which is also what
-  // every pre-existing ledger gets - nothing keeps an invite path it never chose.
-  invitesEnabled: integer("invites_enabled", { mode: "boolean" }).notNull().default(false),
-  createdBy: text("created_by")
-    .notNull()
-    .references(() => users.id),
-  createdAt: integer("created_at").notNull(),
-  archivedAt: integer("archived_at"),
-  deletedAt: integer("deleted_at"),
-});
+export const ledgers = sqliteTable(
+  "ledgers",
+  {
+    id: text("id").primaryKey(),
+    name: text("name").notNull(),
+    endDate: integer("end_date"), // set => trip with burn-rate
+    budget: integer("budget"), // paise, set => budget tracking
+    // Opt-in per ledger: an invite link is a bearer credential, so a long-standing
+    // group has none and a trip turns them on. Default FALSE, which is also what
+    // every pre-existing ledger gets - nothing keeps an invite path it never chose.
+    invitesEnabled: integer("invites_enabled", { mode: "boolean" }).notNull().default(false),
+    // Purely visual, both nullable: a ledger with neither still renders fine,
+    // just text-only as it always has (issue #27).
+    color: text("color"),
+    emoji: text("emoji"),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer("created_at").notNull(),
+    archivedAt: integer("archived_at"),
+    deletedAt: integer("deleted_at"),
+  },
+  (t) => [
+    check(
+      "ledgers_color_ck",
+      sql`${t.color} IS NULL OR ${t.color} IN (${sql.raw(LEDGER_COLOR_VALUES.map((v) => `'${v}'`).join(", "))})`,
+    ),
+    check("ledgers_emoji_len_ck", sql`${t.emoji} IS NULL OR length(${t.emoji}) <= 8`),
+  ],
+);
 
 export const ledgerMembers = sqliteTable(
   "ledger_members",
@@ -141,6 +156,10 @@ export const ledgerMembers = sqliteTable(
     joinedAt: integer("joined_at").notNull(),
     leftAt: integer("left_at"),
     deletedAt: integer("deleted_at"),
+    // Per-viewer home-screen pin (issue #26). Lives here, not on `ledgers`,
+    // because it is one person's preference, not shared ledger state - Ada
+    // pinning a trip must not pin it for Bob.
+    pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
   },
   (t) => [
     check(

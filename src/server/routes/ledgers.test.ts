@@ -3,7 +3,8 @@
 // guest Dee, and the session is Ada's.
 import { beforeEach, describe, expect, it } from "vitest";
 import ledgers from "~/server/routes/ledgers";
-import { type Harness, mount, req, setup } from "~/server/routes/_test-harness";
+import { type Harness, mount, NOW, req, setup } from "~/server/routes/_test-harness";
+import { SESSION_COOKIE, createSession } from "~/server/auth/session";
 
 let h: Harness;
 let app: ReturnType<typeof mount>;
@@ -142,6 +143,127 @@ describe("per-ledger invite toggle", () => {
   it("refuses a caller who is not a member of the ledger", async () => {
     h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = ?").run(Date.now(), "n_ada");
     expect((await mint("L2")).status).toBe(403);
+  });
+});
+
+// Owner removing a member who has gone inactive elsewhere (#25). Ada (owner)
+// is the caller against L1: Ada, Bob, guest Dee.
+describe("DELETE /ledgers/:ledgerId/members/:memberId", () => {
+  const remove = (memberId: string, cookie?: string) =>
+    app.request(req(h, `/api/ledgers/L1/members/${memberId}`, { method: "DELETE", ...(cookie ? { headers: { cookie } } : {}) }));
+
+  it("removes a member with a zero balance", async () => {
+    const res = await remove("m_bob");
+    expect(res.status).toBe(200);
+    expect(await h.db.listMembers("L1")).toHaveLength(2);
+  });
+
+  it("blocks removal while the member's net position is non-zero", async () => {
+    // Ada pays 1000 (10.00 rupees), split evenly with Bob: Bob owes 500.
+    h.sql
+      .prepare(
+        "INSERT INTO expenses (id, ledger_id, description, total, paid_at, payer_member_id, mode, created_by, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+      )
+      .run("e1", "L1", "Dinner", 1000, NOW, "m_ada", "equal", "u_ada", NOW, NOW);
+    h.sql
+      .prepare("INSERT INTO expense_splits (id, expense_id, member_id, amount, sort_order) VALUES (?,?,?,?,?)")
+      .run("s1", "e1", "m_ada", 500, 0);
+    h.sql
+      .prepare("INSERT INTO expense_splits (id, expense_id, member_id, amount, sort_order) VALUES (?,?,?,?,?)")
+      .run("s2", "e1", "m_bob", 500, 1);
+
+    const res = await remove("m_bob");
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { code: string }).code).toBe("non_zero_position");
+    expect((await h.db.listMembers("L1")).some((m) => m.id === "m_bob")).toBe(true);
+  });
+
+  it("refuses a non-owner caller", async () => {
+    const { createSession, SESSION_COOKIE } = await import("~/server/auth/session");
+    const bobToken = await createSession(h.db, "u_bob", Date.now());
+    const res = await remove("m_bob", `${SESSION_COOKIE}=${bobToken}`);
+    expect(res.status).toBe(403);
+    expect((await h.db.listMembers("L1")).some((m) => m.id === "m_bob")).toBe(true);
+  });
+
+  it("404s for a member that does not belong to the ledger", async () => {
+    const res = await remove("n_cy");
+    expect(res.status).toBe(404);
+  });
+});
+
+// Cover accent (issue #27) - a fixed palette on the ledger row itself, shared
+// by every member.
+describe("ledger colour and emoji", () => {
+  it("creates a ledger with a colour and emoji", async () => {
+    const res = await create({ name: "Goa", color: "ochre", emoji: "🏖️" });
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { color: string; emoji: string };
+    expect(body.color).toBe("ochre");
+    expect(body.emoji).toBe("🏖️");
+  });
+
+  it("defaults to no colour and no emoji", async () => {
+    const body = (await (await create({ name: "Flat" })).json()) as { color: unknown; emoji: unknown };
+    expect(body.color).toBeNull();
+    expect(body.emoji).toBeNull();
+  });
+
+  it("refuses a colour outside the fixed palette", async () => {
+    const res = await create({ name: "Goa", color: "magenta" });
+    expect(res.status).toBe(400);
+  });
+
+  it("updates the colour and emoji on an existing ledger", async () => {
+    const res = await app.request(req(h, "/api/ledgers/L1", { method: "PATCH", json: { color: "plum", emoji: "🚗" } }));
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { color: string; emoji: string };
+    expect(body.color).toBe("plum");
+    expect(body.emoji).toBe("🚗");
+  });
+});
+
+// Per-viewer home-screen pin (issue #26) - lives on the member row, so pinning
+// a ledger is never visible to anyone but the person who pinned it.
+describe("POST /ledgers/:ledgerId/pin", () => {
+  const pin = (pinned: boolean, ledgerId = "L1") =>
+    app.request(req(h, `/api/ledgers/${ledgerId}/pin`, { method: "POST", json: { pinned } }));
+
+  it("pins a ledger for the caller", async () => {
+    const res = await pin(true);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { pinned: boolean }).pinned).toBe(true);
+  });
+
+  it("unpins again", async () => {
+    await pin(true);
+    const res = await pin(false);
+    expect(((await res.json()) as { pinned: boolean }).pinned).toBe(false);
+  });
+
+  it("does not pin the ledger for another member", async () => {
+    await pin(true);
+    // Bob has not pinned anything - his own view of L1 must read unpinned.
+    const bobToken = await createSession(h.db, "u_bob", Date.now());
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1", {
+        headers: { cookie: `${SESSION_COOKIE}=${bobToken}` },
+      }),
+    );
+    expect(((await res.json()) as { pinned: boolean }).pinned).toBe(false);
+  });
+
+  it("sorts pinned ledgers first in the list", async () => {
+    // Ada is in L1 and L2 (seeded, L1 created first). Pin L2 - it should now
+    // lead the list despite being newer than nothing else and older than L1.
+    await pin(true, "L2");
+    const list = (await (await app.request(req(h, "/api/ledgers"))).json()) as Array<{ id: string }>;
+    expect(list[0]?.id).toBe("L2");
+  });
+
+  it("refuses a caller who is not a member of the ledger", async () => {
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = ?").run(Date.now(), "n_ada");
+    expect((await pin(true, "L2")).status).toBe(403);
   });
 });
 
