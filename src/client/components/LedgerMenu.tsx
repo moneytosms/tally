@@ -620,6 +620,15 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
               <button type="button" role="menuitem" className={item} onClick={() => pick("duplicate")}>
                 {t("ledger.menu.duplicate")}
               </button>
+              <a
+                href={`/api/ledgers/${ledger.id}/export.csv`}
+                download
+                role="menuitem"
+                className={item}
+                onClick={() => setOpen(false)}
+              >
+                {t("export.ledgerCsv")}
+              </a>
               <div className="my-1 border-t" style={rule} />
               <button
                 type="button"

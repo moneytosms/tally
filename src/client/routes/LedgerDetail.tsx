@@ -177,14 +177,6 @@ export function LedgerDetail() {
           {t("ledger.expenses")}
         </span>
         <span className="flex items-center gap-3">
-          <a
-            href={`/api/ledgers/${ledgerId}/export.csv`}
-            download
-            className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
-            style={{ color: "var(--moss)" }}
-          >
-            {t("export.ledgerCsv")}
-          </a>
           <Link
             to={`/ledgers/${ledgerId}/activity`}
             className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
