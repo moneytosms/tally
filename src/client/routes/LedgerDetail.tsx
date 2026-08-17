@@ -178,6 +178,13 @@ export function LedgerDetail() {
         </span>
         <span className="flex items-center gap-3">
           <Link
+            to={`/ledgers/${ledgerId}/insights`}
+            className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
+            style={{ color: "var(--moss)" }}
+          >
+            {t("ledger.menu.insights")}
+          </Link>
+          <Link
             to={`/ledgers/${ledgerId}/activity`}
             className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
             style={{ color: "var(--moss)" }}

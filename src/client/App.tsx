@@ -28,6 +28,7 @@ const InsightsTab = lazy(() => import("./routes/InsightsTab"));
 const AdminPanel = lazy(() => import("./routes/AdminPanel"));
 const RecurringTab = lazy(() => import("./routes/RecurringTab"));
 const ActivityTab = lazy(() => import("./routes/ActivityTab"));
+const LedgerInsights = lazy(() => import("./routes/LedgerInsights"));
 
 /** Explicit, and a live region - offline is never inferred from a missing number. */
 function OfflineBanner() {
@@ -82,7 +83,7 @@ function AddMenu({ onPick }: { onPick: (choice: AddChoice) => void }) {
  *  A ledger's own screen is here too: three of the four things behind the "+"
  *  create a ledger, which is meaningless once you are inside one, and the fourth
  *  already has a named button next to the expenses it adds to. */
-const FAB_HIDDEN = /\/(settle|activity|recurring)$|^\/you|^\/ledgers\/[^/]+$/;
+const FAB_HIDDEN = /\/(settle|activity|recurring|insights)$|^\/you|^\/ledgers\/[^/]+$/;
 
 function Shell() {
   const [addOpen, setAddOpen] = useState(false);
@@ -151,6 +152,7 @@ export function App() {
           <Route path="ledgers/:ledgerId/expenses/:expenseId" element={<ExpenseEditor />} />
           <Route path="ledgers/:ledgerId/settle" element={<SettleUp />} />
           <Route path="ledgers/:ledgerId/recurring" element={<RecurringTab />} />
+          <Route path="ledgers/:ledgerId/insights" element={<LedgerInsights />} />
           <Route path="ledgers/:ledgerId/activity" element={<ActivityTab />} />
           <Route path="balances" element={<BalancesTab />} />
           <Route path="insights" element={<InsightsTab />} />

@@ -86,7 +86,8 @@
       "duplicate": "Duplicate",
       "archive": "Archive",
       "reopen": "Reopen",
-      "delete": "Delete"
+      "delete": "Delete",
+      "insights": "Insights"
     },
     "endDateOptional": "End date (optional)",
     "endDateHint": "Set a date for something that ends, like a trip. Leave it empty for a ledger that just keeps running.",
@@ -466,6 +467,10 @@
     "byCategory": "Where it went",
     "byMonth": "Month by month",
     "mostSpentWith": "Most spent with",
+    "ledgerTitle": "Ledger insights",
+    "byMember": "By member",
+    "paid": "Paid",
+    "share": "Share",
     "sharedExpenses": {
       "one": "{count} shared expense",
       "other": "{count} shared expenses"
