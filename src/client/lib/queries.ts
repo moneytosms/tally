@@ -115,6 +115,13 @@ export type Insights = {
   mostSpentWith: Array<{ userId: string; displayName: string; sharedExpenseCount: number; sharedTotal: Paise }>;
 };
 
+export type LedgerInsights = {
+  totals: { spent: Paise; expenseCount: number };
+  byCategory: Array<{ categoryId: string | null; name: string; icon: string | null; spent: Paise; count: number }>;
+  byMonth: Array<{ month: string; spent: Paise }>;
+  byMember: Array<{ memberId: string; nickname: string; paid: Paise; share: Paise }>;
+};
+
 export type Series = {
   id: string;
   ledgerId: string;
@@ -199,6 +206,7 @@ export const qk = {
   crossLedger: ["balances"] as const,
   categories: ["categories"] as const,
   insights: (from: number | null, to: number | null) => ["insights", from, to] as const,
+  ledgerInsights: (ledgerId: string) => ["ledgers", ledgerId, "insights"] as const,
   comments: (expenseId: string) => ["expenses", expenseId, "comments"] as const,
   revisions: (expenseId: string) => ["expenses", expenseId, "revisions"] as const,
   series: (ledgerId: string) => ["ledgers", ledgerId, "recurring"] as const,
@@ -279,6 +287,12 @@ export const useInsights = (from: number | null, to: number | null = null) =>
       const qs = p.toString();
       return api<Insights>(`/api/insights${qs ? `?${qs}` : ""}`);
     },
+  });
+
+export const useLedgerInsights = (ledgerId: string) =>
+  useQuery({
+    queryKey: qk.ledgerInsights(ledgerId),
+    queryFn: () => api<LedgerInsights>(`/api/ledgers/${ledgerId}/insights`),
   });
 
 export const useComments = (ledgerId: string, expenseId: string) =>
