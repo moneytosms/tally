@@ -21,7 +21,7 @@ function MemberPieSection({ title, data }: { title: string; data: PieDatum[] }) 
           {nonZero.map((d) => (
             <li key={d.name} className="flex items-center justify-between gap-2.5 py-1">
               <span className="min-w-0 flex-1 truncate text-[13.5px]">{d.name}</span>
-              <Amount paise={d.value} label="" tone="neutral" />
+              <Amount paise={d.value} label={title} tone="neutral" />
             </li>
           ))}
         </ul>
