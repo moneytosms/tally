@@ -155,13 +155,21 @@ insights.get("/ledgers/:ledgerId/insights", requireSession, requireMember, async
   const db = c.var.db;
   const ledgerId = c.req.param("ledgerId");
 
-  const [expenses, members, categories] = await Promise.all([
+  // listMembersForActivity, not listMembers: a member who left after paying or
+  // sharing an expense must still get a name here - this is an insight, not a
+  // balance. (Zero-value entries are filtered client-side, so including every
+  // non-deleted member, current or departed, is harmless.)
+  const [expenses, members, categories, users] = await Promise.all([
     db.listExpenses(ledgerId),
-    db.listMembers(ledgerId),
+    db.listMembersForActivity(ledgerId),
     db.listCategories(),
+    db.listUsers(),
   ]);
   const categoryById = new Map(categories.map((cat) => [cat.id, cat]));
-  const nameOfMember = new Map(members.map((m) => [m.id, m.nickname ?? m.guestName ?? ""]));
+  const displayNames = new Map(users.map((u) => [u.id, u.displayName]));
+  const nameOfMember = new Map(
+    members.map((m) => [m.id, m.nickname ?? m.guestName ?? (m.userId && displayNames.get(m.userId)) ?? ""]),
+  );
 
   let spent = 0;
   const byCategory = new Map<string | null, { spent: number; count: number }>();

@@ -19,7 +19,7 @@ function MemberPieSection({ title, data }: { title: string; data: PieDatum[] }) 
         )}
         <ul className="mt-2">
           {nonZero.map((d) => (
-            <li key={d.name} className="flex items-center justify-between gap-2.5 py-1">
+            <li key={d.id} className="flex items-center justify-between gap-2.5 py-1">
               <span className="min-w-0 flex-1 truncate text-[13.5px]">{d.name}</span>
               <Amount paise={d.value} label={title} tone="neutral" />
             </li>
@@ -31,13 +31,13 @@ function MemberPieSection({ title, data }: { title: string; data: PieDatum[] }) 
 }
 
 function Body({ data }: { data: LedgerInsightsData }) {
-  const paidData: PieDatum[] = data.byMember.map((m) => ({ name: m.nickname, value: m.paid }));
-  const shareData: PieDatum[] = data.byMember.map((m) => ({ name: m.nickname, value: m.share }));
+  const paidData: PieDatum[] = data.byMember.map((m) => ({ id: m.memberId, name: m.nickname, value: m.paid }));
+  const shareData: PieDatum[] = data.byMember.map((m) => ({ id: m.memberId, name: m.nickname, value: m.share }));
 
   return (
     <>
       <div className="mb-4 rounded-[7px] border px-3.5 py-4" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
-        <Amount paise={data.totals.spent} label={t("insights.title")} tone="neutral" hero />
+        <Amount paise={data.totals.spent} label={t("insights.ledgerSpent")} tone="neutral" hero />
         <div className="mt-3 border-t pt-2.5 text-[11.5px]" style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
           {t("insights.expenseCount", { count: data.totals.expenseCount })}
         </div>
@@ -78,8 +78,13 @@ function Body({ data }: { data: LedgerInsightsData }) {
         </section>
       )}
 
-      <MemberPieSection title={t("insights.paid")} data={paidData} />
-      <MemberPieSection title={t("insights.share")} data={shareData} />
+      {data.byMember.length > 0 && (
+        <>
+          <SectionHeading>{t("insights.byMember")}</SectionHeading>
+          <MemberPieSection title={t("insights.paid")} data={paidData} />
+          <MemberPieSection title={t("insights.share")} data={shareData} />
+        </>
+      )}
     </>
   );
 }

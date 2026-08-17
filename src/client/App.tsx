@@ -83,7 +83,7 @@ function AddMenu({ onPick }: { onPick: (choice: AddChoice) => void }) {
  *  A ledger's own screen is here too: three of the four things behind the "+"
  *  create a ledger, which is meaningless once you are inside one, and the fourth
  *  already has a named button next to the expenses it adds to. */
-const FAB_HIDDEN = /\/(settle|activity|recurring|insights)$|^\/you|^\/ledgers\/[^/]+$/;
+const FAB_HIDDEN = /\/(settle|activity|recurring)$|\/ledgers\/[^/]+\/insights$|^\/you|^\/ledgers\/[^/]+$/;
 
 function Shell() {
   const [addOpen, setAddOpen] = useState(false);

@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import expensesRouter from "~/server/routes/expenses";
 import insightsRouter from "~/server/routes/insights";
+import { SESSION_COOKIE, createSession } from "~/server/auth/session";
 import { type Harness, NOW, mount, req, setup } from "~/server/routes/_test-harness";
 
 let h: Harness;
@@ -212,11 +213,50 @@ describe("GET /ledgers/:ledgerId/insights", () => {
     expect(i.byMonth.map((m) => m.spent)).toEqual([2_000, 0, 4_000]);
   });
 
-  it("404s are not a concern here - a non-member gets rejected by requireMember", async () => {
-    const res = await app.request(req(h, "/api/ledgers/L2/insights")); // Ada is not a member of L2... wait Ada IS n_ada on L2
-    // Ada is on both L1 and L2 in the harness, so use a ledger id that doesn't exist instead.
-    const res2 = await app.request(req(h, "/api/ledgers/does-not-exist/insights"));
-    expect(res2.status).toBe(403);
-    void res;
+  it("403s a real member of a different ledger, leaking nothing from it", async () => {
+    // Bob is a member of L1 only. L2 (Ada + Cy) has real expense data.
+    await expense("L1", { total: 2_000, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] });
+    const bobToken = await createSession(h.db, "u_bob", Date.now());
+    const bobCookie = `${SESSION_COOKIE}=${bobToken}`;
+
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L2/insights", { headers: { cookie: bobCookie } }),
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it("403s a nonexistent ledger", async () => {
+    const res = await app.request(req(h, "/api/ledgers/does-not-exist/insights"));
+    expect(res.status).toBe(403);
+  });
+
+  it("401s without a session", async () => {
+    expect((await app.request(new Request("http://tally.test/api/ledgers/L1/insights"))).status).toBe(401);
+  });
+
+  it("resolves a member's name via displayName when nickname is null", async () => {
+    // A user-backed member with no explicit nickname - the common case for
+    // anyone who never renamed themselves in a ledger.
+    h.sql
+      .prepare(
+        "INSERT INTO ledger_members (id, ledger_id, user_id, guest_name, nickname, joined_at) VALUES (?,?,?,?,?,?)",
+      )
+      .run("m_cy", "L1", "u_cy", null, null, NOW + 3);
+    await expense("L1", { total: 4_000, payerMemberId: "m_cy", participants: [{ memberId: "m_cy" }] });
+
+    const i = await ledgerInsights("L1");
+    const cy = i.byMember.find((m) => m.memberId === "m_cy")!;
+    expect(cy.nickname).toBe("Cy"); // Cy's displayName, not blank
+  });
+
+  it("still shows a departed member's name when they have expense history", async () => {
+    await expense("L1", { total: 6_000, payerMemberId: "m_bob", participants: [{ memberId: "m_bob" }, { memberId: "m_ada" }] });
+
+    // Bob leaves after paying/sharing.
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = ?").run(NOW + 10, "m_bob");
+
+    const i = await ledgerInsights("L1");
+    const bob = i.byMember.find((m) => m.memberId === "m_bob")!;
+    expect(bob).toMatchObject({ nickname: "Bob", paid: 6_000, share: 3_000 });
   });
 });

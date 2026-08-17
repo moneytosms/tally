@@ -64,7 +64,7 @@ export const MonthChart = lazy(() =>
   })),
 );
 
-export type PieDatum = { name: string; value: number };
+export type PieDatum = { id: string; name: string; value: number };
 
 /** A single labelled pie, used twice on the ledger insights page (paid /
  *  share) with two different datasets - the caller picks which numbers go in. */
