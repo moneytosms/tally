@@ -11,6 +11,7 @@
 // Mounted at `/api` by the root app; paths below are relative to that.
 import { Hono } from "hono";
 import type { Env } from "~/server/context";
+import { requireMember } from "~/server/middleware/membership";
 import { requireSession } from "~/server/middleware/session";
 
 const insights = new Hono<Env>();
@@ -143,6 +144,79 @@ insights.get("/insights", requireSession, async (c) => {
     byCategory: byCategoryOut,
     byMonth: byMonthOut,
     mostSpentWith,
+  });
+});
+
+/** Ledger-scoped insights: the WHOLE ledger's numbers, not filtered to the
+ *  caller's own shares - this answers "what happened in this trip", not
+ *  "what did I spend". Unlike the lifetime endpoint above, this one walks
+ *  `listExpenses` directly since every expense in the ledger is in scope. */
+insights.get("/ledgers/:ledgerId/insights", requireSession, requireMember, async (c) => {
+  const db = c.var.db;
+  const ledgerId = c.req.param("ledgerId");
+
+  const [expenses, members, categories] = await Promise.all([
+    db.listExpenses(ledgerId),
+    db.listMembers(ledgerId),
+    db.listCategories(),
+  ]);
+  const categoryById = new Map(categories.map((cat) => [cat.id, cat]));
+  const nameOfMember = new Map(members.map((m) => [m.id, m.nickname ?? m.guestName ?? ""]));
+
+  let spent = 0;
+  const byCategory = new Map<string | null, { spent: number; count: number }>();
+  const byMonth = new Map<string, number>();
+  const paidByMember = new Map<string, number>();
+  const shareByMember = new Map<string, number>();
+
+  for (const e of expenses) {
+    spent += e.total;
+
+    const cat = byCategory.get(e.categoryId) ?? { spent: 0, count: 0 };
+    cat.spent += e.total;
+    cat.count += 1;
+    byCategory.set(e.categoryId, cat);
+
+    const mk = monthKey(e.paidAt);
+    byMonth.set(mk, (byMonth.get(mk) ?? 0) + e.total);
+
+    paidByMember.set(e.payerMemberId, (paidByMember.get(e.payerMemberId) ?? 0) + e.total);
+    for (const s of e.splits) {
+      shareByMember.set(s.memberId, (shareByMember.get(s.memberId) ?? 0) + s.amount);
+    }
+  }
+
+  const byCategoryOut = [...byCategory]
+    .map(([categoryId, v]) => {
+      const cat = categoryId ? categoryById.get(categoryId) : undefined;
+      return { categoryId, name: cat?.name ?? "Uncategorised", icon: cat?.icon ?? null, spent: v.spent, count: v.count };
+    })
+    .sort((a, b) => b.spent - a.spent);
+
+  const months = [...byMonth.keys()].sort();
+  const byMonthOut =
+    months.length === 0
+      ? []
+      : fillMonths(months[0]!, months[months.length - 1]!).map((month) => ({ month, spent: byMonth.get(month) ?? 0 }));
+
+  // Every current member appears, even one with only a paid entry or only a
+  // share entry - a zero on the side they didn't touch is the correct number,
+  // not an absence.
+  const memberIds = new Set([...members.map((m) => m.id), ...paidByMember.keys(), ...shareByMember.keys()]);
+  const byMember = [...memberIds]
+    .map((memberId) => ({
+      memberId,
+      nickname: nameOfMember.get(memberId) ?? "",
+      paid: paidByMember.get(memberId) ?? 0,
+      share: shareByMember.get(memberId) ?? 0,
+    }))
+    .sort((a, b) => b.share - a.share);
+
+  return c.json({
+    totals: { spent, expenseCount: expenses.length },
+    byCategory: byCategoryOut,
+    byMonth: byMonthOut,
+    byMember,
   });
 });
 

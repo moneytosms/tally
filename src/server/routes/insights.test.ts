@@ -160,3 +160,63 @@ describe("GET /insights", () => {
     expect((await app.request(new Request("http://tally.test/api/insights"))).status).toBe(401);
   });
 });
+
+type LedgerInsights = {
+  totals: { spent: number; expenseCount: number };
+  byCategory: Array<{ categoryId: string | null; name: string; icon: string | null; spent: number; count: number }>;
+  byMonth: Array<{ month: string; spent: number }>;
+  byMember: Array<{ memberId: string; nickname: string; paid: number; share: number }>;
+};
+
+const ledgerInsights = async (ledgerId: string) =>
+  (await (await app.request(req(h, `/api/ledgers/${ledgerId}/insights`))).json()) as LedgerInsights;
+
+describe("GET /ledgers/:ledgerId/insights", () => {
+  it("sums the WHOLE ledger's spend, not just the caller's share", async () => {
+    // ₹100.00 total, split evenly between Bob and the guest - Ada (the caller) is not a participant.
+    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] });
+
+    const i = await ledgerInsights("L1");
+    expect(i.totals.spent).toBe(10_000); // whole ledger, not Ada's (zero) share
+    expect(i.totals.expenseCount).toBe(1);
+  });
+
+  it("reports byMember paid vs share separately, including a member with only a share", async () => {
+    // Bob pays ₹80.00, split evenly between Ada and Bob (₹40.00 each).
+    await expense("L1", { total: 8_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] });
+
+    const i = await ledgerInsights("L1");
+    const ada = i.byMember.find((m) => m.memberId === "m_ada")!;
+    const bob = i.byMember.find((m) => m.memberId === "m_bob")!;
+    expect(ada).toMatchObject({ paid: 0, share: 4_000 });
+    expect(bob).toMatchObject({ paid: 8_000, share: 4_000 });
+  });
+
+  it("orders byCategory by spent descending, using the expense total (not a per-viewer share)", async () => {
+    await expense("L1", { total: 10_000, payerMemberId: "m_bob", categoryId: "cat_food", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] });
+    await expense("L1", { total: 20_000, payerMemberId: "m_bob", categoryId: "cat_transport", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] });
+
+    const i = await ledgerInsights("L1");
+    expect(i.byCategory.map((c) => c.categoryId)).toEqual(["cat_transport", "cat_food"]);
+    expect(i.byCategory.find((c) => c.categoryId === "cat_food")).toMatchObject({ spent: 10_000, count: 1 });
+  });
+
+  it("fills a gap month with 0, ascending, scoped to this ledger only", async () => {
+    const jan = Date.UTC(2026, 0, 15);
+    const mar = Date.UTC(2026, 2, 15);
+    await expense("L1", { total: 2_000, paidAtEpochMs: jan, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] });
+    await expense("L1", { total: 4_000, paidAtEpochMs: mar, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] });
+
+    const i = await ledgerInsights("L1");
+    expect(i.byMonth.map((m) => m.month)).toEqual(["2026-01", "2026-02", "2026-03"]);
+    expect(i.byMonth.map((m) => m.spent)).toEqual([2_000, 0, 4_000]);
+  });
+
+  it("404s are not a concern here - a non-member gets rejected by requireMember", async () => {
+    const res = await app.request(req(h, "/api/ledgers/L2/insights")); // Ada is not a member of L2... wait Ada IS n_ada on L2
+    // Ada is on both L1 and L2 in the harness, so use a ledger id that doesn't exist instead.
+    const res2 = await app.request(req(h, "/api/ledgers/does-not-exist/insights"));
+    expect(res2.status).toBe(403);
+    void res;
+  });
+});
