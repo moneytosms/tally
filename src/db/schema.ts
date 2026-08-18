@@ -30,6 +30,11 @@ export const users = sqliteTable(
     // PBKDF2 string from src/server/auth/password.ts. Null = passkey-only account.
     passwordHash: text("password_hash"),
     isOwner: integer("is_owner", { mode: "boolean" }).notNull().default(false),
+    // Set at invite redemption (ADR 0008): a ledger invite produces 'restricted',
+    // an instance invite (or bootstrap) produces 'full'. Column default 'full' is
+    // for every account that predates this - matches their actual behaviour
+    // today. Promotion is one-directional; there is no demotion path.
+    accountType: text("account_type", { enum: ["full", "restricted"] }).notNull().default("full"),
     createdAt: integer("created_at").notNull(),
     deletedAt: integer("deleted_at"),
   },
@@ -38,6 +43,7 @@ export const users = sqliteTable(
     uniqueIndex("users_owner_uq").on(t.isOwner).where(sql`${t.isOwner} = 1`),
     // SQLite treats NULLs as distinct, so passkey-only accounts don't collide.
     uniqueIndex("users_email_uq").on(t.email),
+    check("users_account_type_ck", sql`${t.accountType} IN ('full', 'restricted')`),
   ],
 );
 

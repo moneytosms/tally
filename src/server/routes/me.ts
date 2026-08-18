@@ -39,6 +39,9 @@ export async function meResponse(db: Db, user: SessionUser) {
   return {
     ...serialiseUser(row, true),
     isOwner: row.isOwner,
+    // ADR 0008: restricted accounts (invite-joined) can't create ledgers or
+    // mint invites. The client hides those affordances off this flag.
+    accountType: row.accountType,
     // Own account only. The hash never leaves the server - only whether one exists,
     // which is what the You tab needs to say "set" versus "change" password.
     email: row.email ?? null,

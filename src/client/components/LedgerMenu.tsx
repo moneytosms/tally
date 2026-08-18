@@ -677,6 +677,7 @@ type Panel = "edit" | "members" | "invite" | "duplicate" | "import";
 
 export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
   const navigate = useNavigate();
+  const me = useMe();
   const lifecycle = useLedgerLifecycle(ledger.id);
   const remove = useDeleteLedger(ledger.id);
   const [open, setOpen] = useState(false);
@@ -749,9 +750,11 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
               <button type="button" role="menuitem" className={item} onClick={() => pick("members")}>
                 {t("ledger.menu.members")}
               </button>
-              <button type="button" role="menuitem" className={item} onClick={() => pick("invite")}>
-                {t("ledger.menu.invite")}
-              </button>
+              {me.data?.accountType !== "restricted" && (
+                <button type="button" role="menuitem" className={item} onClick={() => pick("invite")}>
+                  {t("ledger.menu.invite")}
+                </button>
+              )}
               <button type="button" role="menuitem" className={item} onClick={() => pick("duplicate")}>
                 {t("ledger.menu.duplicate")}
               </button>

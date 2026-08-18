@@ -581,7 +581,11 @@
     "clearPassword": "Clear password",
     "clearPasswordConfirm": "Clear this password? They will need a passkey or a recovery link to get back in.",
     "clearPasswordDone": "Password cleared.",
-    "emergencyHint": "For a lost device or a leaked password. Neither deletes anything: passkeys and expense history are untouched."
+    "emergencyHint": "For a lost device or a leaked password. Neither deletes anything: passkeys and expense history are untouched.",
+    "restricted": "Restricted",
+    "promote": "Promote to full account",
+    "promoteHint": "Joined via a ledger invite, so they can only use ledgers they're already in. Promoting gives them full run of the instance - there is no way back.",
+    "promoteDone": "Promoted to a full account."
   },
   "activity": {
     "title": "Activity",

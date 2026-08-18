@@ -13,3 +13,15 @@ export const requireMember: MiddlewareHandler<Env> = async (c, next) => {
   c.set("member", member);
   await next();
 };
+
+/**
+ * ADR 0008: a restricted account (one created from a ledger invite) is scoped
+ * to the ledgers it already belongs to. It may not create a ledger or mint an
+ * invite - both would hand it reach beyond what it was invited into. Routes
+ * scoped to a ledger the caller is already a member of go through
+ * `requireMember` instead and are unaffected.
+ */
+export const requireFull: MiddlewareHandler<Env> = async (c, next) => {
+  if (c.var.user.accountType !== "full") return c.json({ error: "forbidden", code: "restricted" }, 403);
+  await next();
+};

@@ -95,12 +95,18 @@ auth.post("/bootstrap", async (c) => {
   // Hand that same account a fresh session so the passkey step can be retried.
   const owner = existing ?? { id: uuidv7(), displayName: parsed.data.displayName, isOwner: true };
   if (!existing) {
-    await db.insertUser({ id: owner.id, displayName: owner.displayName, isOwner: true, createdAt: now });
+    await db.insertUser({
+      id: owner.id,
+      displayName: owner.displayName,
+      isOwner: true,
+      accountType: "full",
+      createdAt: now,
+    });
   }
 
   const token = await createSession(db, owner.id, now, c.req.header("user-agent") ?? null);
   c.header("set-cookie", sessionCookie(token), { append: true });
-  const body = await meResponse(db, { id: owner.id, displayName: owner.displayName, isOwner: true });
+  const body = await meResponse(db, { id: owner.id, displayName: owner.displayName, isOwner: true, accountType: "full" });
   return c.json(body, 201);
 });
 
@@ -134,10 +140,13 @@ auth.post("/signup", async (c) => {
 
   const now = Date.now();
   // Checked before the account is created so a bad invite never leaves a row
-  // behind. It is consumed further down, after the user exists.
-  if (!(await db.findUsableInvite(await sha256Hex(inviteToken), now))) {
-    return c.json({ error: "forbidden", code: "invite" }, 403);
-  }
+  // behind. It is consumed further down, after the user exists. The ledgerId
+  // on the invite - peeked at here, not yet consumed - decides the account
+  // ceiling (ADR 0008): a ledger invite makes a restricted account, an
+  // instance invite makes a full one.
+  const usable = await db.findUsableInvite(await sha256Hex(inviteToken), now);
+  if (!usable) return c.json({ error: "forbidden", code: "invite" }, 403);
+  const accountType = usable.invite.ledgerId !== null ? "restricted" : "full";
   if (await db.findUserByEmail(email)) {
     return c.json({ error: "email already registered", code: "email_taken" }, 409);
   }
@@ -150,6 +159,7 @@ auth.post("/signup", async (c) => {
       email,
       passwordHash: await hashPassword(password),
       isOwner: false,
+      accountType,
       createdAt: now,
     });
   } catch {
@@ -172,7 +182,7 @@ auth.post("/signup", async (c) => {
 
   const token = await createSession(db, id, now, c.req.header("user-agent") ?? null);
   c.header("set-cookie", sessionCookie(token), { append: true });
-  const body = await meResponse(db, { id, displayName: name, isOwner: false });
+  const body = await meResponse(db, { id, displayName: name, isOwner: false, accountType });
   return c.json({ ...body, ledgerId }, 201);
 });
 
@@ -191,7 +201,9 @@ auth.post("/signin", async (c) => {
   const now = Date.now();
   const token = await createSession(db, row.id, now, c.req.header("user-agent") ?? null);
   c.header("set-cookie", sessionCookie(token), { append: true });
-  return c.json(await meResponse(db, { id: row.id, displayName: row.displayName, isOwner: row.isOwner }));
+  return c.json(
+    await meResponse(db, { id: row.id, displayName: row.displayName, isOwner: row.isOwner, accountType: row.accountType }),
+  );
 });
 
 // ---- registration -----------------------------------------------------------
@@ -216,7 +228,7 @@ auth.post("/register/options", async (c) => {
     const claimed = await db.consumeRecoveryToken(row.token.id, now);
     if (claimed.meta.changes !== 1) return c.json({ error: "forbidden" }, 403);
 
-    user = { id: row.user.id, displayName: row.user.displayName, isOwner: row.user.isOwner };
+    user = { id: row.user.id, displayName: row.user.displayName, isOwner: row.user.isOwner, accountType: row.user.accountType };
     const token = await createSession(db, user.id, now, c.req.header("user-agent") ?? null);
     c.header("set-cookie", sessionCookie(token), { append: true });
   }
@@ -224,12 +236,15 @@ auth.post("/register/options", async (c) => {
     const inviteToken = parsed.data.inviteToken;
     // Every rejection reason collapses to one - an invite is a bearer credential.
     if (!inviteToken) return c.json({ error: "forbidden" }, 403);
-    if (!(await db.findUsableInvite(await sha256Hex(inviteToken), now))) {
-      return c.json({ error: "forbidden" }, 403);
-    }
+    const usable = await db.findUsableInvite(await sha256Hex(inviteToken), now);
+    if (!usable) return c.json({ error: "forbidden" }, 403);
+    // Peeked at, not yet consumed - the ledger membership itself is joined later
+    // via POST /invites/:token/accept. The ledgerId alone decides the account
+    // ceiling (ADR 0008).
+    const accountType = usable.invite.ledgerId !== null ? "restricted" : "full";
     const id = uuidv7();
-    await db.insertUser({ id, displayName: parsed.data.displayName, isOwner: false, createdAt: now });
-    user = { id, displayName: parsed.data.displayName, isOwner: false };
+    await db.insertUser({ id, displayName: parsed.data.displayName, isOwner: false, accountType, createdAt: now });
+    user = { id, displayName: parsed.data.displayName, isOwner: false, accountType };
     const token = await createSession(db, id, now, c.req.header("user-agent") ?? null);
     c.header("set-cookie", sessionCookie(token), { append: true });
   }
@@ -301,7 +316,9 @@ auth.post("/login/verify", async (c) => {
   if (!row) return c.json({ error: "authentication failed", code: "webauthn" }, 401);
   const token = await createSession(db, userId, now, c.req.header("user-agent") ?? null);
   c.header("set-cookie", sessionCookie(token), { append: true });
-  return c.json(await meResponse(db, { id: row.id, displayName: row.displayName, isOwner: row.isOwner }));
+  return c.json(
+    await meResponse(db, { id: row.id, displayName: row.displayName, isOwner: row.isOwner, accountType: row.accountType }),
+  );
 });
 
 // ---- logout -----------------------------------------------------------------

@@ -31,6 +31,7 @@ const me: Me = {
   displayName: "Ada",
   vpa: null,
   isOwner: false,
+  accountType: "full",
   email: null,
   hasPassword: false,
   credentials: [],

@@ -3,7 +3,14 @@ import type { D1Database, DurableObjectNamespace } from "@cloudflare/workers-typ
 import type { Db } from "~/db";
 import type { ledgerMembers } from "~/db/schema";
 
-export type SessionUser = { id: string; displayName: string; isOwner: boolean };
+export type AccountType = "full" | "restricted";
+
+export type SessionUser = {
+  id: string;
+  displayName: string;
+  isOwner: boolean;
+  accountType: AccountType;
+};
 
 export type LedgerMember = typeof ledgerMembers.$inferSelect;
 
