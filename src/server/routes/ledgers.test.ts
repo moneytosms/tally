@@ -285,3 +285,40 @@ describe("GET /ledgers/:ledgerId/addable-users", () => {
     expect((await addable()).map((u) => u.id).sort()).toEqual(["u_bob", "u_cy"]);
   });
 });
+
+// The guest Dee (m_guest) merging into Bob (m_bob), both on L1. n_cy is a
+// member of L2, not L1 - a cross-ledger target.
+describe("POST /ledgers/:ledgerId/members/:guestMemberId/merge", () => {
+  const merge = (guestMemberId: string, targetMemberId: string) =>
+    app.request(req(h, `/api/ledgers/L1/members/${guestMemberId}/merge`, { method: "POST", json: { targetMemberId } }));
+
+  it("merges the guest into the target and retires the guest", async () => {
+    const res = await merge("m_guest", "m_bob");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect((await h.db.listMembers("L1")).some((m) => m.id === "m_guest")).toBe(false);
+  });
+
+  it("400s when the source is not a guest", async () => {
+    const res = await merge("m_bob", "m_ada");
+    expect(res.status).toBe(400);
+  });
+
+  it("400s on a cross-ledger target", async () => {
+    const res = await merge("m_guest", "n_cy");
+    expect(res.status).toBe(400);
+  });
+
+  it("400s when the target is itself a guest", async () => {
+    h.sql.prepare(
+      "INSERT INTO ledger_members (id, ledger_id, user_id, guest_name, nickname, joined_at) VALUES (?,?,?,?,?,?)",
+    ).run("m_guest2", "L1", null, "Fen", "Fen", Date.now());
+    const res = await merge("m_guest", "m_guest2");
+    expect(res.status).toBe(400);
+  });
+
+  it("400s on an unknown target", async () => {
+    const res = await merge("m_guest", "does-not-exist");
+    expect(res.status).toBe(400);
+  });
+});

@@ -462,6 +462,29 @@ export function useRemoveMember(ledgerId: string) {
   });
 }
 
+/** Folds a guest's expense history onto the real member who joined in their
+ *  place, then retires the guest. Invalidates the same set as remove/leave -
+ *  balances and history both shift. */
+export function useMergeGuest(ledgerId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ guestMemberId, targetMemberId }: { guestMemberId: string; targetMemberId: string }) =>
+      api<{ ok: true }>(`/api/ledgers/${ledgerId}/members/${guestMemberId}/merge`, {
+        method: "POST",
+        body: JSON.stringify({ targetMemberId }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.members(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.ledger(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.ledgers });
+      qc.invalidateQueries({ queryKey: qk.expenses(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.balances(ledgerId) });
+      qc.invalidateQueries({ queryKey: qk.crossLedger });
+      qc.invalidateQueries({ queryKey: qk.recentActivity });
+    },
+  });
+}
+
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({

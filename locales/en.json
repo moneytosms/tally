@@ -142,7 +142,14 @@
     "remove": "Remove",
     "removeConfirm": "Remove {name} from this ledger? Their past expenses stay exactly where they are.",
     "removeBlocked": "{name}'s net position isn't zero yet, so they can't be removed.",
-    "removeFailed": "Could not remove them."
+    "removeFailed": "Could not remove them.",
+    "merge": "merge into...",
+    "mergeTitle": "Merge {name} into...",
+    "mergeTarget": "Merge into",
+    "mergeAction": "Merge",
+    "mergeCancel": "Cancel",
+    "mergeHint": "Every expense the guest paid or shared moves to whoever you pick. The guest is retired - this can't be undone from here.",
+    "mergeFailed": "Could not merge that guest."
   },
   "expense": {
     "add": "Add expense",
