@@ -14,6 +14,7 @@ import {
   SplitEditor,
   paiseToRupeeString,
   preview,
+  remainingToAllocate,
   rupeesToPaise,
   splitValues,
   type SplitParticipant,
@@ -30,7 +31,7 @@ import {
 } from "~/client/lib/queries";
 import { ApiError } from "~/client/lib/api";
 import { t } from "~/client/i18n";
-import type { Paise, SplitMode } from "~/shared/money";
+import { formatPaise, type Paise, type SplitMode } from "~/shared/money";
 
 /** A stored expense as the editor needs it: the wire carries each split's raw
  *  `inputValue` so the form reopens exactly as the user left it. Splits are
@@ -105,6 +106,7 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
   const total = rupeesToPaise(amountRaw);
   const payerIndex = participants.findIndex((p) => p.memberId === payerId);
   const result = preview({ total: total ?? 0, mode, payerIndex, participants, raw });
+  const remaining = remainingToAllocate({ total: total ?? 0, mode, payerIndex, participants, raw });
   const blocked = !description.trim() || total === null || total === 0 || "error" in result || save.isPending;
 
   async function submit(e: React.FormEvent) {
@@ -236,6 +238,19 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
         onModeChange={setMode}
         onRawChange={setRaw}
       />
+
+      {/* Display-only: does not gate save (issue #37) - `blocked` above still owns
+          that via `result`. Disappears the instant allocation matches the total. */}
+      {remaining && (
+        <p role="status" className="mb-3 text-[12px]" style={{ color: remaining.amount < 0 ? "var(--clay)" : "var(--ink-2)" }}>
+          {t(remaining.amount < 0 ? "expense.overAllocated" : "expense.remainingToAllocate", {
+            amount:
+              remaining.unit === "percent"
+                ? `${Math.abs(remaining.amount)}%`
+                : formatPaise(Math.abs(remaining.amount)),
+          })}
+        </p>
+      )}
 
       {/* Date and notes are right nearly every time - today, nothing to add.
           Category moved out to a chip row above (SPEC §10); these two stay
