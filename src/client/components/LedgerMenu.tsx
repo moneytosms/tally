@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Avatar, Button, Field, Input, Rupees, Select } from "~/client/components/ui";
 import { Sheet } from "~/client/components/ui/Sheet";
 import { focusRing } from "~/client/components/ui/focus";
+import { guessMapping } from "~/client/lib/guessMapping";
 import { rupeesToPaise, paiseToRupeeString } from "~/client/components/SplitEditor";
 import { api, ApiError } from "~/client/lib/api";
 import {
@@ -536,13 +537,7 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
     preview.mutate(file, {
       onSuccess: (result) => {
         setParsed(result);
-        // Guess a mapping from a case-insensitive nickname match.
-        const guess: Record<string, string> = {};
-        for (const name of result.sourceNames) {
-          const match = memberList.find((m) => m.nickname.trim().toLowerCase() === name.trim().toLowerCase());
-          if (match) guess[name] = match.id;
-        }
-        setMapping(guess);
+        setMapping(guessMapping(result.sourceNames, memberList));
       },
     });
   };
