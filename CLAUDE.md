@@ -24,6 +24,37 @@ TS everywhere. Cloudflare Workers + D1 + Drizzle + Hono. React SPA on Vite, TanS
 
 One Worker serves static assets and `/api/*`. One origin, no CORS.
 
+**RTK wrappers:** `rtk pnpm` (dev/build/db:generate/db:migrate/deploy — all pnpm scripts), `rtk tsc` (typecheck), `rtk vitest` (test). No eslint/prettier config present yet — add `rtk lint`/`rtk format` if those land.
+
+## Canary
+
+Every completed task ends with: `[Canary:tally:TASK_NAME]`. Can't produce it → context dropped, stop and say so.
+
+## Context rules
+
+- Flag before any phase that risks a full context window.
+- Running low → `/checkpoint`, then stop.
+- All commands must work headless.
+
+## Error protocol
+
+- **Minor** (typo, wrong flag): note inline, continue.
+- **Major** (wrong architecture, repeated mistake):
+  1. Append to `.claude/errors.md`
+  2. Pattern repeats → add a skill under `.claude/skills/`
+  3. Approach changes → append to **Learned rules** below
+
+## Agents
+
+Ask before spawning; pick model by task weight. Defined in `.claude/agents/`:
+`ReadOnly` · `BuildValidator` · `CodeReviewer` · `LogAnalyzer` · `Researcher` · `DocWriter`
+
+Subagent/hook output follows `.claude/rules/agent-output-conventions.md` — no silent truncation, explicit empty states, end with a concrete next command.
+
+## Learned rules
+
+<!-- Append here on major errors. Do not delete. -->
+
 ## Non-negotiables
 
 Violating any of these is a defect, not a style choice.

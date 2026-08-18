@@ -18,6 +18,7 @@ import { and, asc, desc, eq, gt, gte, inArray, isNull, lte, or, sql as raw } fro
 import type { BatchItem } from "drizzle-orm/batch";
 import { drizzle } from "drizzle-orm/d1";
 import * as t from "~/db/schema";
+import { uuidv7 } from "~/shared/id";
 
 type Insert<T extends { $inferInsert: unknown }> = T["$inferInsert"];
 
@@ -401,6 +402,77 @@ export function createDb(d1: D1Database) {
         .where(and(eq(t.expenseRevisions.id, revisionId), eq(t.expenseRevisions.expenseId, expenseId)))
         .limit(1);
       return row;
+    },
+    /**
+     * Folds a guest's history onto a real member: every live expense where the
+     * guest is payer or a participant is reassigned to `targetMemberId`, each
+     * touched expense gets a revision snapshot first (same mechanism as any
+     * edit - ADR 0005 makes any member's edit undoable), and the guest member
+     * row is soft-deleted. One D1 batch - a half-applied merge would leave some
+     * expenses on the guest and some on the target (CLAUDE.md watch-item).
+     *
+     * `expense_splits` has a unique (expense_id, member_id) index, so a guest
+     * and the target can't both hold a split row on the same expense after the
+     * merge: when both are already participants there, their amounts are
+     * summed onto the target's row and the guest's row is dropped. Net
+     * positions are derived by summing split amounts (src/server/balances.ts),
+     * so this preserves the combined total exactly.
+     */
+    async mergeGuestIntoMember(ledgerId: string, guestMemberId: string, targetMemberId: string, revisedBy: string) {
+      const touched = await withSplits(
+        await db
+          .select()
+          .from(t.expenses)
+          .where(
+            and(
+              eq(t.expenses.ledgerId, ledgerId),
+              isNull(t.expenses.deletedAt),
+              or(
+                eq(t.expenses.payerMemberId, guestMemberId),
+                raw`EXISTS (SELECT 1 FROM ${t.expenseSplits} WHERE ${t.expenseSplits.expenseId} = ${t.expenses.id} AND ${t.expenseSplits.memberId} = ${guestMemberId})`,
+              )!,
+            ),
+          ),
+      );
+
+      const now = Date.now();
+      const stmts: BatchItem<"sqlite">[] = [];
+      for (const expense of touched) {
+        stmts.push(
+          db.insert(t.expenseRevisions).values({
+            id: uuidv7(),
+            expenseId: expense.id,
+            snapshot: JSON.stringify(expense),
+            revisedBy,
+            revisedAt: now,
+          }),
+        );
+
+        const patch: Partial<Insert<typeof t.expenses>> = { updatedAt: now };
+        if (expense.payerMemberId === guestMemberId) patch.payerMemberId = targetMemberId;
+        stmts.push(db.update(t.expenses).set(patch).where(eq(t.expenses.id, expense.id)));
+
+        const guestSplit = expense.splits.find((s) => s.memberId === guestMemberId);
+        if (guestSplit) {
+          const targetSplit = expense.splits.find((s) => s.memberId === targetMemberId);
+          if (targetSplit) {
+            stmts.push(
+              db
+                .update(t.expenseSplits)
+                .set({ amount: targetSplit.amount + guestSplit.amount })
+                .where(eq(t.expenseSplits.id, targetSplit.id)),
+            );
+            stmts.push(db.delete(t.expenseSplits).where(eq(t.expenseSplits.id, guestSplit.id)));
+          } else {
+            stmts.push(
+              db.update(t.expenseSplits).set({ memberId: targetMemberId }).where(eq(t.expenseSplits.id, guestSplit.id)),
+            );
+          }
+        }
+      }
+      stmts.push(db.update(t.ledgerMembers).set({ deletedAt: now }).where(eq(t.ledgerMembers.id, guestMemberId)));
+
+      await db.batch(stmts as [BatchItem<"sqlite">, ...BatchItem<"sqlite">[]]);
     },
 
     // ---- settlements -----------------------------------------------------

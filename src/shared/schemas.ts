@@ -119,6 +119,10 @@ export const addGuestSchema = z.object({
   guestName: name,
 });
 
+export const mergeGuestSchema = z.object({
+  targetMemberId: id,
+});
+
 export const createCommentSchema = z.object({
   body: z.string().trim().min(1).max(2000),
 });

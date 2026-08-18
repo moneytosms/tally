@@ -27,6 +27,7 @@ import {
   useLedgerLifecycle,
   useMe,
   useMembers,
+  useMergeGuest,
   useRemoveMember,
   useUpdateLedger,
   type ImportParseResult,
@@ -311,8 +312,14 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
   const balances = useBalances(ledgerId);
   const me = useMe();
   const removeMember = useRemoveMember(ledgerId);
+  const mergeGuest = useMergeGuest(ledgerId);
   const [confirmingRemove, setConfirmingRemove] = useState<Member | null>(null);
   const [removeFailure, setRemoveFailure] = useState("");
+  const [mergingGuest, setMergingGuest] = useState<Member | null>(null);
+  const [mergeTarget, setMergeTarget] = useState("");
+  const [mergeFailure, setMergeFailure] = useState("");
+
+  const realMembers = (members.data ?? []).filter((m) => m.guestName === null);
 
   const positionByMemberId = new Map((balances.data?.positions ?? []).map((p) => [p.memberId, p.net]));
 
@@ -336,20 +343,37 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
               </div>
               <Amount paise={net} label={t("ledger.netPosition")} />
             </div>
-            {me.data?.isOwner && m.userId !== me.data.id && (
-              <button
-                type="button"
-                className={`mt-1 self-start px-1.5 py-1 text-[11.5px] ${focusRing}`}
-                style={{ color: "var(--clay)" }}
-                disabled={removeMember.isPending}
-                onClick={() => {
-                  setRemoveFailure("");
-                  setConfirmingRemove(m);
-                }}
-              >
-                {t("member.remove")}
-              </button>
-            )}
+            <div className="mt-1 flex gap-1.5">
+              {m.guestName !== null && (
+                <button
+                  type="button"
+                  className={`self-start px-1.5 py-1 text-[11.5px] ${focusRing}`}
+                  style={{ color: "var(--moss-2)" }}
+                  disabled={mergeGuest.isPending || realMembers.length === 0}
+                  onClick={() => {
+                    setMergeFailure("");
+                    setMergeTarget("");
+                    setMergingGuest(m);
+                  }}
+                >
+                  {t("member.merge")}
+                </button>
+              )}
+              {me.data?.isOwner && m.userId !== me.data.id && (
+                <button
+                  type="button"
+                  className={`self-start px-1.5 py-1 text-[11.5px] ${focusRing}`}
+                  style={{ color: "var(--clay)" }}
+                  disabled={removeMember.isPending}
+                  onClick={() => {
+                    setRemoveFailure("");
+                    setConfirmingRemove(m);
+                  }}
+                >
+                  {t("member.remove")}
+                </button>
+              )}
+            </div>
           </div>
         );
       })}
@@ -381,6 +405,56 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
             });
           }}
         />
+      )}
+
+      {mergingGuest && (
+        <div className="mt-1 border-t pt-2.5" style={rule}>
+          <div className="mb-1.5 text-[10.5px] tracking-[0.13em] uppercase" style={hint}>
+            {t("member.mergeTitle", { name: mergingGuest.nickname })}
+          </div>
+          <div className="flex items-end gap-2">
+            <span className="min-w-0 flex-1">
+              <Field label={t("member.mergeTarget")}>
+                <Select value={mergeTarget} onChange={(e) => setMergeTarget(e.target.value)}>
+                  <option value="">{t("member.mergeTarget")}</option>
+                  {realMembers.map((rm) => (
+                    <option key={rm.id} value={rm.id}>
+                      {rm.nickname}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </span>
+            <Button
+              size="sm"
+              className="mb-3"
+              disabled={!mergeTarget || mergeGuest.isPending}
+              onClick={() => {
+                const guest = mergingGuest;
+                mergeGuest.mutate(
+                  { guestMemberId: guest.id, targetMemberId: mergeTarget },
+                  {
+                    onSuccess: () => setMergingGuest(null),
+                    onError: () => setMergeFailure(t("member.mergeFailed")),
+                  },
+                );
+              }}
+            >
+              {t("member.mergeAction")}
+            </Button>
+            <Button variant="ghost" size="sm" className="mb-3" onClick={() => setMergingGuest(null)}>
+              {t("member.mergeCancel")}
+            </Button>
+          </div>
+          <p className="text-[11.5px]" style={hint}>
+            {t("member.mergeHint")}
+          </p>
+          {mergeFailure && (
+            <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+              {mergeFailure}
+            </p>
+          )}
+        </div>
       )}
     </>
   );

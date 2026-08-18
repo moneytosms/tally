@@ -17,6 +17,7 @@ import {
   addGuestSchema,
   addMemberSchema,
   createLedgerSchema,
+  mergeGuestSchema,
   pinLedgerSchema,
   updateLedgerSchema,
 } from "~/shared/schemas";
@@ -275,6 +276,35 @@ ledgers.post("/ledgers/:ledgerId/guests", requireOwner, async (c) => {
   };
   await c.var.db.insertMember(member);
   return c.json(serialiseMember(member, new Map()), 201);
+});
+
+/**
+ * Fold a guest placeholder's history onto the real member who joined in their
+ * place: every expense the guest touched moves to `targetMemberId` and the
+ * guest is soft-deleted. Any member may (ADR 0005) - same authority as any
+ * other edit to the ledger's history.
+ */
+ledgers.post("/ledgers/:ledgerId/members/:guestMemberId/merge", async (c) => {
+  const parsed = mergeGuestSchema.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "invalid merge", code: "invalid" }, 400);
+
+  const db = c.var.db;
+  const ledgerId = c.req.param("ledgerId");
+  const guestMemberId = c.req.param("guestMemberId");
+  const { targetMemberId } = parsed.data;
+
+  const members = await db.listMembers(ledgerId);
+  const guest = members.find((m) => m.id === guestMemberId);
+  if (!guest || guest.guestName === null) {
+    return c.json({ error: "not a guest in this ledger", code: "not_guest" }, 400);
+  }
+  const target = members.find((m) => m.id === targetMemberId);
+  if (!target || target.guestName !== null) {
+    return c.json({ error: "target is not a member of this ledger", code: "invalid_target" }, 400);
+  }
+
+  await db.mergeGuestIntoMember(ledgerId, guestMemberId, targetMemberId, c.var.user.id);
+  return c.json({ ok: true });
 });
 
 /** Blocked while the member's net position is non-zero. Settle, or have someone
