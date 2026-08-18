@@ -137,3 +137,27 @@ describe("DELETE /admin/users/:userId", () => {
     expect((await del("u_cy", `${SESSION_COOKIE}=${token}`)).status).toBe(403);
   });
 });
+
+/** Owner-only, one-directional (ADR 0008): no demote route exists. */
+describe("POST /admin/users/:userId/promote", () => {
+  it("flips a restricted account to full", async () => {
+    await h.db.updateUser("u_bob", { accountType: "restricted" });
+    const res = await app.request(req(h, "/api/admin/users/u_bob/promote", { method: "POST" }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ id: "u_bob", accountType: "full" });
+    expect((await h.db.findUserById("u_bob"))!.accountType).toBe("full");
+  });
+
+  it("rejects a non-owner", async () => {
+    await h.db.updateUser("u_bob", { accountType: "restricted" });
+    const token = await createSession(h.db, "u_cy", Date.now());
+    const res = await app.request(
+      req(h, "/api/admin/users/u_bob/promote", {
+        method: "POST",
+        headers: { cookie: `${SESSION_COOKIE}=${token}` },
+      }),
+    );
+    expect(res.status).toBe(403);
+    expect((await h.db.findUserById("u_bob"))!.accountType).toBe("restricted");
+  });
+});

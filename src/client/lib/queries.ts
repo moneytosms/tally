@@ -32,6 +32,9 @@ export type Me = {
   displayName: string;
   vpa: string | null;
   isOwner: boolean;
+  /** ADR 0008: 'restricted' accounts (joined via a ledger invite) can't create
+   *  ledgers or mint invites - the client hides those affordances off this. */
+  accountType: "full" | "restricted";
   /** Sign-in address. Null on accounts that only ever enrolled a passkey. */
   email: string | null;
   hasPassword: boolean;
@@ -163,6 +166,7 @@ export type AdminUser = {
   id: string;
   displayName: string;
   isOwner: boolean;
+  accountType: "full" | "restricted";
   createdAt: number;
   email: string | null;
   hasPassword: boolean;
@@ -714,6 +718,16 @@ export function useSignOutUser() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (userId: string) => api<{ id: string }>(`/api/admin/users/${userId}/sessions`, { method: "DELETE" }),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.adminUsers }),
+  });
+}
+
+/** Owner-only, one-directional (ADR 0008) - there is no demote endpoint. */
+export function usePromoteUser() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: string) =>
+      api<{ id: string; accountType: "full" }>(`/api/admin/users/${userId}/promote`, { method: "POST" }),
     onSettled: () => qc.invalidateQueries({ queryKey: qk.adminUsers }),
   });
 }

@@ -56,7 +56,10 @@ function setup(): { sql: Sqlite; store: SessionStore } {
           expiresAt: row.expires_at as number,
           lastSeenAt: row.last_seen_at as number,
         },
+        // accountType isn't in this migration snapshot (0000) - this fixture
+        // only exercises session mechanics, not account typing.
         user: {
+          accountType: "full",
           id: row.uid as string,
           displayName: row.display_name as string,
           isOwner: row.is_owner === 1,
@@ -98,6 +101,7 @@ describe("sessions", () => {
       id: "u1",
       displayName: "Ada",
       isOwner: true,
+      accountType: "full",
     });
   });
 

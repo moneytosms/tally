@@ -179,7 +179,9 @@ export function LedgersTab() {
         <EmptyState
           title={t("empty.ledgers")}
           body={t("empty.ledgersBody")}
-          action={
+          // ADR 0008: a restricted account has no self-service way to create a
+          // ledger - it waits on the owner to add it to one, or to promote it.
+          action={me.data?.accountType === "restricted" ? undefined : (
             <div className="flex flex-wrap justify-center gap-2">
               <Button onClick={() => setKind("trip")}>{t("add.trip")}</Button>
               <Button variant="ghost" onClick={() => setKind("group")}>
@@ -189,7 +191,7 @@ export function LedgersTab() {
                 {t("add.pair")}
               </Button>
             </div>
-          }
+          )}
         />
       ) : (
         <>

@@ -51,8 +51,12 @@ type AddChoice = "expense" | LedgerKind;
 
 function AddMenu({ onPick }: { onPick: (choice: AddChoice) => void }) {
   const ledgers = useLedgers();
+  const me = useMe();
   const hasLedger = (ledgers.data ?? []).some((l) => l.archivedAt === null);
-  const choices: AddChoice[] = ["expense", "trip", "group", "pair"];
+  // ADR 0008: a restricted account (joined via a ledger invite) can't create a
+  // ledger - only expense entry is offered.
+  const choices: AddChoice[] =
+    me.data?.accountType === "restricted" ? ["expense"] : ["expense", "trip", "group", "pair"];
 
   return (
     <div className="flex flex-col gap-2">

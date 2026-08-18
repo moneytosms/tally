@@ -40,6 +40,9 @@ admin.get("/admin/users", async (c) => {
       id: u.id,
       displayName: u.displayName,
       isOwner: u.isOwner,
+      // Which accounts have full run of the instance vs. are scoped to their
+      // current ledgers (ADR 0008) - the owner's promote lever below reads this.
+      accountType: u.accountType,
       createdAt: u.createdAt,
       email: u.email,
       // Whether a password EXISTS, never the hash. The owner needs to know which
@@ -168,6 +171,19 @@ admin.delete("/admin/users/:userId/password", async (c) => {
     c.var.db.deleteSessionsForUser(userId),
   ]);
   return c.json({ id: userId });
+});
+
+/**
+ * Promote a restricted account to full (ADR 0008). One-directional - there is
+ * no demotion route. Existing memberships are untouched; promotion only adds
+ * capability, it never takes any away.
+ */
+admin.post("/admin/users/:userId/promote", async (c) => {
+  const userId = c.req.param("userId");
+  const target = await c.var.db.findUserById(userId);
+  if (!target) return c.json({ error: "not found" }, 404);
+  await c.var.db.updateUser(userId, { accountType: "full" });
+  return c.json({ id: userId, accountType: "full" });
 });
 
 admin.get("/admin/ledgers", async (c) => {

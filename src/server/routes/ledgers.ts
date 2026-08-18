@@ -10,7 +10,7 @@ import type { Env, LedgerMember } from "~/server/context";
 import { netPositions } from "~/server/balances";
 import { createInvite, acceptInvite, InviteError } from "~/server/auth/invite";
 import { requireSession } from "~/server/middleware/session";
-import { requireMember } from "~/server/middleware/membership";
+import { requireFull, requireMember } from "~/server/middleware/membership";
 import { isLedgerCreator, requireOwner } from "~/server/middleware/owner";
 import { uuidv7 } from "~/shared/id";
 import {
@@ -86,7 +86,7 @@ ledgers.get("/ledgers", async (c) => {
   return c.json(await Promise.all(rows.map((r) => summarise(c.var.db, r.ledger, r.memberId))));
 });
 
-ledgers.post("/ledgers", async (c) => {
+ledgers.post("/ledgers", requireFull, async (c) => {
   const parsed = createLedgerSchema.safeParse(await c.req.json().catch(() => ({})));
   if (!parsed.success) return c.json({ error: "invalid ledger", code: "invalid" }, 400);
 
@@ -339,7 +339,7 @@ ledgers.delete("/ledgers/:ledgerId/members/:memberId", requireOwner, async (c) =
 
 /** Any member may invite, but only on an invite-enabled ledger (ADR 0007). The
  *  token is returned exactly once - never logged. */
-ledgers.post("/ledgers/:ledgerId/invites", async (c) => {
+ledgers.post("/ledgers/:ledgerId/invites", requireFull, async (c) => {
   const ledger = await c.var.db.findLedger(c.req.param("ledgerId"));
   if (!ledger) return c.json({ error: "forbidden" }, 403);
   if (!ledger.invitesEnabled) {

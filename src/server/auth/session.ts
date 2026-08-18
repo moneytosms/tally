@@ -64,7 +64,7 @@ export type SessionStore = {
   ): Promise<
     | {
         session: { id: string; expiresAt: number; lastSeenAt: number };
-        user: { id: string; displayName: string; isOwner: boolean };
+        user: { id: string; displayName: string; isOwner: boolean; accountType: "full" | "restricted" };
       }
     | undefined
   >;
@@ -111,6 +111,7 @@ export async function resolveSession(
     id: row.user.id,
     displayName: row.user.displayName,
     isOwner: row.user.isOwner,
+    accountType: row.user.accountType,
   };
 }
 

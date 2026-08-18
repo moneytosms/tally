@@ -319,6 +319,91 @@ describe("ledgers", () => {
   });
 });
 
+/** ADR 0008: a restricted account is one created by redeeming a ledger invite.
+ *  It is scoped to the ledgers it already belongs to - it cannot create a
+ *  ledger or mint an invite, but every route scoped to a ledger it is already
+ *  a member of works exactly as it would for a full account. */
+describe("restricted accounts", () => {
+  /** Bypasses invite redemption - these tests are about what the flag gates,
+   *  not how it got set (that is "invite redemption" below). */
+  async function signInRestricted(db: ReturnType<typeof createDb>, displayName: string) {
+    const id = uuidv7();
+    await db.insertUser({ id, displayName, isOwner: false, accountType: "restricted", createdAt: NOW });
+    const token = await createSession(db, id, NOW);
+    return { id, cookie: `${SESSION_COOKIE}=${token}` };
+  }
+
+  it("403s ledger creation for a restricted account", async () => {
+    const { env, db } = setup();
+    const restricted = await signInRestricted(db, "Bob");
+    const res = await post(env, "/api/ledgers", { name: "Goa" }, restricted.cookie);
+    expect(res.status).toBe(403);
+    expect((await res.json()) as { code: string }).toMatchObject({ code: "restricted" });
+  });
+
+  it("403s invite minting for a restricted account, even on a ledger it belongs to", async () => {
+    const { env, db } = setup();
+    const owner = await signIn(db, "Ada");
+    const restricted = await signInRestricted(db, "Bob");
+    const created = (await (
+      await post(env, "/api/ledgers", { name: "Goa", invitesEnabled: true }, owner.cookie)
+    ).json()) as { id: string };
+    await db.insertMember({ id: uuidv7(), ledgerId: created.id, userId: restricted.id, joinedAt: NOW });
+
+    const res = await post(env, `/api/ledgers/${created.id}/invites`, {}, restricted.cookie);
+    expect(res.status).toBe(403);
+    expect((await res.json()) as { code: string }).toMatchObject({ code: "restricted" });
+  });
+
+  it("200s a route scoped to a ledger the restricted account already belongs to", async () => {
+    const { env, db } = setup();
+    const owner = await signIn(db, "Ada");
+    const restricted = await signInRestricted(db, "Bob");
+    const created = (await (await post(env, "/api/ledgers", { name: "Goa" }, owner.cookie)).json()) as { id: string };
+    await db.insertMember({ id: uuidv7(), ledgerId: created.id, userId: restricted.id, joinedAt: NOW });
+
+    expect((await get(env, `/api/ledgers/${created.id}`, restricted.cookie)).status).toBe(200);
+  });
+});
+
+/** ADR 0008: the account ceiling is decided by which kind of invite was
+ *  redeemed, not by which sign-up path was used. */
+describe("invite redemption sets the account ceiling", () => {
+  const signUp = (env: Env, inviteToken: string, displayName: string, email: string) =>
+    post(env, "/api/auth/signup", { inviteToken, displayName, email, password: "a-long-enough-password" });
+
+  it("a ledger invite produces a restricted account", async () => {
+    const { env, db } = setup();
+    const owner = await signIn(db, "Ada");
+    const ledger = (await (
+      await post(env, "/api/ledgers", { name: "Goa", invitesEnabled: true }, owner.cookie)
+    ).json()) as { id: string };
+    const invite = (await (
+      await post(env, `/api/ledgers/${ledger.id}/invites`, {}, owner.cookie)
+    ).json()) as { token: string };
+
+    const res = await signUp(env, invite.token, "Bob", "bob@example.com");
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { id: string; accountType: string };
+    expect(body.accountType).toBe("restricted");
+    expect((await db.findUserById(body.id))!.accountType).toBe("restricted");
+  });
+
+  it("an instance invite produces a full account", async () => {
+    const { env, db } = setup();
+    const ownerId = uuidv7();
+    await db.insertUser({ id: ownerId, displayName: "Ada", isOwner: true, createdAt: NOW });
+    const ownerCookie = `${SESSION_COOKIE}=${await createSession(db, ownerId, NOW)}`;
+    const invite = (await (await post(env, "/api/admin/invites", {}, ownerCookie)).json()) as { token: string };
+
+    const res = await signUp(env, invite.token, "Bob", "bob@example.com");
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as { id: string; accountType: string };
+    expect(body.accountType).toBe("full");
+    expect((await db.findUserById(body.id))!.accountType).toBe("full");
+  });
+});
+
 describe("vpa visibility", () => {
   it("GET /api/me carries the caller's own VPA and no one else's", async () => {
     const { env, db } = setup();

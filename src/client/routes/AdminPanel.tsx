@@ -11,6 +11,7 @@ import {
   useRevokeCredential,
   useSignOutUser,
   useClearPassword,
+  usePromoteUser,
   useRevokeInvite,
   useCategories,
   useSaveCategory,
@@ -180,6 +181,32 @@ function EmergencyRow({ userId, hasPassword }: { userId: string; hasPassword: bo
   );
 }
 
+/** Owner-only, one-directional (ADR 0008): promotes a restricted account to
+ *  full. There is no demote button because there is no demote route. */
+function PromoteRow({ userId }: { userId: string }) {
+  const promote = usePromoteUser();
+  return (
+    <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
+      <Button variant="ghost" size="sm" disabled={promote.isPending} onClick={() => promote.mutate(userId)}>
+        {t("admin.promote")}
+      </Button>
+      <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        {t("admin.promoteHint")}
+      </p>
+      {promote.isSuccess && (
+        <p role="status" className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          {t("admin.promoteDone")}
+        </p>
+      )}
+      {promote.isError && (
+        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+          {t("error.generic")}
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Maps the server's refusal codes to a specific reason. A generic "failed"
  *  here would hide the one message that tells the owner what to do next -
  *  settle the balance first. */
@@ -248,6 +275,14 @@ function PeopleSection() {
                 {t("admin.owner")}
               </span>
             )}
+            {u.accountType === "restricted" && (
+              <span
+                className="rounded-[4px] px-1.5 py-0.5 text-[10.5px] tracking-[0.08em] uppercase"
+                style={{ background: "var(--paper-sunk)", color: "var(--ink-3)" }}
+              >
+                {t("admin.restricted")}
+              </span>
+            )}
           </div>
           <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
             <span className="truncate">{u.email ?? t("admin.noEmail")}</span>
@@ -290,6 +325,7 @@ function PeopleSection() {
           </div>
           <RecoveryRow userId={u.id} />
           <EmergencyRow userId={u.id} hasPassword={u.hasPassword} />
+          {u.accountType === "restricted" && <PromoteRow userId={u.id} />}
           {!u.isOwner && (
             <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
               <Button
