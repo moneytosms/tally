@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Avatar, Button, Field, Input, Rupees, Select } from "~/client/components/ui";
+import { Amount, Avatar, Button, Field, Input, Rupees, Select } from "~/client/components/ui";
 import { Sheet } from "~/client/components/ui/Sheet";
 import { focusRing } from "~/client/components/ui/focus";
 import { rupeesToPaise, paiseToRupeeString } from "~/client/components/SplitEditor";
@@ -16,6 +16,7 @@ import { api, ApiError } from "~/client/lib/api";
 import {
   qk,
   useAddGuest,
+  useBalances,
   useCreateInvite,
   useCreateLedger,
   useDeleteLedger,
@@ -306,38 +307,51 @@ function LeaveLedger({ ledgerId }: { ledgerId: string }) {
  *  word on whether the position is actually zero. */
 function MembersPanel({ ledgerId }: { ledgerId: string }) {
   const members = useMembers(ledgerId);
+  const balances = useBalances(ledgerId);
   const me = useMe();
   const removeMember = useRemoveMember(ledgerId);
   const [confirmingRemove, setConfirmingRemove] = useState<Member | null>(null);
   const [removeFailure, setRemoveFailure] = useState("");
 
+  const positionByMemberId = new Map((balances.data?.positions ?? []).map((p) => [p.memberId, p.net]));
+
   return (
     <>
-      {(members.data ?? []).map((m) => (
-        <div key={m.id} className="flex items-center gap-2.5 py-1.5">
-          <Avatar name={m.nickname} />
-          <span className="flex-1 truncate text-[14px]">{m.nickname}</span>
-          {m.guestName !== null && (
-            <span className="text-[11.5px]" style={hint}>
-              {t("member.guest")}
-            </span>
-          )}
-          {me.data?.isOwner && m.userId !== me.data.id && (
-            <button
-              type="button"
-              className={`px-1.5 py-1 text-[11.5px] ${focusRing}`}
-              style={{ color: "var(--clay)" }}
-              disabled={removeMember.isPending}
-              onClick={() => {
-                setRemoveFailure("");
-                setConfirmingRemove(m);
-              }}
-            >
-              {t("member.remove")}
-            </button>
-          )}
-        </div>
-      ))}
+      {(members.data ?? []).map((m) => {
+        const net = positionByMemberId.get(m.id) ?? 0;
+        return (
+          <div key={m.id} className="flex flex-col py-1.5">
+            <div className="flex items-center justify-between gap-2.5">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar name={m.nickname} />
+                <div className="min-w-0">
+                  <div className="truncate text-[14px]">{m.nickname}</div>
+                  {m.guestName !== null && (
+                    <span className="text-[11.5px]" style={hint}>
+                      {t("member.guest")}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <Amount paise={net} label={t("ledger.netPosition")} />
+            </div>
+            {me.data?.isOwner && m.userId !== me.data.id && (
+              <button
+                type="button"
+                className={`mt-1 self-start px-1.5 py-1 text-[11.5px] ${focusRing}`}
+                style={{ color: "var(--clay)" }}
+                disabled={removeMember.isPending}
+                onClick={() => {
+                  setRemoveFailure("");
+                  setConfirmingRemove(m);
+                }}
+              >
+                {t("member.remove")}
+              </button>
+            )}
+          </div>
+        );
+      })}
       <AddExistingMember ledgerId={ledgerId} />
       {me.data?.isOwner && <AddGuest ledgerId={ledgerId} />}
       <LeaveLedger ledgerId={ledgerId} />
