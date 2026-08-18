@@ -115,6 +115,8 @@ export function LedgerDetail() {
   const [sort, setSort] = useState<ExpenseSort>("newest");
   const [selected, setSelected] = useState<Expense | null>(null);
   const [adding, setAdding] = useState(false);
+  const [searchExpanded, setSearchExpanded] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // The unfiltered list is kept alongside the filtered one purely so the result
   // count can say "3 of 20" - the server is the only thing that filters.
@@ -130,6 +132,10 @@ export function LedgerDetail() {
   const rows = sortExpenses(expenses.data ?? [], sort);
 
   const patch = (p: Partial<ExpenseFilters>) => setFilters((f) => ({ ...f, ...p }));
+
+  // Check if there are active filters (category, member, from, to) - not including search
+  const hasFilterSet = filters.categoryId !== undefined || filters.memberId !== undefined ||
+                       filters.from !== undefined || filters.to !== undefined;
 
   return (
     <>
@@ -221,64 +227,97 @@ export function LedgerDetail() {
           above an empty state is furniture, not help. */}
       {(all.data?.length ?? 0) > 0 && (
       <div className="mb-3 grid gap-2">
-        <Field label={t("search.label")}>
-          <Input
-            type="search"
-            value={filters.q ?? ""}
-            placeholder={t("search.placeholder")}
-            onChange={(e) => patch({ q: e.target.value || undefined })}
-          />
-        </Field>
-        <details>
-          <summary
-            className={`inline-flex min-h-11 cursor-pointer list-none items-center text-[12px] underline ${focusRing}`}
+        {/* Collapsible search field - shows as icon when empty/unfocused, expands on tap */}
+        {searchExpanded ? (
+          <Field label={t("search.label")}>
+            <Input
+              type="search"
+              autoFocus
+              value={filters.q ?? ""}
+              placeholder={t("search.placeholder")}
+              onChange={(e) => patch({ q: e.target.value || undefined })}
+              onBlur={() => {
+                // Collapse when blurred and empty
+                if (!filters.q) {
+                  setSearchExpanded(false);
+                }
+              }}
+            />
+          </Field>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setSearchExpanded(true)}
+            className={`inline-flex min-h-11 cursor-pointer items-center text-[17px] ${focusRing}`}
+            aria-label={t("search.label")}
+          >
+            🔍
+          </button>
+        )}
+
+        {/* Collapsible filters section */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+            className={`inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-[12px] underline ${focusRing}`}
             style={{ color: "var(--moss)" }}
           >
             {t("search.filters")}
-          </summary>
-        <div className="mt-2 grid grid-cols-2 gap-2">
-          <Field label={t("search.category")}>
-            <Select
-              value={filters.categoryId ?? ""}
-              onChange={(e) => patch({ categoryId: e.target.value || undefined })}
-            >
-              <option value="">{t("search.anyCategory")}</option>
-              {(categories.data ?? []).map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.icon} {c.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label={t("search.member")}>
-            <Select
-              value={filters.memberId ?? ""}
-              onChange={(e) => patch({ memberId: e.target.value || undefined })}
-            >
-              <option value="">{t("search.anyMember")}</option>
-              {(members.data ?? []).map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.nickname}
-                </option>
-              ))}
-            </Select>
-          </Field>
-          <Field label={t("search.from")}>
-            <Input
-              type="date"
-              value={dateInputValue(filters.from)}
-              onChange={(e) => patch({ from: startOfDay(e.target.value) })}
-            />
-          </Field>
-          <Field label={t("search.to")}>
-            <Input
-              type="date"
-              value={dateInputValue(filters.to)}
-              onChange={(e) => patch({ to: endOfDay(e.target.value) })}
-            />
-          </Field>
+            {hasFilterSet && (
+              <span
+                className="inline-block h-2 w-2 rounded-full shrink-0"
+                style={{ background: "var(--moss)" }}
+                aria-label={t("search.filters")}
+              />
+            )}
+          </button>
+          {filtersExpanded && (
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <Field label={t("search.category")}>
+                <Select
+                  value={filters.categoryId ?? ""}
+                  onChange={(e) => patch({ categoryId: e.target.value || undefined })}
+                >
+                  <option value="">{t("search.anyCategory")}</option>
+                  {(categories.data ?? []).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.icon} {c.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t("search.member")}>
+                <Select
+                  value={filters.memberId ?? ""}
+                  onChange={(e) => patch({ memberId: e.target.value || undefined })}
+                >
+                  <option value="">{t("search.anyMember")}</option>
+                  {(members.data ?? []).map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.nickname}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field label={t("search.from")}>
+                <Input
+                  type="date"
+                  value={dateInputValue(filters.from)}
+                  onChange={(e) => patch({ from: startOfDay(e.target.value) })}
+                />
+              </Field>
+              <Field label={t("search.to")}>
+                <Input
+                  type="date"
+                  value={dateInputValue(filters.to)}
+                  onChange={(e) => patch({ to: endOfDay(e.target.value) })}
+                />
+              </Field>
+            </div>
+          )}
         </div>
-        </details>
+
         {filtering && (
           <div className="flex items-center justify-between gap-2" role="status" aria-live="polite">
             <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
