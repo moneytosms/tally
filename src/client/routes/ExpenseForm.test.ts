@@ -76,6 +76,83 @@ function renderForm() {
   );
 }
 
+function renderEdit(mode: "exact" | "percent", splits: Array<{ memberId: string; amount: number; inputValue: number | null }>) {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  client.setQueryData(qk.ledgers, [ledger]);
+  client.setQueryData(qk.me, me);
+  client.setQueryData(qk.members("L1"), members);
+  client.setQueryData(qk.categories, categories);
+
+  return renderToStaticMarkup(
+    createElement(
+      QueryClientProvider,
+      { client },
+      createElement(
+        MemoryRouter,
+        { initialEntries: ["/ledgers/L1/expenses/e1/edit"] },
+        createElement(
+          Routes,
+          null,
+          createElement(Route, {
+            path: "/ledgers/:ledgerId/expenses/:id/edit",
+            element: createElement(ExpenseForm, {
+              onDone: () => {},
+              expense: {
+                id: "e1",
+                ledgerId: "L1",
+                description: "Lunch",
+                total: 40000, // ₹400.00
+                paidAt: Date.UTC(2026, 0, 1),
+                payerMemberId: "m_ada",
+                categoryId: "c_food",
+                notes: null,
+                mode,
+                splits,
+              },
+            }),
+          }),
+        ),
+      ),
+    ),
+  );
+}
+
+describe("<ExpenseForm> remaining-to-allocate indicator", () => {
+  it("shows the remaining amount while an exact split is under-allocated", () => {
+    const html = renderEdit("exact", [
+      { memberId: "m_ada", amount: 20000, inputValue: 100_00 }, // ₹100.00 entered
+      { memberId: "m_bo", amount: 20000, inputValue: null }, // nothing entered yet
+    ]);
+    expect(html).toContain(t("expense.remainingToAllocate", { amount: "₹300.00" }));
+    expect(html).not.toContain(t("expense.overAllocated", { amount: "₹300.00" }));
+  });
+
+  it("flags over-allocation distinctly from under-allocation", () => {
+    const html = renderEdit("exact", [
+      { memberId: "m_ada", amount: 20000, inputValue: 300_00 },
+      { memberId: "m_bo", amount: 20000, inputValue: 200_00 },
+    ]);
+    expect(html).toContain(t("expense.overAllocated", { amount: "₹100.00" }));
+  });
+
+  it("hides the indicator once an exact split exactly matches the total", () => {
+    const html = renderEdit("exact", [
+      { memberId: "m_ada", amount: 20000, inputValue: 200_00 },
+      { memberId: "m_bo", amount: 20000, inputValue: 200_00 },
+    ]);
+    expect(html).not.toContain(t("expense.remainingToAllocate", { amount: "₹0.00" }));
+    expect(html).not.toContain('role="status"');
+  });
+
+  it("gives percent mode the same remaining-percent treatment", () => {
+    const html = renderEdit("percent", [
+      { memberId: "m_ada", amount: 20000, inputValue: 30 },
+      { memberId: "m_bo", amount: 20000, inputValue: 30 },
+    ]);
+    expect(html).toContain(t("expense.remainingToAllocate", { amount: "40%" }));
+  });
+});
+
 describe("<ExpenseForm> category chips", () => {
   it("renders a chip per category plus the uncategorised chip, pressed by default", () => {
     const html = renderForm();

@@ -163,6 +163,8 @@
     "category": "Category",
     "save": "Save",
     "remainderNote": "Odd paise go to the payer.",
+    "remainingToAllocate": "{amount} left to allocate",
+    "overAllocated": "{amount} over-allocated",
     "splitMode": {
       "equal": "Equal",
       "exact": "Exact",

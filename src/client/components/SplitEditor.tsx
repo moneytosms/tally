@@ -84,6 +84,41 @@ export function preview(input: PreviewInput): { splits: number[] } | { error: st
   }
 }
 
+/** How far a split is from fully allocated while the user is still typing.
+ *  `null` means nothing to show: `equal` has no per-person entry, and a split
+ *  that already matches has nothing left to flag (issue #37).
+ *
+ *  exact/percent: summed directly from the raw entries - the same kind of
+ *  arithmetic `splitValues` does, just tolerant of blanks (0, not an error)
+ *  since this runs on every keystroke, not just a complete split.
+ *
+ *  shares: no direct sum makes sense (shares don't need to add to anything).
+ *  Instead this reuses `preview()` - the exact resolution the save path
+ *  computes - and diffs its resolved paise against the total. That diff is
+ *  always 0 once shares resolve at all (resolveSplits' remainder always lands
+ *  on a participant), so this only ever reports something while entries are
+ *  still incomplete or invalid, which `preview` already flags as an error. */
+export function remainingToAllocate(input: PreviewInput): { unit: "paise" | "percent"; amount: number } | null {
+  const { total, mode, participants, raw } = input;
+  if (mode === "equal") return null;
+
+  if (mode === "shares") {
+    const result = preview(input);
+    if (!("splits" in result)) return null;
+    const amount = total - result.splits.reduce((a, b) => a + b, 0);
+    return amount === 0 ? null : { unit: "paise", amount };
+  }
+
+  const entered = participants.reduce((sum, p) => {
+    const text = (raw[p.memberId] ?? "").trim();
+    const value = mode === "exact" ? rupeesToPaise(text) : /^\d+$/.test(text) ? Number(text) : null;
+    return sum + (value ?? 0);
+  }, 0);
+  const target = mode === "percent" ? 100 : total;
+  const amount = target - entered;
+  return amount === 0 ? null : { unit: mode === "percent" ? "percent" : "paise", amount };
+}
+
 const modes: SplitMode[] = ["equal", "exact", "shares", "percent"];
 
 /**

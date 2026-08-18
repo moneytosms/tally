@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SplitEditor, paiseToRupeeString, preview, rupeesToPaise } from "./SplitEditor";
+import { SplitEditor, paiseToRupeeString, preview, remainingToAllocate, rupeesToPaise } from "./SplitEditor";
 import { t } from "~/client/i18n";
 import type { SplitMode } from "~/shared/money";
 
@@ -91,6 +91,49 @@ describe("preview", () => {
     const splits = (r as { splits: number[] }).splits;
     expect(splits.reduce((x, y) => x + y, 0)).toBe(-100_01);
     expect(splits.every((s) => s < 0)).toBe(true);
+  });
+});
+
+describe("remainingToAllocate", () => {
+  const run = (mode: SplitMode, raw: Record<string, string>, total = 100_00) =>
+    remainingToAllocate({ total, mode, payerIndex: 0, participants: people, raw });
+
+  it("has nothing to say about equal splits", () => {
+    expect(run("equal", {})).toBeNull();
+  });
+
+  it("reports what's left, under exact entries", () => {
+    expect(run("exact", { a: "33.34", b: "33.33" })).toEqual({ unit: "paise", amount: 33_33 });
+  });
+
+  it("hides once exact entries match exactly", () => {
+    expect(run("exact", { a: "33.34", b: "33.33", c: "33.33" })).toBeNull();
+  });
+
+  it("signals over-allocation as negative", () => {
+    expect(run("exact", { a: "50.00", b: "50.00", c: "50.00" })).toEqual({ unit: "paise", amount: -50_00 });
+  });
+
+  it("treats a blank or unparseable exact entry as unentered, not zero-and-ignored", () => {
+    expect(run("exact", { a: "33.34", b: "not a number" })).toEqual({ unit: "paise", amount: 66_66 });
+  });
+
+  it("reports remaining percent, not paise, for percent mode", () => {
+    expect(run("percent", { a: "50", b: "25" })).toEqual({ unit: "percent", amount: 25 });
+    expect(run("percent", { a: "50", b: "30", c: "25" })).toEqual({ unit: "percent", amount: -5 });
+    expect(run("percent", { a: "50", b: "25", c: "25" })).toBeNull();
+  });
+
+  it("shares: matches what save (resolveSplits) would compute once fully entered - always fully allocated", () => {
+    const raw = { a: "1", b: "1", c: "2" };
+    expect(run("shares", raw)).toBeNull(); // matches: nothing left, same as preview()'s resolved splits
+    const resolved = preview({ total: 100_00, mode: "shares", payerIndex: 0, participants: people, raw });
+    expect("splits" in resolved && resolved.splits.reduce((a, b) => a + b, 0)).toBe(100_00);
+  });
+
+  it("shares: says nothing while entries are still incomplete or invalid", () => {
+    expect(run("shares", { a: "1", b: "" })).toBeNull();
+    expect(run("shares", { a: "1", b: "two", c: "1" })).toBeNull();
   });
 });
 
