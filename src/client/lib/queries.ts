@@ -4,9 +4,11 @@
 // staleTime is 0 everywhere: every number here is money a user acts on, and a
 // stale one is worse than a spinner. Nothing is persisted, and no service worker
 // may ever cache an API response (SPEC §10).
-import { useMutation, useQuery, useQueryClient, QueryClient } from "@tanstack/react-query";
+import { MutationCache, useMutation, useQuery, useQueryClient, QueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { api, ApiError } from "./api";
+import { pushToast } from "~/client/components/ui/Toast";
+import { t } from "~/client/i18n";
 import { markActed } from "~/client/components/InstallPrompt";
 import { uuidv7 } from "~/shared/id";
 import type { ParsedImportRow as ImportRow, ParseResult as ImportParseResult } from "~/shared/import/types";
@@ -240,8 +242,19 @@ function filterQuery(f: ExpenseFilters): string {
   return s ? `?${s}` : "";
 }
 
+/** Every `useMutation` gets this for free (issue #42/#46) - a rollback or a
+ *  failed write used to just flicker back with no signal. Set
+ *  `meta: { skipToast: true }` on a specific `useMutation` call to opt out
+ *  when the caller already renders a more specific inline message. */
 export function createQueryClient() {
   return new QueryClient({
+    mutationCache: new MutationCache({
+      onError: (error, _vars, _ctx, mutation) => {
+        if (mutation.options.meta?.skipToast) return;
+        if (error instanceof ApiError && error.code === "offline") return pushToast(t("offline.title"), "error");
+        pushToast(error instanceof ApiError && error.message ? error.message : t("error.mutationFailed"), "error");
+      },
+    }),
     defaultOptions: {
       queries: { staleTime: 0, gcTime: 60_000, refetchOnWindowFocus: true, retry: 1 },
       mutations: { retry: 0 },

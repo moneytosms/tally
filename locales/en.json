@@ -21,7 +21,8 @@
     "cancel": "Cancel",
     "confirm": "Confirm",
     "retry": "Retry",
-    "edit": "Edit"
+    "edit": "Edit",
+    "reload": "Reload"
   },
   "amount": {
     "positive": "owed to you,",
@@ -437,7 +438,10 @@
   "error": {
     "generic": "Something went wrong.",
     "network": "Couldn't reach the server.",
-    "unauthorized": "Sign in to continue."
+    "unauthorized": "Sign in to continue.",
+    "crashed": "Something broke.",
+    "crashedBody": "This screen hit an error it couldn't recover from. Reloading usually fixes it.",
+    "mutationFailed": "That didn't save. Try again."
   },
   "sort": {
     "label": "Sort expenses",

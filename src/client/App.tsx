@@ -5,7 +5,9 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "rea
 import { TabBar } from "./components/TabBar";
 import { Fab } from "./components/Fab";
 import { Sheet } from "./components/ui/Sheet";
+import { ToastViewport } from "./components/ui/Toast";
 import { focusRing } from "./components/ui/focus";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LedgerForm, type LedgerKind } from "./components/LedgerForm";
 import { useLedgers, useMe, useOnline } from "./lib/queries";
 import { ApiError } from "./lib/api";
@@ -115,12 +117,19 @@ function Shell() {
         <UpdatePrompt />
         <InstallPrompt />
         <main className="min-h-0 flex-1 overflow-auto px-3.5 pt-3 pb-5">
-          <Suspense fallback={null}>
-            <Outlet />
-          </Suspense>
+          {/* Keyed on the route so a tab/page switch replays the fade rather
+              than snapping in - issue #45. */}
+          <div key={pathname} className="page-in">
+            <ErrorBoundary>
+              <Suspense fallback={null}>
+                <Outlet />
+              </Suspense>
+            </ErrorBoundary>
+          </div>
         </main>
         {!FAB_HIDDEN.test(pathname) && <Fab onClick={() => setAddOpen(true)} />}
         <TabBar />
+        <ToastViewport />
       </div>
       <Sheet open={addOpen} onOpenChange={setAddOpen} title={t("add.title")}>
         <AddMenu

@@ -260,7 +260,7 @@ export default function SettleUp() {
               {failure}
             </p>
 
-            <Button className="w-full" disabled={paise === null || create.isPending} onClick={record}>
+            <Button className="w-full" disabled={paise === null} isLoading={create.isPending} onClick={record}>
               {t("settle.record")}
             </Button>
           </>

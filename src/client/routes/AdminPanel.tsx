@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Avatar, Button, EmptyState, Field, Input } from "~/client/components/ui";
+import { Avatar, Button, EmptyState, Field, Input, ScreenSkeleton, Skeleton } from "~/client/components/ui";
 import { api, ApiError } from "~/client/lib/api";
 import { qk } from "~/client/lib/queries";
 import {
@@ -30,7 +30,16 @@ const card = { background: "var(--paper-2)", borderColor: "var(--line)" } as con
 
 function InstanceSection() {
   const instance = useAdminInstance();
-  if (instance.isPending) return null;
+  if (instance.isPending) {
+    return (
+      <div className="rounded-[7px] border px-3.5 py-3.5" style={card}>
+        <Skeleton className="mb-2 h-4 w-full" />
+        <Skeleton className="mb-2 h-4 w-full" />
+        <Skeleton className="mb-2 h-4 w-2/3" />
+        <Skeleton className="h-4 w-2/3" />
+      </div>
+    );
+  }
   if (instance.error || !instance.data) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
   const d = instance.data;
   return (
@@ -102,7 +111,7 @@ function RecoveryRow({ userId }: { userId: string }) {
 
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
-      <Button variant="ghost" size="sm" disabled={create.isPending} onClick={mint}>
+      <Button variant="ghost" size="sm" isLoading={create.isPending} onClick={mint}>
         {t("admin.recovery")}
       </Button>
       {create.isError && (
@@ -129,13 +138,14 @@ function EmergencyRow({ userId, hasPassword }: { userId: string; hasPassword: bo
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="ghost" size="sm" disabled={signOut.isPending} onClick={() => signOut.mutate(userId)}>
+        <Button variant="ghost" size="sm" isLoading={signOut.isPending} onClick={() => signOut.mutate(userId)}>
           {t("admin.signOutUser")}
         </Button>
         <Button
           variant="ghost"
           size="sm"
-          disabled={clearPassword.isPending || !hasPassword}
+          disabled={!hasPassword}
+          isLoading={clearPassword.isPending}
           onClick={() => setConfirmingClear(true)}
         >
           {t("admin.clearPassword")}
@@ -187,7 +197,7 @@ function PromoteRow({ userId }: { userId: string }) {
   const promote = usePromoteUser();
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
-      <Button variant="ghost" size="sm" disabled={promote.isPending} onClick={() => promote.mutate(userId)}>
+      <Button variant="ghost" size="sm" isLoading={promote.isPending} onClick={() => promote.mutate(userId)}>
         {t("admin.promote")}
       </Button>
       <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
@@ -237,7 +247,21 @@ function PeopleSection() {
     },
   });
 
-  if (users.isPending) return null;
+  if (users.isPending) {
+    return (
+      <>
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="mb-2 rounded-[7px] border px-3.5 py-3" style={card}>
+            <div className="flex items-center gap-2.5">
+              <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+              <Skeleton className="h-4 w-1/2" />
+            </div>
+            <Skeleton className="mt-2.5 h-3 w-2/3" />
+          </div>
+        ))}
+      </>
+    );
+  }
   if (users.error || !users.data) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
 
   const doRevoke = () => {
@@ -308,7 +332,8 @@ function PeopleSection() {
                       size="sm"
                       // Revoking the only passkey locks the account out and the
                       // server refuses it (409). Issue a recovery link instead.
-                      disabled={revoke.isPending || u.credentials.length === 1}
+                      disabled={u.credentials.length === 1}
+                      isLoading={revoke.isPending}
                       onClick={() => setConfirming({ userId: u.id, credentialId: c.id })}
                     >
                       {t("admin.revoke")}
@@ -331,7 +356,7 @@ function PeopleSection() {
               <Button
                 variant="danger"
                 size="sm"
-                disabled={removeUser.isPending}
+                isLoading={removeUser.isPending}
                 onClick={() => (setDeleted(false), removeUser.reset(), setDeleting({ id: u.id, name: u.displayName }))}
               >
                 {t("admin.deleteUser")}
@@ -398,7 +423,15 @@ function CategoriesSection() {
   const [icon, setIcon] = useState("");
   const [confirming, setConfirming] = useState<string | null>(null);
 
-  if (categories.isPending) return null;
+  if (categories.isPending) {
+    return (
+      <>
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="mb-2 h-11 w-full" />
+        ))}
+      </>
+    );
+  }
   if (categories.error || !categories.data) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
 
   const onSubmit = (e: FormEvent) => {
@@ -426,7 +459,7 @@ function CategoriesSection() {
               {t("admin.categoryDefault")}
             </span>
           ) : (
-            <Button variant="danger" size="sm" disabled={del.isPending} onClick={() => setConfirming(c.id)}>
+            <Button variant="danger" size="sm" isLoading={del.isPending} onClick={() => setConfirming(c.id)}>
               {t("admin.categoryDelete")}
             </Button>
           )}
@@ -440,7 +473,7 @@ function CategoriesSection() {
         <Field label={t("admin.categoryIcon")}>
           <Input value={icon} onChange={(e) => setIcon(e.target.value)} required maxLength={8} />
         </Field>
-        <Button type="submit" disabled={save.isPending}>
+        <Button type="submit" isLoading={save.isPending}>
           {t("admin.categoryAdd")}
         </Button>
       </form>
@@ -487,7 +520,7 @@ function InstanceInviteCard() {
       <div className="mb-2 text-[14px] font-medium">{t("admin.inviteInstance")}</div>
       {link === null ? (
         <>
-          <Button variant="ghost" size="sm" disabled={create.isPending} onClick={() => create.mutate()}>
+          <Button variant="ghost" size="sm" isLoading={create.isPending} onClick={() => create.mutate()}>
             {t("admin.inviteInstanceCreate")}
           </Button>
           {create.isError && (
@@ -525,7 +558,15 @@ function InvitesSection() {
   const revoke = useRevokeInvite();
   const [confirming, setConfirming] = useState<string | null>(null);
 
-  if (invites.isPending) return null;
+  if (invites.isPending) {
+    return (
+      <>
+        {[0, 1].map((i) => (
+          <Skeleton key={i} className="mb-2 h-14 w-full" />
+        ))}
+      </>
+    );
+  }
   if (invites.error || !invites.data) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
 
   const doRevoke = () => {
@@ -556,7 +597,7 @@ function InvitesSection() {
                 {t("admin.expiresIn", { hours })}
               </div>
             </div>
-            <Button variant="danger" size="sm" disabled={revoke.isPending} onClick={() => setConfirming(inv.id)}>
+            <Button variant="danger" size="sm" isLoading={revoke.isPending} onClick={() => setConfirming(inv.id)}>
               {t("admin.inviteRevoke")}
             </Button>
           </div>
@@ -585,7 +626,7 @@ function InvitesSection() {
 export default function AdminPanel() {
   const me = useMe();
 
-  if (me.isPending) return null;
+  if (me.isPending) return <ScreenSkeleton />;
   if (me.error || !me.data) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
   if (!me.data.isOwner) return <EmptyState title={t("admin.onlyOwner")} body="" />;
 

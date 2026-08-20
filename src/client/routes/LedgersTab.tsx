@@ -77,7 +77,7 @@ function LedgerCard({ ledger }: { ledger: LedgerSummary }) {
   return (
     <Link
       to={`/ledgers/${ledger.id}`}
-      className={`mb-2 block rounded-[7px] border px-3.5 py-3 ${focusRing}`}
+      className={`row-in mb-2 block rounded-[7px] border px-3.5 py-3 ${focusRing}`}
       style={{
         background: "var(--paper-2)",
         borderColor: "var(--line)",

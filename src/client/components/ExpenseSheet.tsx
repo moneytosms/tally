@@ -2,7 +2,7 @@
 // Opened by tapping an expense row in LedgerDetail.
 import { useState } from "react";
 import { Link } from "react-router";
-import { Amount, Button, EmptyState, Field, Input, Sheet, focusRing } from "~/client/components/ui";
+import { Amount, Button, EmptyState, Field, Input, Sheet, Skeleton, focusRing } from "~/client/components/ui";
 import {
   useAddComment,
   useCategories,
@@ -171,7 +171,12 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
       <div className="mx-0.5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
         {t("expense.comments")}
       </div>
-      {comments.isPending ? null : comments.error ? (
+      {comments.isPending ? (
+        <div className="mb-3">
+          <Skeleton className="mb-2 h-10 w-full" />
+          <Skeleton className="h-10 w-4/5" />
+        </div>
+      ) : comments.error ? (
         <EmptyState title={t("error.generic")} body={t("error.network")} />
       ) : sortedComments.length === 0 ? (
         <p className="mb-3 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
@@ -211,7 +216,7 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
             onKeyDown={(e) => e.key === "Enter" && postComment()}
           />
         </Field>
-        <Button size="sm" onClick={postComment} disabled={!commentText.trim() || addComment.isPending} className="mt-1">
+        <Button size="sm" onClick={postComment} disabled={!commentText.trim()} isLoading={addComment.isPending} className="mt-1">
           {t("expense.commentSend")}
         </Button>
       </div>
@@ -221,7 +226,12 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
         <summary className={`inline-flex min-h-11 cursor-pointer list-none items-center text-[13px] underline ${focusRing}`} style={{ color: "var(--ink-3)" }}>
           {t("expense.history")}
         </summary>
-        {revisions.isPending ? null : revisions.error ? (
+        {revisions.isPending ? (
+          <div className="py-2">
+            <Skeleton className="mb-2 h-9 w-full" />
+            <Skeleton className="h-9 w-full" />
+          </div>
+        ) : revisions.error ? (
           <p className="py-2 text-[12.5px]" style={{ color: "var(--clay)" }}>
             {t("error.generic")}
           </p>
@@ -306,7 +316,7 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
       </Link>
 
       {/* ---------- delete ---------- */}
-      <Button variant="danger" onClick={handleDelete} disabled={deleteExpense.isPending}>
+      <Button variant="danger" onClick={handleDelete} isLoading={deleteExpense.isPending}>
         {t("action.delete")}
       </Button>
       <p role="status" aria-live="polite" className="mt-1.5 text-[12px]" style={{ color: "var(--clay)" }}>

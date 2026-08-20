@@ -48,7 +48,7 @@ const dotColour: Record<ActivityEvent["kind"], string> = {
 export function ActivityRow({ event, showTime = true }: { event: ActivityEvent; showTime?: boolean }) {
   const who = event.actorName ?? event.fromName;
   return (
-    <li className="flex items-start gap-2.5 py-2.5">
+    <li className="row-in flex items-start gap-2.5 py-2.5">
       <span className="mt-1.5 flex-none">
         {who ? (
           <Avatar name={who} />

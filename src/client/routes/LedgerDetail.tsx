@@ -62,7 +62,7 @@ function ExpenseRow({
     <button
       type="button"
       onClick={() => onSelect(expense)}
-      className={`mb-2 block w-full rounded-[7px] border px-3.5 py-3 text-left ${focusRing}`}
+      className={`row-in mb-2 block w-full rounded-[7px] border px-3.5 py-3 text-left ${focusRing}`}
       style={{
         background: "var(--paper-2)",
         borderColor: "var(--line)",
@@ -260,17 +260,25 @@ export function LedgerDetail() {
           <button
             type="button"
             onClick={() => setFiltersExpanded(!filtersExpanded)}
-            className={`inline-flex min-h-11 cursor-pointer list-none items-center gap-1.5 text-[12px] underline ${focusRing}`}
-            style={{ color: "var(--moss)" }}
+            aria-expanded={filtersExpanded}
+            className={`inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-[6px] border px-2.5 text-[12px] ${focusRing}`}
+            style={{
+              borderColor: hasFilterSet ? "var(--moss)" : "var(--line)",
+              color: hasFilterSet ? "var(--moss-2)" : "var(--ink-2)",
+              background: hasFilterSet ? "var(--moss-wash)" : "var(--paper-2)",
+            }}
           >
             {t("search.filters")}
             {hasFilterSet && (
               <span
-                className="inline-block h-2 w-2 rounded-full shrink-0"
+                className="inline-block h-1.5 w-1.5 rounded-full shrink-0"
                 style={{ background: "var(--moss)" }}
-                aria-label={t("search.filters")}
+                aria-hidden="true"
               />
             )}
+            <span aria-hidden="true" className="text-[10px]" style={{ transform: filtersExpanded ? "rotate(180deg)" : undefined }}>
+              ▾
+            </span>
           </button>
           {filtersExpanded && (
             <div className="mt-2 grid grid-cols-2 gap-2">

@@ -286,7 +286,7 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
       {/* Sticky: this form is taller than a phone screen, and a Save button below
           the fold from the moment the sheet opens is a Save button nobody finds. */}
       <div className="pad-safe-bottom sticky bottom-0 -mx-4 px-4 pt-2 pb-2" style={{ background: "var(--paper)" }}>
-        <Button type="submit" disabled={blocked} className="w-full">
+        <Button type="submit" disabled={blocked} isLoading={save.isPending} className="w-full">
           {t(expense ? "expense.editSave" : "expense.save")}
         </Button>
       </div>

@@ -60,7 +60,7 @@ function SeriesRow({
   const isPaused = series.pausedAt !== null;
   return (
     <div
-      className="mb-2 rounded-[7px] border px-3.5 py-3"
+      className="row-in mb-2 rounded-[7px] border px-3.5 py-3"
       style={{ background: "var(--paper-2)", borderColor: "var(--line)", opacity: isPaused ? 0.7 : 1 }}
     >
       <div className="flex items-center justify-between gap-2.5">
