@@ -174,6 +174,33 @@ export function LedgerDetail() {
         <BurnRate ledger={ledger.data} />
       </div>
 
+      <div className="mx-0.5 mt-5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
+        {t("ledger.members")}
+      </div>
+      <div className="rounded-[7px] border px-3.5 py-2" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+        {(members.data ?? []).map((m) => {
+          const position = (balances.data?.positions ?? []).find((p) => p.memberId === m.id);
+          return (
+            <div key={m.id} className="flex items-center gap-2.5 py-1.5">
+              <Avatar name={m.nickname} />
+              <span className="flex-1 truncate text-[14px]">{m.nickname}</span>
+              {m.guestName !== null && (
+                <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                  {t("member.guest")}
+                </span>
+              )}
+              {position && (
+                <Amount
+                  paise={position.net}
+                  label={t("ledger.netPosition")}
+                  subject={m.id === myMemberId ? undefined : m.nickname}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
       <Sheet open={adding} onOpenChange={setAdding} title={t("expense.add")}>
         <Suspense fallback={null}>
           <ExpenseForm onDone={() => setAdding(false)} />
@@ -363,33 +390,6 @@ export function LedgerDetail() {
           />
         ))
       )}
-
-      <div className="mx-0.5 mt-5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
-        {t("ledger.members")}
-      </div>
-      <div className="rounded-[7px] border px-3.5 py-2" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
-        {(members.data ?? []).map((m) => {
-          const position = (balances.data?.positions ?? []).find((p) => p.memberId === m.id);
-          return (
-            <div key={m.id} className="flex items-center gap-2.5 py-1.5">
-              <Avatar name={m.nickname} />
-              <span className="flex-1 truncate text-[14px]">{m.nickname}</span>
-              {m.guestName !== null && (
-                <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-                  {t("member.guest")}
-                </span>
-              )}
-              {position && (
-                <Amount
-                  paise={position.net}
-                  label={t("ledger.netPosition")}
-                  subject={m.id === myMemberId ? undefined : m.nickname}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
 
       {selected && (
         <ExpenseSheet
