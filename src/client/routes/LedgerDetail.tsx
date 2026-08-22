@@ -165,7 +165,11 @@ export function LedgerDetail() {
             <Button size="sm" onClick={() => setAdding(true)}>
               {t("expense.add")}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => navigate(`/ledgers/${ledgerId}/settle`)}>
+            <Button
+              size="sm"
+              variant={ledger.data.net === 0 ? "ghost" : "primary"}
+              onClick={() => navigate(`/ledgers/${ledgerId}/settle`)}
+            >
               {t("settle.title")}
             </Button>
           </span>
