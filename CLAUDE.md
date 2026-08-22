@@ -26,6 +26,11 @@ One Worker serves static assets and `/api/*`. One origin, no CORS.
 
 **RTK wrappers:** `rtk pnpm` (dev/build/db:generate/db:migrate/deploy — all pnpm scripts), `rtk tsc` (typecheck), `rtk vitest` (test). No eslint/prettier config present yet — add `rtk lint`/`rtk format` if those land.
 
+## Tooling
+
+- **RTK** — first layer for all matching Bash commands, raw only if no wrapper exists. See **RTK wrappers** above; full list `rtk help`.
+- **ctx7** — `ctx7 library <name> <query>` before touching any external library API.
+
 ## Canary
 
 Every completed task ends with: `[Canary:tally:TASK_NAME]`. Can't produce it → context dropped, stop and say so.
@@ -50,6 +55,17 @@ Ask before spawning; pick model by task weight. Defined in `.claude/agents/`:
 `ReadOnly` · `BuildValidator` · `CodeReviewer` · `LogAnalyzer` · `Researcher` · `DocWriter`
 
 Subagent/hook output follows `.claude/rules/agent-output-conventions.md` — no silent truncation, explicit empty states, end with a concrete next command.
+
+## Folder map
+
+- `src/` - Worker + React SPA (Cloudflare Workers, Hono, React)
+- `docs/` - SPEC, ADRs, agent skill docs
+- `docs/adr/` - irreversible decisions
+- `.claude/` - agents, commands, hooks, rules
+
+## Scoped rules
+
+`.claude/rules/` files load by glob match. Add per-subdirectory as needed.
 
 ## Learned rules
 
