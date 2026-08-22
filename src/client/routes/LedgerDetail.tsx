@@ -7,6 +7,7 @@ import { ExpenseSheet } from "~/client/components/ExpenseSheet";
 import { LedgerMenu } from "~/client/components/LedgerMenu";
 import { BurnRate, runFor } from "~/client/routes/LedgersTab";
 import {
+  useBalances,
   useCategories,
   useExpenseSearch,
   useExpenses,
@@ -108,6 +109,7 @@ export function LedgerDetail() {
   const navigate = useNavigate();
   const ledger = useLedger(ledgerId);
   const members = useMembers(ledgerId);
+  const balances = useBalances(ledgerId);
   const categories = useCategories();
   const me = useMe();
 
@@ -163,13 +165,44 @@ export function LedgerDetail() {
             <Button size="sm" onClick={() => setAdding(true)}>
               {t("expense.add")}
             </Button>
-            <Button size="sm" variant="ghost" onClick={() => navigate(`/ledgers/${ledgerId}/settle`)}>
+            <Button
+              size="sm"
+              variant={ledger.data.net === 0 ? "ghost" : "primary"}
+              onClick={() => navigate(`/ledgers/${ledgerId}/settle`)}
+            >
               {t("settle.title")}
             </Button>
           </span>
         </div>
         {/* A budget entered at creation used to be stored and never shown again. */}
         <BurnRate ledger={ledger.data} />
+      </div>
+
+      <div className="mx-0.5 mt-5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
+        {t("ledger.members")}
+      </div>
+      <div className="rounded-[7px] border px-3.5 py-2" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+        {(members.data ?? []).map((m) => {
+          const position = (balances.data?.positions ?? []).find((p) => p.memberId === m.id);
+          return (
+            <div key={m.id} className="flex items-center gap-2.5 py-1.5">
+              <Avatar name={m.nickname} />
+              <span className="flex-1 truncate text-[14px]">{m.nickname}</span>
+              {m.guestName !== null && (
+                <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                  {t("member.guest")}
+                </span>
+              )}
+              {position && (
+                <Amount
+                  paise={position.net}
+                  label={t("ledger.netPosition")}
+                  subject={m.id === myMemberId ? undefined : m.nickname}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <Sheet open={adding} onOpenChange={setAdding} title={t("expense.add")}>
@@ -361,23 +394,6 @@ export function LedgerDetail() {
           />
         ))
       )}
-
-      <div className="mx-0.5 mt-5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
-        {t("ledger.members")}
-      </div>
-      <div className="rounded-[7px] border px-3.5 py-2" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
-        {(members.data ?? []).map((m) => (
-          <div key={m.id} className="flex items-center gap-2.5 py-1.5">
-            <Avatar name={m.nickname} />
-            <span className="flex-1 truncate text-[14px]">{m.nickname}</span>
-            {m.guestName !== null && (
-              <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-                {t("member.guest")}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
 
       {selected && (
         <ExpenseSheet
