@@ -185,7 +185,7 @@ export default function SettleUp() {
                 </p>
               )}
               {owedToMe && <Nudge ledgerId={ledgerId} toUserId={member(tr.fromMemberId)?.userId ?? null} />}
-              <WhyTrail ledgerId={ledgerId} fromMemberId={tr.fromMemberId} toMemberId={tr.toMemberId} />
+              <WhyTrail ledgerId={ledgerId} fromMemberId={tr.fromMemberId} toMemberId={tr.toMemberId} amount={tr.amount} />
             </div>
           );
         })

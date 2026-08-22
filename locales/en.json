@@ -300,7 +300,8 @@
     "notYoursHint": "This one is {name}'s to pay. Record it here only if they already have.",
     "whyFor": "Why does {from} pay {to}?",
     "trailEmpty": "No expenses behind this one yet.",
-    "trailShare": "{name}'s share"
+    "trailShare": "{name}'s share",
+    "trailSimplified": "This payment settles the group's overall balances and may not match these expenses exactly."
   },
   "profile": {
     "displayName": "Display name",

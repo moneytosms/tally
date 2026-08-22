@@ -176,7 +176,7 @@ function LedgerPlan({ ledger, onLegs }: { ledger: LedgerSummary; onLegs: (id: st
                 </span>
                 <Amount paise={tr.amount} label={t("settle.suggested")} tone="neutral" />
               </div>
-              <WhyTrail ledgerId={ledger.id} fromMemberId={tr.fromMemberId} toMemberId={tr.toMemberId} />
+              <WhyTrail ledgerId={ledger.id} fromMemberId={tr.fromMemberId} toMemberId={tr.toMemberId} amount={tr.amount} />
             </div>
           ))
         )}
