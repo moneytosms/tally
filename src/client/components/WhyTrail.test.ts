@@ -1,84 +1,63 @@
-// Pure logic behind the "why?" disclosure. See WhyTrail.tsx for why
-// fullyExplained matters: a simplified transfer can have a direct trail
-// that doesn't sum to the transfer amount, and the UI must say so rather
-// than imply completeness.
+// Pure logic behind the "why?" disclosure. The trail itself is built on the
+// server (trailFor in src/server/routes/balances.ts) because only the server can
+// see settlements; what is left here is the question the UI actually asks of it:
+// does this list account for the whole payment, or does the disclaimer belong?
+//
+// Amounts are paise, written as integers with the rupee value in a comment.
 import { describe, expect, it } from "vitest";
-import { directTrail, directTrailNet } from "./WhyTrail";
+import { fullyExplained, trailNet } from "./WhyTrail";
+import type { TrailRow } from "~/client/lib/queries";
 
-const FROM = "m-from";
-const TO = "m-to";
+const expense = (amount: number, at = 1): TrailRow => ({
+  kind: "expense",
+  id: `e-${at}-${amount}`,
+  expenseId: `e-${at}-${amount}`,
+  description: "x",
+  at,
+  amount,
+});
 
-function expense(payerMemberId: string, splits: Array<{ memberId: string; amount: number }>, paidAt = 1) {
-  return { id: `e-${paidAt}-${payerMemberId}`, payerMemberId, description: "x", paidAt, splits };
-}
+const settlement = (amount: number, at = 1): TrailRow => ({
+  kind: "settlement",
+  id: `s-${at}-${amount}`,
+  expenseId: null,
+  description: "",
+  at,
+  amount,
+});
 
-describe("directTrail", () => {
-  it("to paid, from has a split: one row, net is negative (from owes)", () => {
-    const rows = directTrail(
-      [expense(TO, [{ memberId: FROM, amount: 200_00 }])],
-      FROM,
-      TO,
-    );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]!.paidByTo).toBe(true);
-    expect(directTrailNet(rows)).toBe(-200_00);
+describe("trailNet", () => {
+  it("adds the rows signed: what `to` paid, less what `from` paid", () => {
+    // `to` paid and `from` took a ₹200.00 share; `from` paid and `to` took ₹150.00
+    expect(trailNet([expense(200_00), expense(-150_00, 2)])).toBe(50_00);
   });
 
-  it("from paid, to has a split: one row, net is positive (to owes from)", () => {
-    const rows = directTrail(
-      [expense(FROM, [{ memberId: TO, amount: 150_00 }])],
-      FROM,
-      TO,
-    );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]!.paidByTo).toBe(false);
-    expect(directTrailNet(rows)).toBe(150_00);
+  it("counts a settlement already made against the obligation", () => {
+    // ₹200.00 owed, ₹80.00 of it already settled by `from`
+    expect(trailNet([expense(200_00), settlement(-80_00, 2)])).toBe(120_00);
   });
 
-  it("both directions present: net is the correct sum, not just one side", () => {
-    const rows = directTrail(
-      [
-        expense(TO, [{ memberId: FROM, amount: 200_00 }], 1),
-        expense(FROM, [{ memberId: TO, amount: 150_00 }], 2),
-      ],
-      FROM,
-      TO,
-    );
-    expect(rows).toHaveLength(2);
-    expect(directTrailNet(rows)).toBe(150_00 - 200_00);
+  it("is zero for an empty trail", () => {
+    expect(trailNet([])).toBe(0);
+  });
+});
+
+describe("fullyExplained", () => {
+  it("is true when the rows account for the whole suggested amount", () => {
+    expect(fullyExplained([expense(200_00), expense(-150_00, 2)], 50_00)).toBe(true);
   });
 
-  it("no shared expenses: empty trail, zero net", () => {
-    const rows = directTrail(
-      [expense("someone-else", [{ memberId: "another", amount: 100_00 }])],
-      FROM,
-      TO,
-    );
-    expect(rows).toEqual([]);
-    expect(directTrailNet(rows)).toBe(0);
+  it("stays true once a partial settle is in the trail", () => {
+    // The pre-fix trail listed the ₹200.00 expense alone against a ₹120.00
+    // suggestion and disclaimed a transfer it could explain exactly.
+    expect(fullyExplained([expense(200_00), settlement(-80_00, 2)], 120_00)).toBe(true);
   });
 
-  it("fullyExplained: net exactly matches -amount at the integer paise boundary", () => {
-    const rows = directTrail(
-      [expense(TO, [{ memberId: FROM, amount: 640_00 }])],
-      FROM,
-      TO,
-    );
-    const net = directTrailNet(rows);
-    const amount = 640_00;
-    const fullyExplained = rows.length > 0 && -net === amount;
-    expect(fullyExplained).toBe(true);
+  it("is false when simplification put money in the transfer that these rows don't hold", () => {
+    expect(fullyExplained([expense(200_00)], 300_00)).toBe(false);
   });
 
-  it("simplified/partial: rows exist but net doesn't cover the transfer amount", () => {
-    const rows = directTrail(
-      [expense(TO, [{ memberId: FROM, amount: 200_00 }])],
-      FROM,
-      TO,
-    );
-    const net = directTrailNet(rows);
-    const amount = 640_00;
-    const fullyExplained = rows.length > 0 && -net === amount;
-    expect(fullyExplained).toBe(false);
+  it("is false for an empty trail - there is nothing to be explained by", () => {
+    expect(fullyExplained([], 0)).toBe(false);
   });
 });

@@ -129,6 +129,18 @@ describe("net positions sum to zero", () => {
   });
 });
 
+  it("refuses a settlement on an archived ledger", async () => {
+    await adaOwesBob();
+    await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 5_000 }); // ₹50.00, so it can be archived
+    h.sql.prepare("UPDATE ledgers SET archived_at = ? WHERE id = 'L1'").run(Date.now());
+
+    const res = await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 1_000 });
+    expect(res.status).toBe(409);
+    expect(await h.db.listSettlements("L1")).toHaveLength(1);
+    // SPEC §12: an archived ledger has every net position at zero, and stays there.
+    expect([...(await positions("L1")).values()].every((n) => n === 0)).toBe(true);
+  });
+
 describe("POST /settlements/bulk", () => {
   /** Ada owes Bob ₹50.00 and the guest ₹20.00 in L1, and Cy ₹30.00 in L2. */
   async function owingEverywhere() {
@@ -177,6 +189,16 @@ describe("POST /settlements/bulk", () => {
     expect(body.total).toBe(3_000);
     expect(body.settlements.map((s) => s.ledgerId)).toEqual(["L2"]);
     expect(await h.db.listSettlements("L1")).toHaveLength(0);
+  });
+
+  it("leaves an archived ledger alone - it is read-only and settled by definition", async () => {
+    await owingEverywhere();
+    h.sql.prepare("UPDATE ledgers SET archived_at = ? WHERE id = 'L2'").run(Date.now());
+
+    const res = await app.request(req(h, "/api/settlements/bulk", { method: "POST", json: { method: "upi", note: null } }));
+    const body = (await res.json()) as { total: number; settlements: Array<{ ledgerId: string }> };
+    expect(body.settlements.map((s) => s.ledgerId)).toEqual(["L1"]);
+    expect(await h.db.listSettlements("L2")).toHaveLength(0);
   });
 
   it("writes nothing when the viewer owes nothing", async () => {

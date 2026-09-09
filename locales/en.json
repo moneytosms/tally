@@ -268,6 +268,7 @@
     "recordAll": "Record all",
     "recordedAll": "Recorded in all {total} ledgers.",
     "recordedSome": "Recorded in {done} of {total} ledgers.",
+    "recordedNone": "Nothing was recorded - this balance can't be settled from here. Open the ledger it comes from.",
     "nothingToSettle": "Nothing to settle."
   },
   "settle": {
@@ -301,7 +302,9 @@
     "whyFor": "Why does {from} pay {to}?",
     "trailEmpty": "No expenses behind this one yet.",
     "trailShare": "{name}'s share",
-    "trailSimplified": "This payment settles the group's overall balances and may not match these expenses exactly."
+    "trailSettlement": "Settlement already recorded",
+    "trailSettledBy": "{name} settled",
+    "trailSimplified": "These don't add up to the whole of this payment: it also settles balances that run through other people."
   },
   "profile": {
     "displayName": "Display name",

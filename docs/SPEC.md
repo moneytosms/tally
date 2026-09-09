@@ -159,7 +159,7 @@ No payment callback exists, and P2P collect was abolished on 1 Oct 2025 - settle
 
 ### Cross-ledger
 
-- **Cross-ledger net balance** - one number per person across every shared ledger.
+- **Cross-ledger net balance** - one number per person across every shared ledger: the viewer's own obligation to them, summed from each ledger's transfer-plan leg between the two. Never the sum of that person's net positions - that figure includes debts between two other members, and cannot be settled by the viewer.
 - **Bulk settle** - one UPI link for that total, writing settle-up records into each contributing ledger so every sum-to-zero invariant holds. Guests are skipped (no VPA).
 
 Bulk settle is a multi-ledger write that **must not half-apply** - see §11.

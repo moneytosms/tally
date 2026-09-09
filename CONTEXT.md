@@ -38,7 +38,9 @@ Decisions live in [`docs/adr/`](docs/adr/). The buildable spec is [`docs/SPEC.md
 
 > Don't say "balance" when you mean a net position for one member in one ledger. "Balance" is loose; net position is exact.
 
-**Cross-ledger net balance** - the sum of one person's net positions across every Ledger shared with the viewer. One number per friend.
+**Cross-ledger net balance** - what the viewer owes one person (or is owed by them) across every Ledger they share. One number per friend, summed from the **Transfer plan** leg between the two of them in each Ledger - so it is always a figure a **Bulk settle** can clear to zero.
+
+> Not the sum of that person's own net positions: those include what a third Member owes them, which is neither the viewer's money nor the viewer's to settle.
 
 **Transfer plan** - the derived, minimal set of payments that would clear a Ledger. Never stored, recomputed on every change. Each suggested transfer must be explainable via its **trail**.
 

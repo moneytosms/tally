@@ -13,6 +13,7 @@ import type { Db } from "~/db";
 import type { Env } from "~/server/context";
 import { netPositions, transferPlan } from "~/server/balances";
 import { requireMember } from "~/server/middleware/membership";
+import { rejectArchivedWrites } from "~/server/routes/expenses";
 import { requireSession } from "~/server/middleware/session";
 import { notify } from "~/server/routes/push";
 import { uuidv7 } from "~/shared/id";
@@ -31,7 +32,12 @@ const bulkSchema = z.object({
   note: z.string().trim().max(2000).nullable().default(null),
 });
 
-settlements.post("/ledgers/:ledgerId/settlements", requireSession, requireMember, async (c) => {
+// An archived ledger is READ-ONLY (SPEC §4), and that read-only-ness is the only
+// thing keeping "an archived ledger has every net position at zero" (SPEC §12)
+// true after the archive check has run. A settlement moves money exactly as an
+// expense does, so it goes through the same guard - without it, archiving and
+// then settling put an archived ledger permanently out of balance.
+settlements.post("/ledgers/:ledgerId/settlements", requireSession, requireMember, rejectArchivedWrites, async (c) => {
   const db = c.var.db;
   const ledgerId = c.req.param("ledgerId");
 
@@ -84,6 +90,7 @@ settlements.post(
   "/ledgers/:ledgerId/settlements/:settlementId/acknowledge",
   requireSession,
   requireMember,
+  rejectArchivedWrites,
   async (c) => {
     const db = c.var.db;
     const settlementId = c.req.param("settlementId");
@@ -118,6 +125,9 @@ settlements.post("/settlements/bulk", requireSession, async (c) => {
   const skipped: Array<{ ledgerId: string; memberId: string; guestName: string | null; amount: Paise }> = [];
 
   for (const { ledger, memberId } of await db.listLedgersForUser(c.var.user.id)) {
+    // Read-only, and settled by definition - it has nothing to contribute and
+    // must not be written to.
+    if (ledger.archivedAt !== null) continue;
     const [members, expenses, existing] = await Promise.all([
       db.listMembers(ledger.id),
       db.listExpenses(ledger.id),
@@ -129,6 +139,10 @@ settlements.post("/settlements/bulk", requireSession, async (c) => {
       if (tr.fromMemberId !== memberId) continue;
       const payee = byId.get(tr.toMemberId);
       if (!payee) continue;
+      // A guest has no VPA and no user, so this leg cannot be part of a UPI push
+      // and has to be settled by hand. Reported rather than dropped - but only on
+      // the settle-everything path, since a guest is nobody's leg when the caller
+      // named one friend to settle with.
       if (!payee.userId) {
         if (!toUserId) skipped.push({ ledgerId: ledger.id, memberId: payee.id, guestName: payee.guestName, amount: tr.amount });
         continue;

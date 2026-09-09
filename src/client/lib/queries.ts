@@ -85,9 +85,22 @@ export type Expense = {
   splits: Array<{ memberId: string; amount: Paise }>;
 };
 
+/** One row of a transfer's "why?" trail. `amount` is signed from the payer-of-
+ *  the-transfer's side: POSITIVE is part of why they owe, NEGATIVE is something
+ *  running the other way (an expense they paid, or a settlement they already
+ *  made). Rows summing to the transfer amount explain it completely. */
+export type TrailRow = {
+  kind: "expense" | "settlement";
+  id: string;
+  expenseId: string | null;
+  description: string;
+  at: number;
+  amount: Paise;
+};
+
 export type LedgerBalances = {
   positions: Array<{ memberId: string; net: Paise }>;
-  transfers: Array<{ fromMemberId: string; toMemberId: string; amount: Paise }>;
+  transfers: Array<{ fromMemberId: string; toMemberId: string; amount: Paise; trail: TrailRow[] }>;
 };
 
 export type CrossLedgerBalance = {

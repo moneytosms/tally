@@ -54,9 +54,9 @@ export default function BalancesTab() {
         <EmptyState title={t("empty.balances")} body={t("balances.emptyBody")} />
       ) : (
         rows.map((f) => {
-          // The API returns THEIR position ("positive = that person is owed").
-          // Every label and colour in this row is written from the viewer's side,
-          // so flip it once, here, rather than at each use.
+          // The API returns the obligation from THEIR side ("positive = they are
+          // owed, by me"). Every label and colour in this row is written from the
+          // viewer's side, so flip it once, here, rather than at each use.
           const mine = -f.net;
           return (
             <div
@@ -176,7 +176,13 @@ function LedgerPlan({ ledger, onLegs }: { ledger: LedgerSummary; onLegs: (id: st
                 </span>
                 <Amount paise={tr.amount} label={t("settle.suggested")} tone="neutral" />
               </div>
-              <WhyTrail ledgerId={ledger.id} fromMemberId={tr.fromMemberId} toMemberId={tr.toMemberId} amount={tr.amount} />
+              <WhyTrail
+                ledgerId={ledger.id}
+                fromMemberId={tr.fromMemberId}
+                toMemberId={tr.toMemberId}
+                amount={tr.amount}
+                trail={tr.trail}
+              />
             </div>
           ))
         )}
@@ -203,6 +209,13 @@ function BulkSettle({ friend, legs, onDone }: { friend: CrossLedgerBalance; legs
         body: JSON.stringify({ toUserId: friend.userId, method: friend.vpa ? "upi" : "manual", note: null }),
       });
       const done = res.settlements.length;
+      // Nothing written is not a success. It used to report "recorded" anyway and
+      // close the sheet, which is exactly how a settle-up came to be "done" while
+      // the balance it was meant to clear sat there unchanged.
+      if (done === 0) {
+        setStatus(t("balances.recordedNone"));
+        return;
+      }
       setStatus(t(res.skipped.length === 0 ? "balances.recordedAll" : "balances.recordedSome", { done, total: done + res.skipped.length }));
       onDone();
     } catch {
