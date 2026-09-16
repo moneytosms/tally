@@ -42,9 +42,7 @@ async function seedInvite(h: Harness, ledgerId: string | null): Promise<string> 
     h.sql.prepare("UPDATE ledgers SET invites_enabled = 1 WHERE id = ?").run(ledgerId);
   }
   h.sql
-    .prepare(
-      "INSERT INTO invites (id, token_hash, ledger_id, created_by, created_at, expires_at) VALUES (?,?,?,?,?,?)",
-    )
+    .prepare("INSERT INTO invites (id, token_hash, ledger_id, created_by, created_at, expires_at) VALUES (?,?,?,?,?,?)")
     .run(uuidv7(), await sha256Hex(token), ledgerId, "u_ada", Date.now(), Date.now() + 3_600_000);
   return token;
 }
@@ -133,9 +131,7 @@ describe("password signup and sign-in", () => {
     // The session that sign-in issued is a real one: it resolves to Eve, not to
     // Ada, whose cookie the harness attaches to every request by default.
     const cookie = sessionCookieFrom(good);
-    const whoami = await app.request(
-      new Request("http://tally.test/api/me", { headers: { cookie } }),
-    );
+    const whoami = await app.request(new Request("http://tally.test/api/me", { headers: { cookie } }));
     expect(((await whoami.json()) as { displayName: string }).displayName).toBe("Eve");
 
     const wrongPassword = await app.request(

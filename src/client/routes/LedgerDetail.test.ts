@@ -85,7 +85,7 @@ describe("Search and Filter UI states", () => {
     });
 
     it("search stays expanded while search term is non-empty", () => {
-      let expanded = false;
+      let expanded = true; // Search was expanded
       const filters = { q: "coffee" };
       const onBlur = () => {
         // Collapse when blurred and empty
@@ -93,7 +93,6 @@ describe("Search and Filter UI states", () => {
           expanded = false;
         }
       };
-      expanded = true; // Search was expanded
       onBlur(); // Blur happens
       // But search term is non-empty, so stays expanded
       expect(expanded).toBe(true);
@@ -127,9 +126,11 @@ describe("Search and Filter UI states", () => {
     });
 
     it("shows active filter indicator (dot) when any filter is set", () => {
-      const hasFilterSet = (filters: Record<string, any>) =>
-        filters.categoryId !== undefined || filters.memberId !== undefined ||
-        filters.from !== undefined || filters.to !== undefined;
+      const hasFilterSet = (filters: Record<string, unknown>) =>
+        filters.categoryId !== undefined ||
+        filters.memberId !== undefined ||
+        filters.from !== undefined ||
+        filters.to !== undefined;
 
       expect(hasFilterSet({})).toBe(false);
       expect(hasFilterSet({ categoryId: "cat-1" })).toBe(true);
@@ -140,7 +141,6 @@ describe("Search and Filter UI states", () => {
 
     it("Clear button resets all four filter fields regardless of expanded state", () => {
       const filters = { categoryId: "cat-1", memberId: "mem-1", from: 1000, to: 2000, q: "search" };
-      const filtersExpanded = false; // Collapsed
 
       // Clear action
       const clearedFilters = {};
@@ -150,9 +150,11 @@ describe("Search and Filter UI states", () => {
     });
 
     it("does not include search term (q) in active filter indicator", () => {
-      const hasFilterSet = (filters: Record<string, any>) =>
-        filters.categoryId !== undefined || filters.memberId !== undefined ||
-        filters.from !== undefined || filters.to !== undefined;
+      const hasFilterSet = (filters: Record<string, unknown>) =>
+        filters.categoryId !== undefined ||
+        filters.memberId !== undefined ||
+        filters.from !== undefined ||
+        filters.to !== undefined;
 
       // Search term alone should not count as an active filter
       expect(hasFilterSet({ q: "coffee" })).toBe(false);

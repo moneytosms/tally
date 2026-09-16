@@ -7,7 +7,13 @@ import { requireSession } from "~/server/middleware/session";
 function escapeCsv(value: string): string {
   let needsQuote = false;
   // Check if original value needs quoting or special handling
-  if (/^[=+\-@]/.test(value) || value.includes(",") || value.includes('"') || value.includes("\n") || /^\s|\s$/.test(value)) {
+  if (
+    /^[=+\-@]/.test(value) ||
+    value.includes(",") ||
+    value.includes('"') ||
+    value.includes("\n") ||
+    /^\s|\s$/.test(value)
+  ) {
     needsQuote = true;
   }
 

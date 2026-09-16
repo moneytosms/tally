@@ -9,9 +9,6 @@ export const requireOwner: MiddlewareHandler<Env> = async (c, next) => {
 
 /** Ledger deletion is creator-only - the other exception to the membership rule.
  *  Lives here so the route can't quietly forget it. */
-export function isLedgerCreator(
-  ledger: { createdBy: string },
-  user: SessionUser,
-): boolean {
+export function isLedgerCreator(ledger: { createdBy: string }, user: SessionUser): boolean {
   return ledger.createdBy === user.id;
 }

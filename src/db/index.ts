@@ -44,10 +44,7 @@ export function createDb(d1: D1Database) {
       isNull(t.invites.consumedAt),
       isNull(t.invites.revokedAt),
       gt(t.invites.expiresAt, now),
-      or(
-        isNull(t.invites.ledgerId),
-        and(isNull(t.ledgers.deletedAt), eq(t.ledgers.invitesEnabled, true)),
-      ),
+      or(isNull(t.invites.ledgerId), and(isNull(t.ledgers.deletedAt), eq(t.ledgers.invitesEnabled, true))),
     );
 
   return {
@@ -56,7 +53,11 @@ export function createDb(d1: D1Database) {
 
     // ---- users -----------------------------------------------------------
     async findUserById(id: string) {
-      const [row] = await db.select().from(t.users).where(and(eq(t.users.id, id), isNull(t.users.deletedAt))).limit(1);
+      const [row] = await db
+        .select()
+        .from(t.users)
+        .where(and(eq(t.users.id, id), isNull(t.users.deletedAt)))
+        .limit(1);
       return row;
     },
     async listUsers() {
@@ -81,7 +82,10 @@ export function createDb(d1: D1Database) {
     },
     insertUser: (v: Insert<typeof t.users>) => db.insert(t.users).values(v),
     updateUser: (id: string, v: Partial<Insert<typeof t.users>>) =>
-      db.update(t.users).set(v).where(and(eq(t.users.id, id), isNull(t.users.deletedAt))),
+      db
+        .update(t.users)
+        .set(v)
+        .where(and(eq(t.users.id, id), isNull(t.users.deletedAt))),
     /** Soft-delete. The email is released so the address can be re-invited; the
      *  display name stays, because every expense they touched still names them. */
     softDeleteUser: (id: string, at: number) =>
@@ -167,9 +171,15 @@ export function createDb(d1: D1Database) {
     },
     insertLedger: (v: Insert<typeof t.ledgers>) => db.insert(t.ledgers).values(v),
     updateLedger: (ledgerId: string, v: Partial<Insert<typeof t.ledgers>>) =>
-      db.update(t.ledgers).set(v).where(and(eq(t.ledgers.id, ledgerId), isNull(t.ledgers.deletedAt))),
+      db
+        .update(t.ledgers)
+        .set(v)
+        .where(and(eq(t.ledgers.id, ledgerId), isNull(t.ledgers.deletedAt))),
     softDeleteLedger: (ledgerId: string, at: number) =>
-      db.update(t.ledgers).set({ deletedAt: at }).where(and(eq(t.ledgers.id, ledgerId), isNull(t.ledgers.deletedAt))),
+      db
+        .update(t.ledgers)
+        .set({ deletedAt: at })
+        .where(and(eq(t.ledgers.id, ledgerId), isNull(t.ledgers.deletedAt))),
 
     // ---- members ---------------------------------------------------------
     /** Current members only: not left, not deleted. */
@@ -198,7 +208,10 @@ export function createDb(d1: D1Database) {
           set: { leftAt: null, deletedAt: null, joinedAt: v.joinedAt },
         }),
     updateMember: (memberId: string, v: Partial<Insert<typeof t.ledgerMembers>>) =>
-      db.update(t.ledgerMembers).set(v).where(and(eq(t.ledgerMembers.id, memberId), isNull(t.ledgerMembers.deletedAt))),
+      db
+        .update(t.ledgerMembers)
+        .set(v)
+        .where(and(eq(t.ledgerMembers.id, memberId), isNull(t.ledgerMembers.deletedAt))),
 
     // ---- invites ---------------------------------------------------------
     /** Unconsumed, unrevoked, unexpired. A ledger invite additionally needs its
@@ -216,11 +229,7 @@ export function createDb(d1: D1Database) {
     /** Every live ledger on the instance. Owner-only - the admin panel is the
      *  single caller, and membership is deliberately not consulted. */
     async listAllLedgers() {
-      return db
-        .select()
-        .from(t.ledgers)
-        .where(isNull(t.ledgers.deletedAt))
-        .orderBy(desc(t.ledgers.createdAt));
+      return db.select().from(t.ledgers).where(isNull(t.ledgers.deletedAt)).orderBy(desc(t.ledgers.createdAt));
     },
     /** Invites that could still be redeemed right now. A leaked invite is
      *  potentially account access (CONTEXT.md), so the owner can see and revoke
@@ -241,7 +250,10 @@ export function createDb(d1: D1Database) {
         .set({ consumedAt: at, consumedBy: userId })
         .where(and(eq(t.invites.id, id), isNull(t.invites.consumedAt))),
     revokeInvite: (id: string, at: number) =>
-      db.update(t.invites).set({ revokedAt: at }).where(and(eq(t.invites.id, id), isNull(t.invites.revokedAt))),
+      db
+        .update(t.invites)
+        .set({ revokedAt: at })
+        .where(and(eq(t.invites.id, id), isNull(t.invites.revokedAt))),
 
     // ---- recovery tokens -------------------------------------------------
     insertRecoveryToken: (v: Insert<typeof t.recoveryTokens>) => db.insert(t.recoveryTokens).values(v),
@@ -374,7 +386,10 @@ export function createDb(d1: D1Database) {
      *  prior set survives in the revision snapshot. */
     clearSplits: (expenseId: string) => db.delete(t.expenseSplits).where(eq(t.expenseSplits.expenseId, expenseId)),
     updateExpense: (expenseId: string, v: Partial<Insert<typeof t.expenses>>) =>
-      db.update(t.expenses).set(v).where(and(eq(t.expenses.id, expenseId), isNull(t.expenses.deletedAt))),
+      db
+        .update(t.expenses)
+        .set(v)
+        .where(and(eq(t.expenses.id, expenseId), isNull(t.expenses.deletedAt))),
     softDeleteExpense: (expenseId: string, at: number) =>
       db
         .update(t.expenses)
@@ -490,7 +505,10 @@ export function createDb(d1: D1Database) {
         .set({ acknowledgedAt: at })
         .where(and(eq(t.settlements.id, id), isNull(t.settlements.deletedAt))),
     softDeleteSettlement: (id: string, at: number) =>
-      db.update(t.settlements).set({ deletedAt: at }).where(and(eq(t.settlements.id, id), isNull(t.settlements.deletedAt))),
+      db
+        .update(t.settlements)
+        .set({ deletedAt: at })
+        .where(and(eq(t.settlements.id, id), isNull(t.settlements.deletedAt))),
 
     // ---- categories ------------------------------------------------------
     async listCategories() {
@@ -518,11 +536,7 @@ export function createDb(d1: D1Database) {
 
     /** Includes soft-deleted expenses. Never feed this to a balance. */
     async listExpensesForActivity(ledgerId: string) {
-      return db
-        .select()
-        .from(t.expenses)
-        .where(eq(t.expenses.ledgerId, ledgerId))
-        .orderBy(desc(t.expenses.createdAt));
+      return db.select().from(t.expenses).where(eq(t.expenses.ledgerId, ledgerId)).orderBy(desc(t.expenses.createdAt));
     },
     /** Includes members who have left. Never feed this to a balance. */
     async listMembersForActivity(ledgerId: string) {
@@ -569,7 +583,10 @@ export function createDb(d1: D1Database) {
     },
     insertComment: (v: Insert<typeof t.comments>) => db.insert(t.comments).values(v),
     softDeleteComment: (id: string, at: number) =>
-      db.update(t.comments).set({ deletedAt: at }).where(and(eq(t.comments.id, id), isNull(t.comments.deletedAt))),
+      db
+        .update(t.comments)
+        .set({ deletedAt: at })
+        .where(and(eq(t.comments.id, id), isNull(t.comments.deletedAt))),
 
     // ---- recurring series ------------------------------------------------
     async listSeries(ledgerId: string) {
@@ -623,7 +640,10 @@ export function createDb(d1: D1Database) {
     },
     insertSeries: (v: Insert<typeof t.recurringSeries>) => db.insert(t.recurringSeries).values(v),
     updateSeries: (id: string, v: Partial<Insert<typeof t.recurringSeries>>) =>
-      db.update(t.recurringSeries).set(v).where(and(eq(t.recurringSeries.id, id), isNull(t.recurringSeries.deletedAt))),
+      db
+        .update(t.recurringSeries)
+        .set(v)
+        .where(and(eq(t.recurringSeries.id, id), isNull(t.recurringSeries.deletedAt))),
     softDeleteSeries: (id: string, at: number) =>
       db
         .update(t.recurringSeries)
@@ -685,7 +705,12 @@ export function createDb(d1: D1Database) {
     const splits = await db
       .select()
       .from(t.expenseSplits)
-      .where(inArray(t.expenseSplits.expenseId, rows.map((r) => r.id)))
+      .where(
+        inArray(
+          t.expenseSplits.expenseId,
+          rows.map((r) => r.id),
+        ),
+      )
       .orderBy(t.expenseSplits.sortOrder);
     return rows.map((r) => ({ ...r, splits: splits.filter((s) => s.expenseId === r.id) }));
   }

@@ -60,7 +60,10 @@ describe("preview", () => {
       const r = run(mode, raw);
       expect(r, mode).toHaveProperty("splits");
       const splits = (r as { splits: number[] }).splits;
-      expect(splits.reduce((x, y) => x + y, 0), mode).toBe(100_00);
+      expect(
+        splits.reduce((x, y) => x + y, 0),
+        mode,
+      ).toBe(100_00);
       expect(splits.every(Number.isInteger), mode).toBe(true);
     }
   });

@@ -219,7 +219,10 @@ export default function SettleUp() {
             </div>
 
             <fieldset className="mb-3">
-              <legend className="mb-1.5 block text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
+              <legend
+                className="mb-1.5 block text-[10.5px] tracking-[0.13em] uppercase"
+                style={{ color: "var(--ink-3)" }}
+              >
                 {t("settle.methodLabel")}
               </legend>
               {(["upi", "manual", "forgiven"] as const).map((m) => (

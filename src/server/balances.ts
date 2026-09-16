@@ -43,8 +43,14 @@ export function netPositions(
 export function transferPlan(positions: NetPosition[]): Transfer[] {
   // ponytail: sorted once, not re-sorted per step. Each step exhausts at least one
   // side, so the transfer count (<= n-1) is unaffected by the stale ordering.
-  const creditors = positions.filter((p) => p.net > 0).map((p) => ({ ...p })).sort((a, b) => b.net - a.net);
-  const debtors = positions.filter((p) => p.net < 0).map((p) => ({ memberId: p.memberId, net: -p.net })).sort((a, b) => b.net - a.net);
+  const creditors = positions
+    .filter((p) => p.net > 0)
+    .map((p) => ({ ...p }))
+    .sort((a, b) => b.net - a.net);
+  const debtors = positions
+    .filter((p) => p.net < 0)
+    .map((p) => ({ memberId: p.memberId, net: -p.net }))
+    .sort((a, b) => b.net - a.net);
 
   const transfers: Transfer[] = [];
   let c = 0;

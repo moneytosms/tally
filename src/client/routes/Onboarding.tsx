@@ -250,7 +250,8 @@ export function Onboarding() {
   const saveVpa = async (skip: boolean) => {
     setBusy(true);
     try {
-      if (!skip && vpa.trim() !== "") await api("/api/me", { method: "PATCH", body: JSON.stringify({ vpa: vpa.trim() }) });
+      if (!skip && vpa.trim() !== "")
+        await api("/api/me", { method: "PATCH", body: JSON.stringify({ vpa: vpa.trim() }) });
       await qc.invalidateQueries({ queryKey: qk.me });
       navigate("/", { replace: true });
     } catch (e) {
@@ -291,7 +292,11 @@ export function Onboarding() {
         </p>
 
         {failure && (
-          <div role="alert" className="mb-4 rounded-[6px] border px-3 py-2" style={{ borderColor: "var(--clay)", background: "var(--clay-wash)", color: "var(--clay)" }}>
+          <div
+            role="alert"
+            className="mb-4 rounded-[6px] border px-3 py-2"
+            style={{ borderColor: "var(--clay)", background: "var(--clay-wash)", color: "var(--clay)" }}
+          >
             <p className="text-[13px]">{t(failure.messageKey)}</p>
             {/* The owner is the support desk on a self-hosted instance. Without
                 the error name a report is "it said something went wrong". */}
@@ -302,7 +307,11 @@ export function Onboarding() {
         )}
 
         {embedded && passkeyView && authenticator !== "unavailable" && (
-          <p role="status" className="mb-4 rounded-[6px] border px-3 py-2 text-[12px] leading-relaxed" style={{ borderColor: "var(--line)", background: "var(--paper-sunk)", color: "var(--ink-3)" }}>
+          <p
+            role="status"
+            className="mb-4 rounded-[6px] border px-3 py-2 text-[12px] leading-relaxed"
+            style={{ borderColor: "var(--line)", background: "var(--paper-sunk)", color: "var(--ink-3)" }}
+          >
             {t("onboarding.inAppWarning")}
           </p>
         )}
@@ -437,7 +446,9 @@ export function Onboarding() {
           </p>
         )}
 
-        {view === "passkey" && authenticator === "unavailable" && <OpenInBrowser title={t("onboarding.noWebauthnTitle")} />}
+        {view === "passkey" && authenticator === "unavailable" && (
+          <OpenInBrowser title={t("onboarding.noWebauthnTitle")} />
+        )}
 
         {view === "passkey" && authenticator === "available" && (
           <div>

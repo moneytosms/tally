@@ -210,7 +210,12 @@ function AddExistingMember({ ledgerId }: { ledgerId: string }) {
       <p className="text-[11.5px]" style={hint}>
         {t("member.addExistingHint")}
       </p>
-      <p role="status" aria-live="polite" className="mt-1.5 text-[11.5px]" style={{ color: add.isError ? "var(--clay)" : "var(--moss-2)" }}>
+      <p
+        role="status"
+        aria-live="polite"
+        className="mt-1.5 text-[11.5px]"
+        style={{ color: add.isError ? "var(--clay)" : "var(--moss-2)" }}
+      >
         {add.isError ? t("member.addExistingFailed") : added}
       </p>
     </div>
@@ -256,7 +261,12 @@ function AddGuest({ ledgerId }: { ledgerId: string }) {
       <p className="text-[11.5px]" style={hint}>
         {t("member.addGuestHint")}
       </p>
-      <p role="status" aria-live="polite" className="mt-1.5 text-[11.5px]" style={{ color: addGuest.isError ? "var(--clay)" : "var(--moss-2)" }}>
+      <p
+        role="status"
+        aria-live="polite"
+        className="mt-1.5 text-[11.5px]"
+        style={{ color: addGuest.isError ? "var(--clay)" : "var(--moss-2)" }}
+      >
         {addGuest.isError ? t("member.addGuestFailed") : added}
       </p>
     </form>
@@ -530,7 +540,10 @@ function InvitePanel({ ledger }: { ledger: LedgerSummary }) {
             </>
           ) : (
             <>
-              <p className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all" style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}>
+              <p
+                className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all"
+                style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
+              >
                 {link}
               </p>
               <div className="flex items-center gap-2">
@@ -680,9 +693,21 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
         />
       </Field>
 
-      {preview.isPending && <p className="text-[12.5px]" style={hint}>{t("import.parsing")}</p>}
-      {preview.isError && <p role="alert" className="text-[12.5px]" style={{ color: "var(--clay)" }}>{t("import.parseFailed")}</p>}
-      {done !== null && <p role="status" aria-live="polite" className="mb-2 text-[12.5px]" style={{ color: "var(--moss-2)" }}>{t("import.done", { count: done })}</p>}
+      {preview.isPending && (
+        <p className="text-[12.5px]" style={hint}>
+          {t("import.parsing")}
+        </p>
+      )}
+      {preview.isError && (
+        <p role="alert" className="text-[12.5px]" style={{ color: "var(--clay)" }}>
+          {t("import.parseFailed")}
+        </p>
+      )}
+      {done !== null && (
+        <p role="status" aria-live="polite" className="mb-2 text-[12.5px]" style={{ color: "var(--moss-2)" }}>
+          {t("import.done", { count: done })}
+        </p>
+      )}
 
       {parsed && (
         <>
@@ -717,7 +742,11 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
             ))}
           </div>
 
-          {commit.isError && <p role="alert" className="mb-2 text-[12.5px]" style={{ color: "var(--clay)" }}>{t("import.failed")}</p>}
+          {commit.isError && (
+            <p role="alert" className="mb-2 text-[12.5px]" style={{ color: "var(--clay)" }}>
+              {t("import.failed")}
+            </p>
+          )}
 
           <Button className="w-full" disabled={!canConfirm || commit.isPending} onClick={onConfirm}>
             {commit.isPending ? t("import.confirming") : t("import.confirm")}
@@ -740,8 +769,16 @@ function ConfirmDialog({
   onConfirm: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
-      <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgb(0 0 0 / 38%)" }}
+    >
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        className="w-full max-w-sm rounded-[10px] border p-4"
+        style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+      >
         <p className="mb-3 text-[14px]">{message}</p>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onCancel}>

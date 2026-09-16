@@ -11,7 +11,13 @@ const reduceMotion =
 // real data).
 export const CHART_COLORS = ["var(--moss)", "var(--ochre)", "var(--clay)", "var(--moss-2)"];
 
-export type CategoryDatum = { categoryId: string | null; name: string; icon: string | null; spent: number; count: number };
+export type CategoryDatum = {
+  categoryId: string | null;
+  name: string;
+  icon: string | null;
+  spent: number;
+  count: number;
+};
 export type MonthDatum = { month: string; spent: number };
 
 // One `import("recharts")` module id shared by every lazy() call site in this
@@ -23,7 +29,14 @@ export const CategoryChart = lazy(() =>
       <m.ResponsiveContainer width="100%" height={Math.max(120, data.length * 32)}>
         <m.BarChart data={data} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
           <m.XAxis type="number" hide />
-          <m.YAxis type="category" dataKey="name" width={96} tick={{ fontSize: 11, fill: "var(--ink-3)" }} axisLine={false} tickLine={false} />
+          <m.YAxis
+            type="category"
+            dataKey="name"
+            width={96}
+            tick={{ fontSize: 11, fill: "var(--ink-3)" }}
+            axisLine={false}
+            tickLine={false}
+          />
           <m.Bar dataKey="spent" isAnimationActive={!reduceMotion} radius={3}>
             {data.map((_, i) => (
               <m.Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
@@ -73,7 +86,14 @@ export const MemberPieChart = lazy(() =>
     default: ({ data }: { data: PieDatum[] }) => (
       <m.ResponsiveContainer width="100%" height={200}>
         <m.PieChart>
-          <m.Pie data={data} dataKey="value" nameKey="name" innerRadius={40} outerRadius={80} isAnimationActive={!reduceMotion}>
+          <m.Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={40}
+            outerRadius={80}
+            isAnimationActive={!reduceMotion}
+          >
             {data.map((_, i) => (
               <m.Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
             ))}

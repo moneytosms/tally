@@ -5,8 +5,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Amount } from "./Amount";
 
-const render = (paise: number) =>
-  renderToStaticMarkup(createElement(Amount, { paise, label: "your position" }));
+const render = (paise: number) => renderToStaticMarkup(createElement(Amount, { paise, label: "your position" }));
 
 describe("<Amount>", () => {
   it("renders a sign and a label for a positive amount", () => {

@@ -47,9 +47,24 @@ function makeSeries(over: Partial<Series> = {}): Series {
         paused_at, deleted_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
     .run(
-      s.id, s.ledgerId, s.description, s.total, s.payerMemberId, s.categoryId, s.notes, s.mode,
-      s.splitTemplate, s.intervalUnit, s.intervalCount, s.startAt, s.endAt, s.nextOccurrenceAt,
-      s.createdBy, s.createdAt, s.pausedAt, s.deletedAt,
+      s.id,
+      s.ledgerId,
+      s.description,
+      s.total,
+      s.payerMemberId,
+      s.categoryId,
+      s.notes,
+      s.mode,
+      s.splitTemplate,
+      s.intervalUnit,
+      s.intervalCount,
+      s.startAt,
+      s.endAt,
+      s.nextOccurrenceAt,
+      s.createdBy,
+      s.createdAt,
+      s.pausedAt,
+      s.deletedAt,
     );
   return s;
 }
@@ -135,7 +150,9 @@ describe("runCatchUp", () => {
 
     await runCatchUp(h.db, s, utc("2026-08-05T00:00:00Z"));
     const splits = h.sql
-      .prepare("SELECT s.member_id, s.amount FROM expense_splits s JOIN expenses e ON e.id = s.expense_id WHERE e.series_id = ?")
+      .prepare(
+        "SELECT s.member_id, s.amount FROM expense_splits s JOIN expenses e ON e.id = s.expense_id WHERE e.series_id = ?",
+      )
       .all(s.id) as Array<{ member_id: string; amount: number }>;
     expect(splits).toHaveLength(2);
     expect(splits.map((x) => x.member_id).sort()).toEqual(["m_ada", "m_bob"]);
@@ -160,7 +177,9 @@ describe("runCatchUp", () => {
     });
     await runCatchUp(h.db, s, utc("2026-08-05T00:00:00Z"));
     const [{ total }] = h.sql
-      .prepare("SELECT sum(s.amount) total FROM expense_splits s JOIN expenses e ON e.id = s.expense_id WHERE e.series_id = ?")
+      .prepare(
+        "SELECT sum(s.amount) total FROM expense_splits s JOIN expenses e ON e.id = s.expense_id WHERE e.series_id = ?",
+      )
       .all(s.id) as [{ total: number }];
     expect(total).toBe(100001);
   });

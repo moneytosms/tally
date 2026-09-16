@@ -82,11 +82,7 @@ auth.post("/bootstrap", async (c) => {
   const configured = c.env.BOOTSTRAP_SECRET ?? "";
   const burned = await db.getInstanceState(BOOTSTRAP_BURNED);
 
-  const ok =
-    parsed.success &&
-    !burned &&
-    configured !== "" &&
-    timingSafeEqual(parsed.data.secret, configured);
+  const ok = parsed.success && !burned && configured !== "" && timingSafeEqual(parsed.data.secret, configured);
   if (!ok || !parsed.success) return c.json({ error: "forbidden" }, 403);
 
   const now = Date.now();
@@ -106,7 +102,12 @@ auth.post("/bootstrap", async (c) => {
 
   const token = await createSession(db, owner.id, now, c.req.header("user-agent") ?? null);
   c.header("set-cookie", sessionCookie(token), { append: true });
-  const body = await meResponse(db, { id: owner.id, displayName: owner.displayName, isOwner: true, accountType: "full" });
+  const body = await meResponse(db, {
+    id: owner.id,
+    displayName: owner.displayName,
+    isOwner: true,
+    accountType: "full",
+  });
   return c.json(body, 201);
 });
 
@@ -168,7 +169,7 @@ auth.post("/signup", async (c) => {
     return c.json({ error: "email already registered", code: "email_taken" }, 409);
   }
 
-  let ledgerId: string | null = null;
+  let ledgerId: string | null;
   try {
     ({ ledgerId } = await acceptInvite(db, { token: inviteToken, userId: id, now }));
   } catch (e) {
@@ -202,7 +203,12 @@ auth.post("/signin", async (c) => {
   const token = await createSession(db, row.id, now, c.req.header("user-agent") ?? null);
   c.header("set-cookie", sessionCookie(token), { append: true });
   return c.json(
-    await meResponse(db, { id: row.id, displayName: row.displayName, isOwner: row.isOwner, accountType: row.accountType }),
+    await meResponse(db, {
+      id: row.id,
+      displayName: row.displayName,
+      isOwner: row.isOwner,
+      accountType: row.accountType,
+    }),
   );
 });
 
@@ -228,7 +234,12 @@ auth.post("/register/options", async (c) => {
     const claimed = await db.consumeRecoveryToken(row.token.id, now);
     if (claimed.meta.changes !== 1) return c.json({ error: "forbidden" }, 403);
 
-    user = { id: row.user.id, displayName: row.user.displayName, isOwner: row.user.isOwner, accountType: row.user.accountType };
+    user = {
+      id: row.user.id,
+      displayName: row.user.displayName,
+      isOwner: row.user.isOwner,
+      accountType: row.user.accountType,
+    };
     const token = await createSession(db, user.id, now, c.req.header("user-agent") ?? null);
     c.header("set-cookie", sessionCookie(token), { append: true });
   }
@@ -317,7 +328,12 @@ auth.post("/login/verify", async (c) => {
   const token = await createSession(db, userId, now, c.req.header("user-agent") ?? null);
   c.header("set-cookie", sessionCookie(token), { append: true });
   return c.json(
-    await meResponse(db, { id: row.id, displayName: row.displayName, isOwner: row.isOwner, accountType: row.accountType }),
+    await meResponse(db, {
+      id: row.id,
+      displayName: row.displayName,
+      isOwner: row.isOwner,
+      accountType: row.accountType,
+    }),
   );
 });
 

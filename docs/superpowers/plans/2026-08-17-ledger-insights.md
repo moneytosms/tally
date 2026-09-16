@@ -23,12 +23,15 @@
 ### Task 1: Server route `GET /ledgers/:ledgerId/insights`
 
 **Files:**
+
 - Modify: `src/server/routes/insights.ts`
 - Test: `src/server/routes/insights.test.ts`
 
 **Interfaces:**
+
 - Consumes: `db.listExpenses(ledgerId)` (returns `StoredExpense[]` with `.splits`, already filters soft-deletes), `db.listMembers(ledgerId)`, `db.listCategories()` — all already used elsewhere in this file's sibling routes.
 - Produces (for Task 3/4 to consume as the wire type):
+
 ```ts
 type LedgerInsights = {
   totals: { spent: number; expenseCount: number };
@@ -56,7 +59,11 @@ const ledgerInsights = async (ledgerId: string) =>
 describe("GET /ledgers/:ledgerId/insights", () => {
   it("sums the WHOLE ledger's spend, not just the caller's share", async () => {
     // ₹100.00 total, split evenly between Bob and the guest - Ada (the caller) is not a participant.
-    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] });
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }],
+    });
 
     const i = await ledgerInsights("L1");
     expect(i.totals.spent).toBe(10_000); // whole ledger, not Ada's (zero) share
@@ -65,7 +72,11 @@ describe("GET /ledgers/:ledgerId/insights", () => {
 
   it("reports byMember paid vs share separately, including a member with only a share", async () => {
     // Bob pays ₹80.00, split evenly between Ada and Bob (₹40.00 each).
-    await expense("L1", { total: 8_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] });
+    await expense("L1", {
+      total: 8_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    });
 
     const i = await ledgerInsights("L1");
     const ada = i.byMember.find((m) => m.memberId === "m_ada")!;
@@ -75,8 +86,18 @@ describe("GET /ledgers/:ledgerId/insights", () => {
   });
 
   it("orders byCategory by spent descending, using the expense total (not a per-viewer share)", async () => {
-    await expense("L1", { total: 10_000, payerMemberId: "m_bob", categoryId: "cat_food", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] });
-    await expense("L1", { total: 20_000, payerMemberId: "m_bob", categoryId: "cat_transport", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] });
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      categoryId: "cat_food",
+      participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }],
+    });
+    await expense("L1", {
+      total: 20_000,
+      payerMemberId: "m_bob",
+      categoryId: "cat_transport",
+      participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }],
+    });
 
     const i = await ledgerInsights("L1");
     expect(i.byCategory.map((c) => c.categoryId)).toEqual(["cat_transport", "cat_food"]);
@@ -86,8 +107,18 @@ describe("GET /ledgers/:ledgerId/insights", () => {
   it("fills a gap month with 0, ascending, scoped to this ledger only", async () => {
     const jan = Date.UTC(2026, 0, 15);
     const mar = Date.UTC(2026, 2, 15);
-    await expense("L1", { total: 2_000, paidAtEpochMs: jan, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] });
-    await expense("L1", { total: 4_000, paidAtEpochMs: mar, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }] });
+    await expense("L1", {
+      total: 2_000,
+      paidAtEpochMs: jan,
+      payerMemberId: "m_ada",
+      participants: [{ memberId: "m_ada" }],
+    });
+    await expense("L1", {
+      total: 4_000,
+      paidAtEpochMs: mar,
+      payerMemberId: "m_ada",
+      participants: [{ memberId: "m_ada" }],
+    });
 
     const i = await ledgerInsights("L1");
     expect(i.byMonth.map((m) => m.month)).toEqual(["2026-01", "2026-02", "2026-03"]);
@@ -165,7 +196,13 @@ insights.get("/ledgers/:ledgerId/insights", requireSession, requireMember, async
   const byCategoryOut = [...byCategory]
     .map(([categoryId, v]) => {
       const cat = categoryId ? categoryById.get(categoryId) : undefined;
-      return { categoryId, name: cat?.name ?? "Uncategorised", icon: cat?.icon ?? null, spent: v.spent, count: v.count };
+      return {
+        categoryId,
+        name: cat?.name ?? "Uncategorised",
+        icon: cat?.icon ?? null,
+        spent: v.spent,
+        count: v.count,
+      };
     })
     .sort((a, b) => b.spent - a.spent);
 
@@ -214,9 +251,11 @@ git commit -m "feat(insights): add per-ledger insights endpoint"
 ### Task 2: Client query hook + wire type
 
 **Files:**
+
 - Modify: `src/client/lib/queries.ts`
 
 **Interfaces:**
+
 - Consumes: `LedgerInsights` server shape from Task 1 (exact field names above).
 - Produces: `LedgerInsights` type export, `qk.ledgerInsights(ledgerId)`, `useLedgerInsights(ledgerId)` — for Task 3 to import.
 
@@ -270,10 +309,12 @@ git commit -m "feat(insights): add useLedgerInsights query hook"
 ### Task 3: Extract shared chart components from InsightsTab
 
 **Files:**
+
 - Modify: `src/client/routes/InsightsTab.tsx`
 - Create: `src/client/components/charts.tsx`
 
 **Interfaces:**
+
 - Consumes: nothing new.
 - Produces: `CategoryChart`, `MonthChart`, `ChartFallback`, `CHART_COLORS`, `SectionHeading` — exported from `charts.tsx` for Task 4 (`LedgerInsights.tsx`) to import alongside a new `MemberPieChart`.
 
@@ -297,7 +338,13 @@ const reduceMotion =
 // real data).
 export const CHART_COLORS = ["var(--moss)", "var(--ochre)", "var(--clay)", "var(--moss-2)"];
 
-export type CategoryDatum = { categoryId: string | null; name: string; icon: string | null; spent: number; count: number };
+export type CategoryDatum = {
+  categoryId: string | null;
+  name: string;
+  icon: string | null;
+  spent: number;
+  count: number;
+};
 export type MonthDatum = { month: string; spent: number };
 
 // One `import("recharts")` module id shared by every lazy() call site in this
@@ -309,7 +356,14 @@ export const CategoryChart = lazy(() =>
       <m.ResponsiveContainer width="100%" height={Math.max(120, data.length * 32)}>
         <m.BarChart data={data} layout="vertical" margin={{ top: 0, right: 12, bottom: 0, left: 0 }}>
           <m.XAxis type="number" hide />
-          <m.YAxis type="category" dataKey="name" width={96} tick={{ fontSize: 11, fill: "var(--ink-3)" }} axisLine={false} tickLine={false} />
+          <m.YAxis
+            type="category"
+            dataKey="name"
+            width={96}
+            tick={{ fontSize: 11, fill: "var(--ink-3)" }}
+            axisLine={false}
+            tickLine={false}
+          />
           <m.Bar dataKey="spent" isAnimationActive={!reduceMotion} radius={3}>
             {data.map((_, i) => (
               <m.Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
@@ -359,7 +413,14 @@ export const MemberPieChart = lazy(() =>
     default: ({ data }: { data: PieDatum[] }) => (
       <m.ResponsiveContainer width="100%" height={200}>
         <m.PieChart>
-          <m.Pie data={data} dataKey="value" nameKey="name" innerRadius={40} outerRadius={80} isAnimationActive={!reduceMotion}>
+          <m.Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius={40}
+            outerRadius={80}
+            isAnimationActive={!reduceMotion}
+          >
             {data.map((_, i) => (
               <m.Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
             ))}
@@ -434,12 +495,14 @@ git commit -m "refactor(insights): extract shared chart components for reuse"
 ### Task 4: LedgerInsights route + nav link
 
 **Files:**
+
 - Create: `src/client/routes/LedgerInsights.tsx`
 - Modify: `src/client/App.tsx`
 - Modify: `src/client/routes/LedgerDetail.tsx`
 - Modify: `locales/en.json`
 
 **Interfaces:**
+
 - Consumes: `useLedgerInsights` (Task 2), `CategoryChart`/`MonthChart`/`MemberPieChart`/`ChartFallback`/`SectionHeading`/`CHART_COLORS` (Task 3).
 - Produces: nothing further consumed by other tasks — this is the leaf.
 
@@ -468,7 +531,14 @@ Create `src/client/routes/LedgerInsights.tsx`:
 import { Suspense } from "react";
 import { Link, useParams } from "react-router";
 import { Amount, EmptyState } from "~/client/components/ui";
-import { CategoryChart, ChartFallback, MemberPieChart, MonthChart, SectionHeading, type PieDatum } from "~/client/components/charts";
+import {
+  CategoryChart,
+  ChartFallback,
+  MemberPieChart,
+  MonthChart,
+  SectionHeading,
+  type PieDatum,
+} from "~/client/components/charts";
 import { useLedgerInsights, useLedger, type LedgerInsights } from "~/client/lib/queries";
 import { focusRing } from "~/client/components/ui/focus";
 import { t } from "~/client/i18n";
@@ -478,7 +548,10 @@ function MemberPieSection({ title, data }: { title: string; data: PieDatum[] }) 
   return (
     <section className="mb-5">
       <SectionHeading>{title}</SectionHeading>
-      <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <div
+        className="rounded-[7px] border px-3.5 py-3"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         {nonZero.length > 1 && (
           <Suspense fallback={<ChartFallback height={200} />}>
             <MemberPieChart data={nonZero} />
@@ -503,9 +576,15 @@ function Body({ data }: { data: LedgerInsights }) {
 
   return (
     <>
-      <div className="mb-4 rounded-[7px] border px-3.5 py-4" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <div
+        className="mb-4 rounded-[7px] border px-3.5 py-4"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         <Amount paise={data.totals.spent} label={t("insights.title")} tone="neutral" hero />
-        <div className="mt-3 border-t pt-2.5 text-[11.5px]" style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
+        <div
+          className="mt-3 border-t pt-2.5 text-[11.5px]"
+          style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}
+        >
           {t("insights.expenseCount", { count: data.totals.expenseCount })}
         </div>
       </div>
@@ -513,7 +592,10 @@ function Body({ data }: { data: LedgerInsights }) {
       {data.byCategory.length > 0 && (
         <section className="mb-5">
           <SectionHeading>{t("insights.byCategory")}</SectionHeading>
-          <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+          <div
+            className="rounded-[7px] border px-3.5 py-3"
+            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+          >
             {data.byCategory.length > 1 && (
               <Suspense fallback={<ChartFallback height={Math.max(120, data.byCategory.length * 32)} />}>
                 <CategoryChart data={data.byCategory} />
@@ -537,7 +619,10 @@ function Body({ data }: { data: LedgerInsights }) {
       {data.byMonth.length > 1 && (
         <section className="mb-5">
           <SectionHeading>{t("insights.byMonth")}</SectionHeading>
-          <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+          <div
+            className="rounded-[7px] border px-3.5 py-3"
+            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+          >
             <Suspense fallback={<ChartFallback height={180} />}>
               <MonthChart data={data.byMonth} />
             </Suspense>
@@ -559,7 +644,12 @@ export function LedgerInsights() {
   return (
     <>
       <header className="mb-3 flex items-end gap-2.5 border-b pb-3" style={{ borderColor: "var(--line)" }}>
-        <Link to={`/ledgers/${ledgerId}`} aria-label={t("action.back")} className={`grid min-h-11 min-w-11 place-items-center text-[17px] ${focusRing}`} style={{ color: "var(--ink-3)" }}>
+        <Link
+          to={`/ledgers/${ledgerId}`}
+          aria-label={t("action.back")}
+          className={`grid min-h-11 min-w-11 place-items-center text-[17px] ${focusRing}`}
+          style={{ color: "var(--ink-3)" }}
+        >
           ←
         </Link>
         <h1 className="serif truncate text-[21px] tracking-[-0.01em]">
@@ -592,14 +682,17 @@ const LedgerInsights = lazy(() => import("./routes/LedgerInsights"));
 Next to `<Route path="ledgers/:ledgerId/recurring" element={<RecurringTab />} />` (line 153), add:
 
 ```tsx
-          <Route path="ledgers/:ledgerId/insights" element={<LedgerInsights />} />
+<Route path="ledgers/:ledgerId/insights" element={<LedgerInsights />} />
 ```
 
 Update the `FAB_HIDDEN` regex (line 85) to also hide the FAB on this route — it currently reads:
+
 ```ts
 const FAB_HIDDEN = /\/(settle|activity|recurring)$|^\/you|^\/ledgers\/[^/]+$/;
 ```
+
 change to:
+
 ```ts
 const FAB_HIDDEN = /\/(settle|activity|recurring|insights)$|^\/you|^\/ledgers\/[^/]+$/;
 ```
@@ -609,14 +702,15 @@ const FAB_HIDDEN = /\/(settle|activity|recurring|insights)$|^\/you|^\/ledgers\/[
 In `src/client/routes/LedgerDetail.tsx`, in the link row that already has Activity and Recurring links (the `<span className="flex items-center gap-3">` block), add a third `Link` alongside them:
 
 ```tsx
-          <Link
-            to={`/ledgers/${ledgerId}/insights`}
-            className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
-            style={{ color: "var(--moss)" }}
-          >
-            {t("ledger.menu.insights")}
-          </Link>
+<Link
+  to={`/ledgers/${ledgerId}/insights`}
+  className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
+  style={{ color: "var(--moss)" }}
+>
+  {t("ledger.menu.insights")}
+</Link>
 ```
+
 (Place it as the first link in that row, before the Activity link, matching the reading order "Insights, Activity, Recurring".)
 
 - [ ] **Step 5: Typecheck**
@@ -627,6 +721,7 @@ Expected: no errors.
 - [ ] **Step 6: Manual verification**
 
 Run: `pnpm dev`, open a ledger with at least two expenses across two categories/months and two different payers, click the new "Insights" link, confirm:
+
 - Category and month bars render.
 - Two pie charts ("Paid", "Share") render with a list of members and amounts under each.
 - A ledger with zero expenses shows the empty state, not a crash.

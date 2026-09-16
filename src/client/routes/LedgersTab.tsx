@@ -29,11 +29,18 @@ export function BurnRate({ ledger }: { ledger: LedgerSummary }) {
   const perDay = days > 0 ? Math.floor(Math.max(0, ledger.budget - ledger.spent) / days) : 0;
   return (
     <div className="mt-2.5">
-      <div className="h-1 overflow-hidden rounded-full border" style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}>
+      <div
+        className="h-1 overflow-hidden rounded-full border"
+        style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
+      >
         {/* Over budget is worth seeing, not just capping the bar at full. */}
         <i
           className="block h-full"
-          style={{ width: `${pct}%`, background: ledger.spent > ledger.budget ? "var(--clay)" : "var(--moss)", opacity: 0.75 }}
+          style={{
+            width: `${pct}%`,
+            background: ledger.spent > ledger.budget ? "var(--clay)" : "var(--moss)",
+            opacity: 0.75,
+          }}
         />
       </div>
       {/* Two columns, not three: at 430px a third column breaks "a day left"
@@ -66,7 +73,14 @@ function PinButton({ ledger }: { ledger: LedgerSummary }) {
     >
       {/* A plain filled/outline star - colour alone is never the only cue, the
           fill state carries it too. */}
-      <svg width="16" height="16" viewBox="0 0 24 24" fill={ledger.pinned ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.75">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill={ledger.pinned ? "currentColor" : "none"}
+        stroke="currentColor"
+        strokeWidth="1.75"
+      >
         <path d="M12 2.5l2.9 6.6 7.1.7-5.4 4.8 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2.1 9.8l7.1-.7z" strokeLinejoin="round" />
       </svg>
     </button>
@@ -129,7 +143,10 @@ function RecentActivity() {
   return (
     <section className="mt-5">
       <SectionLabel>{t("home.recent")}</SectionLabel>
-      <ul className="rounded-[7px] border px-3.5 py-1" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <ul
+        className="rounded-[7px] border px-3.5 py-1"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         {data.map((e) => (
           <ActivityRow key={e.id} event={e} showTime={false} />
         ))}
@@ -181,21 +198,26 @@ export function LedgersTab() {
           body={t("empty.ledgersBody")}
           // ADR 0008: a restricted account has no self-service way to create a
           // ledger - it waits on the owner to add it to one, or to promote it.
-          action={me.data?.accountType === "restricted" ? undefined : (
-            <div className="flex flex-wrap justify-center gap-2">
-              <Button onClick={() => setKind("trip")}>{t("add.trip")}</Button>
-              <Button variant="ghost" onClick={() => setKind("group")}>
-                {t("add.group")}
-              </Button>
-              <Button variant="ghost" onClick={() => setKind("pair")}>
-                {t("add.pair")}
-              </Button>
-            </div>
-          )}
+          action={
+            me.data?.accountType === "restricted" ? undefined : (
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={() => setKind("trip")}>{t("add.trip")}</Button>
+                <Button variant="ghost" onClick={() => setKind("group")}>
+                  {t("add.group")}
+                </Button>
+                <Button variant="ghost" onClick={() => setKind("pair")}>
+                  {t("add.pair")}
+                </Button>
+              </div>
+            )
+          }
         />
       ) : (
         <>
-          <div className="mb-4 rounded-[7px] border px-3.5 py-4" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+          <div
+            className="mb-4 rounded-[7px] border px-3.5 py-4"
+            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+          >
             <Amount paise={overall} label={t("balances.overall")} hero />
             {(owed !== 0 || owe !== 0) && (
               <div className="mt-3 grid grid-cols-2 gap-x-3 border-t pt-2.5" style={{ borderColor: "var(--line)" }}>
@@ -204,7 +226,11 @@ export function LedgersTab() {
               </div>
             )}
             <div className="mt-2.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-              <Link to="/balances" className={`${focusRing} inline-flex min-h-11 items-center`} style={{ color: "var(--moss-2)" }}>
+              <Link
+                to="/balances"
+                className={`${focusRing} inline-flex min-h-11 items-center`}
+                style={{ color: "var(--moss-2)" }}
+              >
                 {t("balances.settleAcross")} →
               </Link>
             </div>

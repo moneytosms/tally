@@ -106,13 +106,13 @@ Decisions live in [`docs/adr/`](docs/adr/). The buildable spec is [`docs/SPEC.md
 
 Words that do **not** appear in this domain, and what to say instead:
 
-| Don't say | Say |
-|---|---|
-| Group | Ledger |
-| Debt / IOU | Net position, or Transfer |
-| Payment (of a settlement) | Settlement |
-| Friend (as an entity) | User |
-| Placeholder / ghost user | Guest |
-| Trip / event (as a type) | Ledger with an `end_date` |
-| Balance (ambiguously) | Net position, or Cross-ledger net balance |
-| Rupees (in code) | Paise |
+| Don't say                 | Say                                       |
+| ------------------------- | ----------------------------------------- |
+| Group                     | Ledger                                    |
+| Debt / IOU                | Net position, or Transfer                 |
+| Payment (of a settlement) | Settlement                                |
+| Friend (as an entity)     | User                                      |
+| Placeholder / ghost user  | Guest                                     |
+| Trip / event (as a type)  | Ledger with an `end_date`                 |
+| Balance (ambiguously)     | Net position, or Cross-ledger net balance |
+| Rupees (in code)          | Paise                                     |

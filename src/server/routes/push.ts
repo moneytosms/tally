@@ -25,9 +25,7 @@ const push = new Hono<Env>();
 push.use("/push/*", requireSession);
 
 /** The browser needs this to subscribe. Absent binding => push is simply off. */
-push.get("/push/key", (c) =>
-  c.json({ publicKey: c.env.VAPID_PUBLIC_KEY ?? null }),
-);
+push.get("/push/key", (c) => c.json({ publicKey: c.env.VAPID_PUBLIC_KEY ?? null }));
 
 push.post("/push/subscribe", async (c) => {
   const parsed = pushSubscribeSchema.safeParse(await c.req.json().catch(() => null));
@@ -98,12 +96,7 @@ push.post("/push/nudge", async (c) => {
  * triggered it, so everything here is caught. A subscription the push service
  * reports as gone is retired so it is not retried forever.
  */
-export async function notify(
-  env: Env["Bindings"],
-  db: Db,
-  userId: string,
-  message: PushMessage,
-): Promise<void> {
+export async function notify(env: Env["Bindings"], db: Db, userId: string, message: PushMessage): Promise<void> {
   // `env` is optional-chained because push must degrade to a no-op wherever the
   // bindings are absent - an un-provisioned instance, and the route tests, which
   // mount routers without a Workers env. Push failing must never fail the action

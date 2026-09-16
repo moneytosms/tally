@@ -82,7 +82,13 @@ insights.get("/insights", requireSession, async (c) => {
   const byCategoryOut = [...byCategory]
     .map(([categoryId, v]) => {
       const cat = categoryId ? categories.get(categoryId) : undefined;
-      return { categoryId, name: cat?.name ?? "Uncategorised", icon: cat?.icon ?? null, spent: v.spent, count: v.count };
+      return {
+        categoryId,
+        name: cat?.name ?? "Uncategorised",
+        icon: cat?.icon ?? null,
+        spent: v.spent,
+        count: v.count,
+      };
     })
     .sort((a, b) => b.spent - a.spent);
 
@@ -197,7 +203,13 @@ insights.get("/ledgers/:ledgerId/insights", requireSession, requireMember, async
   const byCategoryOut = [...byCategory]
     .map(([categoryId, v]) => {
       const cat = categoryId ? categoryById.get(categoryId) : undefined;
-      return { categoryId, name: cat?.name ?? "Uncategorised", icon: cat?.icon ?? null, spent: v.spent, count: v.count };
+      return {
+        categoryId,
+        name: cat?.name ?? "Uncategorised",
+        icon: cat?.icon ?? null,
+        spent: v.spent,
+        count: v.count,
+      };
     })
     .sort((a, b) => b.spent - a.spent);
 

@@ -30,21 +30,9 @@ export type InviteStore = {
   ): Promise<{ invite: { id: string; ledgerId: string | null } } | undefined>;
   /** Conditional UPDATE: `SET consumed_at = ? WHERE id = ? AND consumed_at IS
    *  NULL`. `meta.changes` is the whole concurrency story. */
-  consumeInvite(
-    id: string,
-    userId: string,
-    at: number,
-  ): PromiseLike<{ meta: { changes: number } }>;
-  findMember(
-    ledgerId: string,
-    userId: string,
-  ): Promise<{ id: string } | undefined>;
-  insertMember(row: {
-    id: string;
-    ledgerId: string;
-    userId: string;
-    joinedAt: number;
-  }): PromiseLike<unknown>;
+  consumeInvite(id: string, userId: string, at: number): PromiseLike<{ meta: { changes: number } }>;
+  findMember(ledgerId: string, userId: string): Promise<{ id: string } | undefined>;
+  insertMember(row: { id: string; ledgerId: string; userId: string; joinedAt: number }): PromiseLike<unknown>;
 };
 
 export class InviteError extends Error {}
@@ -79,10 +67,7 @@ export async function acceptInvite(
   store: InviteStore,
   args: { token: string; userId: string; now: number },
 ): Promise<{ ledgerId: string | null; memberId: string | null }> {
-  const row = await store.findUsableInvite(
-    await sha256Hex(args.token),
-    args.now,
-  );
+  const row = await store.findUsableInvite(await sha256Hex(args.token), args.now);
   if (!row) throw new InviteError("invite is not usable");
   const { id, ledgerId } = row.invite;
 

@@ -73,20 +73,11 @@ async function sign(secret: string, payload: string): Promise<string> {
     false,
     ["sign"],
   );
-  const mac = await crypto.subtle.sign(
-    "HMAC",
-    key,
-    new TextEncoder().encode(payload),
-  );
+  const mac = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
   return base64url(new Uint8Array(mac));
 }
 
-async function sealChallenge(
-  secret: string,
-  purpose: Purpose,
-  challenge: string,
-  now: number,
-): Promise<string> {
+async function sealChallenge(secret: string, purpose: Purpose, challenge: string, now: number): Promise<string> {
   const payload = `${purpose}.${challenge}.${now + CHALLENGE_TTL_MS}`;
   return `${payload}.${await sign(secret, payload)}`;
 }
@@ -99,12 +90,7 @@ async function openChallenge(
 ): Promise<string> {
   const parts = sealed?.split(".");
   if (parts?.length !== 4) throw new Error("challenge missing");
-  const [gotPurpose, challenge, expiresAt, mac] = parts as [
-    string,
-    string,
-    string,
-    string,
-  ];
+  const [gotPurpose, challenge, expiresAt, mac] = parts as [string, string, string, string];
   const payload = `${gotPurpose}.${challenge}.${expiresAt}`;
   if (!timingSafeEqual(mac, await sign(secret, payload))) {
     throw new Error("challenge signature invalid");
@@ -151,9 +137,7 @@ export async function registrationOptions(
   });
   return {
     options,
-    cookie: challengeCookie(
-      await sealChallenge(secret, "register", options.challenge, now),
-    ),
+    cookie: challengeCookie(await sealChallenge(secret, "register", options.challenge, now)),
   };
 }
 
@@ -167,12 +151,7 @@ export async function verifyRegistration(
     now: number;
   },
 ): Promise<{ credentialId: string }> {
-  const expectedChallenge = await openChallenge(
-    secret,
-    "register",
-    args.sealedChallenge,
-    args.now,
-  );
+  const expectedChallenge = await openChallenge(secret, "register", args.sealedChallenge, args.now);
   const result = await verifyRegistrationResponse({
     response: args.response,
     expectedChallenge,
@@ -188,9 +167,7 @@ export async function verifyRegistration(
     credentialId: credential.id,
     publicKey: base64url(credential.publicKey),
     counter: credential.counter,
-    transports: credential.transports
-      ? JSON.stringify(credential.transports)
-      : null,
+    transports: credential.transports ? JSON.stringify(credential.transports) : null,
     backedUp: credentialBackedUp,
     createdAt: args.now,
   });
@@ -210,9 +187,7 @@ export async function authenticationOptions(
   });
   return {
     options,
-    cookie: challengeCookie(
-      await sealChallenge(secret, "authenticate", options.challenge, now),
-    ),
+    cookie: challengeCookie(await sealChallenge(secret, "authenticate", options.challenge, now)),
   };
 }
 
@@ -225,12 +200,7 @@ export async function verifyAuthentication(
     now: number;
   },
 ): Promise<{ userId: string }> {
-  const expectedChallenge = await openChallenge(
-    secret,
-    "authenticate",
-    args.sealedChallenge,
-    args.now,
-  );
+  const expectedChallenge = await openChallenge(secret, "authenticate", args.sealedChallenge, args.now);
   const row = await store.findCredential(args.response.id);
   if (!row) throw new Error("unknown credential");
   // a revoked credential never authenticates - checked here, not in callers
@@ -250,11 +220,7 @@ export async function verifyAuthentication(
   });
   if (!result.verified) throw new Error("authentication failed");
 
-  await store.touchCredential(
-    row.id,
-    result.authenticationInfo.newCounter,
-    args.now,
-  );
+  await store.touchCredential(row.id, result.authenticationInfo.newCounter, args.now);
   return { userId: row.userId };
 }
 
@@ -262,19 +228,13 @@ export async function verifyAuthentication(
 
 /** Owner-initiated recovery: revoke the lost credential. `id` is the credentials
  *  row id, as listed by `listCredentials(userId)`. Idempotent. */
-export async function revokeCredential(
-  store: CredentialStore,
-  id: string,
-  now: number,
-): Promise<void> {
+export async function revokeCredential(store: CredentialStore, id: string, now: number): Promise<void> {
   await store.revokeCredential(id, now);
 }
 
 // ---- codecs ----------------------------------------------------------------
 
-function parseTransports(
-  json: string | null,
-): AuthenticatorTransportFuture[] | undefined {
+function parseTransports(json: string | null): AuthenticatorTransportFuture[] | undefined {
   return json ? (JSON.parse(json) as AuthenticatorTransportFuture[]) : undefined;
 }
 

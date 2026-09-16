@@ -26,22 +26,22 @@ upi://pay?param-name=param-value&param-name=param-value&...
 "All PSP applications must mandatorily implement listening to 'UPI' links within their mobile
 applications for QR, intent, NFC, BLE, UHF etc."
 
-| Param | Static mode | Dynamic mode | Meaning |
-|---|---|---|---|
-| `pa` | **M** | **M** | Payee VPA |
-| `pn` | **M** | **M** | Payee name |
-| `mc` | O | O | Payee merchant category code. "If present then needs to be passed as it is." |
-| `tid` | O | O | PSP-generated transaction id. Not for us to invent. |
-| `tr` | O | **C** | Transaction reference (order/bill id). "Mandatory for Merchant transactions and dynamic URL generation." |
-| `tn` | O | O | Transaction note, short description |
-| `am` | O | **M** | Amount, decimal. **"If 'am' is not present then field is editable."** |
-| `mam` | O | C | Minimum amount. "If mam tag is not present or `mam=null` or `mam=` then amount field should NOT be editable." |
-| `cu` | O | O | Currency. **"Currently ONLY 'INR' is the supported value."** |
-| `url` | O | O | Invoice/receipt URL, must be http(s), must relate to that transaction |
-| `mode` | **M** | **M** | Initiation mode: `00` default, `01` QR, `02` secure QR, `04` intent, `05` secure intent, `06` NFC, `07` BLE, `08` UHF, `15` SEBI |
-| `sign` | **M** | **M** | Base64 RSA signature over the whole string minus `&sign=` |
-| `orgid` | **M** | **M** | 6-digit. PSP-initiated → that PSP's orgid. "For merchant initiated/created intent/QR '000000' will be used" |
-| `mid` / `msid` / `mtid` | O | O | Merchant / store / terminal id, ≤20 chars, echoed for reconciliation |
+| Param                   | Static mode | Dynamic mode | Meaning                                                                                                                          |
+| ----------------------- | ----------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| `pa`                    | **M**       | **M**        | Payee VPA                                                                                                                        |
+| `pn`                    | **M**       | **M**        | Payee name                                                                                                                       |
+| `mc`                    | O           | O            | Payee merchant category code. "If present then needs to be passed as it is."                                                     |
+| `tid`                   | O           | O            | PSP-generated transaction id. Not for us to invent.                                                                              |
+| `tr`                    | O           | **C**        | Transaction reference (order/bill id). "Mandatory for Merchant transactions and dynamic URL generation."                         |
+| `tn`                    | O           | O            | Transaction note, short description                                                                                              |
+| `am`                    | O           | **M**        | Amount, decimal. **"If 'am' is not present then field is editable."**                                                            |
+| `mam`                   | O           | C            | Minimum amount. "If mam tag is not present or `mam=null` or `mam=` then amount field should NOT be editable."                    |
+| `cu`                    | O           | O            | Currency. **"Currently ONLY 'INR' is the supported value."**                                                                     |
+| `url`                   | O           | O            | Invoice/receipt URL, must be http(s), must relate to that transaction                                                            |
+| `mode`                  | **M**       | **M**        | Initiation mode: `00` default, `01` QR, `02` secure QR, `04` intent, `05` secure intent, `06` NFC, `07` BLE, `08` UHF, `15` SEBI |
+| `sign`                  | **M**       | **M**        | Base64 RSA signature over the whole string minus `&sign=`                                                                        |
+| `orgid`                 | **M**       | **M**        | 6-digit. PSP-initiated → that PSP's orgid. "For merchant initiated/created intent/QR '000000' will be used"                      |
+| `mid` / `msid` / `mtid` | O           | O            | Merchant / store / terminal id, ≤20 chars, echoed for reconciliation                                                             |
 
 Notes that matter **[spec]**:
 
@@ -79,7 +79,7 @@ Yes, on Android, in every major app. **[spec]** + **[vendor]**
   intents being accepted.
 - Paytm and PhonePe both ship UPI-intent products built on the same URI shape **[vendor]**.
 
-Caveat **[field]**: apps are stricter about *merchant-shaped* links than P2P ones. Passing a
+Caveat **[field]**: apps are stricter about _merchant-shaped_ links than P2P ones. Passing a
 partial merchant identity (`mc` without `mid`/`tr`, or a `tr` that looks like a merchant order id)
 is the common cause of "transaction cannot be completed" dialogs. For a P2P settle-up, send the
 minimum set and no merchant fields at all.
@@ -119,7 +119,7 @@ Works, with hard rules **[spec]**:
 **It works.** Chain of evidence **[spec]**:
 
 - An installed PWA on Android runs as a WebAPK inside Chrome; `WebappActivity extends
-  BaseCustomTabActivity` ([Chromium source](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/chrome/android/java/src/org/chromium/chrome/browser/webapps/WebappActivity.java)).
+BaseCustomTabActivity` ([Chromium source](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/chrome/android/java/src/org/chromium/chrome/browser/webapps/WebappActivity.java)).
 - `components/external_intents` is installed "for each 'tab' of the embedder", explicitly
   covering "Custom Tabs and Tab-like contexts". So the same external-protocol interception that
   launches `upi://` from a normal tab is active in the PWA window.
@@ -133,7 +133,7 @@ tab. The failures are not in the launch, they are on either side of it:
    app?" fallback (QR + copyable VPA) next to the button, always.
 2. **The return trip is an app switch, not a navigation.** The PWA is backgrounded. Android may
    evict it; on return it can cold-start and re-render from scratch. Any "pending settlement"
-   state must be persisted (server or IndexedDB/localStorage) *before* firing the link, never
+   state must be persisted (server or IndexedDB/localStorage) _before_ firing the link, never
    held in component state.
 3. **No gesture, no launch** (as above) - same rule applies in standalone.
 
@@ -177,7 +177,7 @@ Mitigations:
 
 - We cannot detect installed apps from the web. `navigator.canShare`/`canOpenURL` equivalents do
   not exist; probing is not possible.
-- Chrome's `intent://…#Intent;scheme=upi;S.browser_fallback_url=…;end` form *does* give a real
+- Chrome's `intent://…#Intent;scheme=upi;S.browser_fallback_url=…;end` form _does_ give a real
   fallback ("Chrome removes browser_fallback_url so the target app doesn't see this value"), but
   it is Chrome-on-Android only and requires targeting a scheme/package. Usable as a progressive
   enhancement; not a substitute for the always-visible QR/copy fallback.
@@ -216,13 +216,13 @@ Yes. **[spec]**, with one recent-rules caveat.
   utility applications" that construct and launch these links.
 - Signing is a merchant/PSP mechanism; unsigned intents are a defined, permitted case that
   degrades to a warning + PIN (§1.3). There is no registration gate on emitting an unsigned P2P
-  `upi://pay` URL. Nothing in the spec requires the *generator* of the link to be an onboarded
+  `upi://pay` URL. Nothing in the spec requires the _generator_ of the link to be an onboarded
   merchant.
 - We are not a PSP, not a TPAP, not a merchant, and we never touch funds, so the compliance
   regime aimed at those parties (NPCI OC-215 API-usage guidelines of 21 May 2025, effective
   31 July 2025, rate-limiting balance-enquiry/account-listing/status APIs
   - see [TeamLease RegTech summary](https://www.teamleaseregtech.com/updates/article/42884/npci-issued-guidelines-on-the-usage-of-upi-api/))
-  does not apply to us. It does apply to anyone we'd have to integrate with to get more.
+    does not apply to us. It does apply to anyone we'd have to integrate with to get more.
 
 Currency check as of 2026-08-11 - the two changes that landed since the spec and that touch us:
 
@@ -230,13 +230,13 @@ Currency check as of 2026-08-11 - the two changes that landed since the spec and
    payments between individuals no longer exist on UPI
    ([Business Today](https://www.businesstoday.in/personal-finance/banking/story/npci-to-tighten-upi-rules-peer-to-peer-collect-feature-to-end-in-october-489244-2025-08-13),
    [Medianama](https://www.medianama.com/2025/08/223-npci-p2p-collect-payments-oct-1-what-it-means/)).
-   → tally can never "request" money in-band. A settle-up is always the *payer* pushing. Design
+   → tally can never "request" money in-band. A settle-up is always the _payer_ pushing. Design
    the UI around "you owe X, pay now", not around the payee sending a request.
 2. **UPI Collect (manual VPA entry) deprecated for P2M from 28 February 2026**, Android moving to
    intent-only, desktop to QR-only, iOS exempt **[vendor]**. This does not restrict us - intent
    and QR are precisely the two surviving flows and are what we emit.
 
-Neither change removes the `upi://pay` intent. Both push the ecosystem *toward* it.
+Neither change removes the `upi://pay` intent. Both push the ecosystem _toward_ it.
 
 ## 9. Can a VPA be validated without a transaction?
 
@@ -247,7 +247,7 @@ payment aggregator: Razorpay ([Validate VPA](https://razorpay.com/docs/payments/
 Cashfree, Juspay ([Verify VPA](https://juspay.io/in/docs/api-reference/docs/express-checkout/verfiy-vpa)),
 Paytm, PhonePe. Every one of them requires an onboarded, KYC'd merchant account and server-side
 credentials. That is exactly the thing tally has decided not to be. Note also that OC-101A's
-"display the banking name" rule is itself implemented *by the payer's app* via ValidateAddress -
+"display the banking name" rule is itself implemented _by the payer's app_ via ValidateAddress -
 another reason the payer's confirmation screen is our validation step, not ours.
 
 What tally can do, and should stop at:
@@ -279,11 +279,11 @@ Partial settlements are supported by editing the amount.
 
 The options:
 
-| Option | What it means | Cost | Failure mode |
-|---|---|---|---|
-| **A. Payer confirms** (Splitwise's model) | Payer taps settle up, fires the link, comes back, taps "I paid". Balance clears immediately. Payee is notified. | Trivial. One boolean, one notification. | Payer marks paid without paying, or in good faith after a failed transaction. Payee finds out later and disputes socially. |
-| **B. Payee confirms** | Payer's tap creates a *pending* settlement; balance only clears when the payee says "received". | Two states, a pending list, a notification the payee must act on. | Payee is slow or never opens the app. Ledger sits wrong in the *other* direction, which is worse - it under-credits someone who actually paid. |
-| **C. Both** | Payer asserts, payee acknowledges, both timestamps recorded; balance clears on payer's assert, payee's ack is a green tick on top. | Middle. One extra nullable timestamp. | Nagging. Two-step ceremony for ₹200. |
+| Option                                    | What it means                                                                                                                      | Cost                                                              | Failure mode                                                                                                                                   |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A. Payer confirms** (Splitwise's model) | Payer taps settle up, fires the link, comes back, taps "I paid". Balance clears immediately. Payee is notified.                    | Trivial. One boolean, one notification.                           | Payer marks paid without paying, or in good faith after a failed transaction. Payee finds out later and disputes socially.                     |
+| **B. Payee confirms**                     | Payer's tap creates a _pending_ settlement; balance only clears when the payee says "received".                                    | Two states, a pending list, a notification the payee must act on. | Payee is slow or never opens the app. Ledger sits wrong in the _other_ direction, which is worse - it under-credits someone who actually paid. |
+| **C. Both**                               | Payer asserts, payee acknowledges, both timestamps recorded; balance clears on payer's assert, payee's ack is a green tick on top. | Middle. One extra nullable timestamp.                             | Nagging. Two-step ceremony for ₹200.                                                                                                           |
 
 **Recommendation: A, with C's data shape.** Clear the balance on the payer's assertion - that is
 what every user of a friend-group app expects and what Splitwise proved is socially sufficient.

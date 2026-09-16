@@ -62,9 +62,7 @@ describe("classifyAuthError", () => {
   });
 
   it("keeps 403 meaning invite-only, and nothing else meaning that", () => {
-    expect(classifyAuthError(new ApiError(403, "forbidden"), "register").messageKey).toBe(
-      "onboarding.closedInstance",
-    );
+    expect(classifyAuthError(new ApiError(403, "forbidden"), "register").messageKey).toBe("onboarding.closedInstance");
     expect(classifyAuthError(new ApiError(401, "unauthenticated"), "register").messageKey).toBe(
       "onboarding.errorSessionLost",
     );

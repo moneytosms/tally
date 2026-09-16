@@ -3,9 +3,7 @@ import { defineConfig } from "drizzle-kit";
 // Cloudflare credentials do not exist yet — `generate` works offline without them;
 // only `push`/`migrate` over d1-http read these env vars.
 // (read via globalThis: @types/node is not installed and is not worth adding)
-const env =
-  (globalThis as { process?: { env: Record<string, string | undefined> } })
-    .process?.env ?? {};
+const env = (globalThis as { process?: { env: Record<string, string | undefined> } }).process?.env ?? {};
 
 export default defineConfig({
   schema: "./src/db/schema.ts",

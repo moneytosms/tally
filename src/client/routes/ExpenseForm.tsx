@@ -242,12 +242,14 @@ export default function ExpenseForm({ onDone, expense }: { onDone: () => void; e
       {/* Display-only: does not gate save (issue #37) - `blocked` above still owns
           that via `result`. Disappears the instant allocation matches the total. */}
       {remaining && (
-        <p role="status" className="mb-3 text-[12px]" style={{ color: remaining.amount < 0 ? "var(--clay)" : "var(--ink-2)" }}>
+        <p
+          role="status"
+          className="mb-3 text-[12px]"
+          style={{ color: remaining.amount < 0 ? "var(--clay)" : "var(--ink-2)" }}
+        >
           {t(remaining.amount < 0 ? "expense.overAllocated" : "expense.remainingToAllocate", {
             amount:
-              remaining.unit === "percent"
-                ? `${Math.abs(remaining.amount)}%`
-                : formatPaise(Math.abs(remaining.amount)),
+              remaining.unit === "percent" ? `${Math.abs(remaining.amount)}%` : formatPaise(Math.abs(remaining.amount)),
           })}
         </p>
       )}

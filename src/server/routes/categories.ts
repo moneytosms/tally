@@ -26,8 +26,11 @@ categories.post("/categories", requireSession, requireOwner, async (c) => {
       deletedAt: null,
     });
   } catch (e) {
-    const err = e as any;
-    if (err?.cause?.message?.includes("UNIQUE constraint failed") || err?.message?.includes("UNIQUE constraint failed")) {
+    const err = e as { cause?: { message?: string }; message?: string };
+    if (
+      err?.cause?.message?.includes("UNIQUE constraint failed") ||
+      err?.message?.includes("UNIQUE constraint failed")
+    ) {
       return c.json({ error: "a category with that name already exists" }, 409);
     }
     throw e;

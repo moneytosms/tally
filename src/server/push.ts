@@ -87,8 +87,7 @@ export async function encryptPayload(
 
   const salt = fixed?.salt ?? crypto.getRandomValues(new Uint8Array(16));
   const asKeys =
-    fixed?.keyPair ??
-    (await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]));
+    fixed?.keyPair ?? (await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]));
   const asPublic = new Uint8Array(await crypto.subtle.exportKey("raw", asKeys.publicKey));
 
   const uaKey = await crypto.subtle.importKey(

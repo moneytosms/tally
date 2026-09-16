@@ -89,7 +89,10 @@ function RecoveryRow({ userId }: { userId: string }) {
   if (link !== null) {
     return (
       <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
-        <p className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all" style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}>
+        <p
+          className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all"
+          style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
+        >
           {link}
         </p>
         <Button
@@ -170,17 +173,22 @@ function EmergencyRow({ userId, hasPassword }: { userId: string; hasPassword: bo
         </p>
       )}
       {confirmingClear && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
-          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgb(0 0 0 / 38%)" }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-[10px] border p-4"
+            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+          >
             <p className="mb-3 text-[14px]">{t("admin.clearPasswordConfirm")}</p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirmingClear(false)}>
                 {t("action.cancel")}
               </Button>
-              <Button
-                variant="danger"
-                onClick={() => (clearPassword.mutate(userId), setConfirmingClear(false))}
-              >
+              <Button variant="danger" onClick={() => (clearPassword.mutate(userId), setConfirmingClear(false))}>
                 {t("action.confirm")}
               </Button>
             </div>
@@ -267,10 +275,7 @@ function PeopleSection() {
   const doRevoke = () => {
     if (!confirming) return;
     const { userId, credentialId } = confirming;
-    revoke.mutate(
-      { userId, credentialId },
-      { onSuccess: () => setRevokedId(credentialId) },
-    );
+    revoke.mutate({ userId, credentialId }, { onSuccess: () => setRevokedId(credentialId) });
     setConfirming(null);
   };
 
@@ -308,7 +313,10 @@ function PeopleSection() {
               </span>
             )}
           </div>
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          <div
+            className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]"
+            style={{ color: "var(--ink-3)" }}
+          >
             <span className="truncate">{u.email ?? t("admin.noEmail")}</span>
             <span aria-hidden="true">·</span>
             <span>{t(u.hasPassword ? "admin.hasPassword" : "admin.noPassword")}</span>
@@ -381,8 +389,16 @@ function PeopleSection() {
       )}
 
       {deleting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
-          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgb(0 0 0 / 38%)" }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-[10px] border p-4"
+            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+          >
             <p className="mb-3 text-[14px]">{t("admin.deleteUserConfirm", { name: deleting.name })}</p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setDeleting(null)}>
@@ -397,8 +413,16 @@ function PeopleSection() {
       )}
 
       {confirming && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
-          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgb(0 0 0 / 38%)" }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-[10px] border p-4"
+            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+          >
             <p className="mb-3 text-[14px]">{t("admin.revoke")}?</p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirming(null)}>
@@ -449,7 +473,11 @@ function CategoriesSection() {
   return (
     <>
       {categories.data.map((c) => (
-        <div key={c.id} className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-2.5" style={card}>
+        <div
+          key={c.id}
+          className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-2.5"
+          style={card}
+        >
           <span className="flex min-w-0 items-center gap-2 text-[14px]">
             <span aria-hidden="true">{c.icon}</span>
             <span className="truncate">{c.name}</span>
@@ -479,8 +507,16 @@ function CategoriesSection() {
       </form>
 
       {confirming && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
-          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgb(0 0 0 / 38%)" }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-[10px] border p-4"
+            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+          >
             <p className="mb-3 text-[14px]">{t("admin.categoryDelete")}?</p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirming(null)}>
@@ -531,7 +567,10 @@ function InstanceInviteCard() {
         </>
       ) : (
         <>
-          <p className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all" style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}>
+          <p
+            className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all"
+            style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
+          >
             {link}
           </p>
           <Button
@@ -588,7 +627,11 @@ function InvitesSection() {
       {invites.data.map((inv) => {
         const hours = Math.max(0, Math.round((inv.expiresAt - Date.now()) / 3_600_000));
         return (
-          <div key={inv.id} className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-3" style={card}>
+          <div
+            key={inv.id}
+            className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-3"
+            style={card}
+          >
             <div className="min-w-0">
               {/* Null ledgerName means an instance invite - it joins no ledger,
                   so its scope has to be spelled out rather than left blank. */}
@@ -605,8 +648,16 @@ function InvitesSection() {
       })}
 
       {confirming && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
-          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgb(0 0 0 / 38%)" }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-[10px] border p-4"
+            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+          >
             <p className="mb-3 text-[14px]">{t("admin.inviteRevoke")}?</p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirming(null)}>

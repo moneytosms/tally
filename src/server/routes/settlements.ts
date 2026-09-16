@@ -144,7 +144,8 @@ settlements.post("/settlements/bulk", requireSession, async (c) => {
       // the settle-everything path, since a guest is nobody's leg when the caller
       // named one friend to settle with.
       if (!payee.userId) {
-        if (!toUserId) skipped.push({ ledgerId: ledger.id, memberId: payee.id, guestName: payee.guestName, amount: tr.amount });
+        if (!toUserId)
+          skipped.push({ ledgerId: ledger.id, memberId: payee.id, guestName: payee.guestName, amount: tr.amount });
         continue;
       }
       if (toUserId && payee.userId !== toUserId) continue;

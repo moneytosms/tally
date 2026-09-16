@@ -8,15 +8,15 @@ Date: 2026-08-19
 Every account today has the same run of the instance regardless of how it was
 created (ADR 0006). That was fine when the only invite path was the owner's
 admin panel. It stops being fine once any member can hand out a ledger invite
-(ADR 0007): the invite is meant to admit someone to *one* ledger, but the
+(ADR 0007): the invite is meant to admit someone to _one_ ledger, but the
 account it creates can list every other ledger's existence-hidden-by-membership
 notwithstanding, create new ledgers, and mint its own invites - full run of an
 instance the owner never chose to open that wide.
 
 This is not the question ADR 0005 or ADR 0007 answered. Those govern
-authorization *inside* a ledger someone already belongs to - "no roles" there
+authorization _inside_ a ledger someone already belongs to - "no roles" there
 means no editor/viewer split once you're a member. This is a different axis:
-what an account may do *before* or *outside* any ledger membership - create
+what an account may do _before_ or _outside_ any ledger membership - create
 one, invite into one, see the instance-wide list. Silently reusing "no roles"
 for that question would be answering it, not applying it.
 

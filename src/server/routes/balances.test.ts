@@ -19,7 +19,14 @@ type Ledger = {
     fromMemberId: string;
     toMemberId: string;
     amount: number;
-    trail: Array<{ kind: "expense" | "settlement"; id: string; expenseId: string | null; description: string; at: number; amount: number }>;
+    trail: Array<{
+      kind: "expense" | "settlement";
+      id: string;
+      expenseId: string | null;
+      description: string;
+      at: number;
+      amount: number;
+    }>;
   }>;
   pairs: Array<{ fromMemberId: string; toMemberId: string; amount: number }>;
 };
@@ -28,10 +35,16 @@ const expense = (ledgerId: string, body: object) =>
   app.request(
     req(h, `/api/ledgers/${ledgerId}/expenses`, {
       method: "POST",
-      json: { description: "x", paidAtEpochMs: 1_760_000_000_000, categoryId: null, notes: null, mode: "equal", ...body },
+      json: {
+        description: "x",
+        paidAtEpochMs: 1_760_000_000_000,
+        categoryId: null,
+        notes: null,
+        mode: "equal",
+        ...body,
+      },
     }),
   );
-
 
 const settle = (ledgerId: string, body: object) =>
   app.request(
@@ -48,8 +61,16 @@ const net = (b: Ledger) => new Map(b.positions.map((p) => [p.memberId, p.net]));
 
 describe("GET /ledgers/:ledgerId/balances", () => {
   it("derives net positions and a transfer plan that clears them", async () => {
-    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00
-    await expense("L1", { total: 4_000, payerMemberId: "m_guest", participants: [{ memberId: "m_ada" }, { memberId: "m_guest" }] }); // ₹40.00
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00
+    await expense("L1", {
+      total: 4_000,
+      payerMemberId: "m_guest",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_guest" }],
+    }); // ₹40.00
 
     const b = await ledgerBalances("L1");
     expect(net(b).get("m_ada")).toBe(-7_000);
@@ -68,11 +89,23 @@ describe("GET /ledgers/:ledgerId/balances", () => {
 
   it("returns the expense trail behind each suggested transfer", async () => {
     const dinner = (await (
-      await expense("L1", { description: "Dinner", total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }) // ₹100.00
-    ).json()) as { id: string };
+      await expense("L1", {
+        description: "Dinner",
+        total: 10_000,
+        payerMemberId: "m_bob",
+        participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+      })
+    ) // ₹100.00
+      .json()) as { id: string };
     const taxi = (await (
-      await expense("L1", { description: "Taxi", total: 3_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }) // ₹30.00
-    ).json()) as { id: string };
+      await expense("L1", {
+        description: "Taxi",
+        total: 3_000,
+        payerMemberId: "m_bob",
+        participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+      })
+    ) // ₹30.00
+      .json()) as { id: string };
 
     const b = await ledgerBalances("L1");
     expect(b.transfers).toHaveLength(1);
@@ -90,8 +123,16 @@ describe("GET /ledgers/:ledgerId/balances", () => {
   it("explains a simplified transfer through the gross pairs", async () => {
     // Bob owes Ada, the guest owes Bob - the plan suggests guest -> Ada, a pair
     // with no shared expense. `pairs` is what makes that one explainable.
-    await expense("L1", { total: 6_000, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹60.00
-    await expense("L1", { total: 6_000, payerMemberId: "m_bob", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] }); // ₹60.00
+    await expense("L1", {
+      total: 6_000,
+      payerMemberId: "m_ada",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹60.00
+    await expense("L1", {
+      total: 6_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }],
+    }); // ₹60.00
 
     const b = await ledgerBalances("L1");
     expect(b.transfers).toEqual([
@@ -105,11 +146,20 @@ describe("GET /ledgers/:ledgerId/balances", () => {
     );
   });
 
-
   it("nets the trail: an expense running the other way subtracts from it", async () => {
     // Bob pays ₹100.00 split with Ada, then Ada pays ₹40.00 split with Bob.
-    await expense("L1", { description: "Dinner", total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] });
-    await expense("L1", { description: "Taxi", total: 4_000, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] });
+    await expense("L1", {
+      description: "Dinner",
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    });
+    await expense("L1", {
+      description: "Taxi",
+      total: 4_000,
+      payerMemberId: "m_ada",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    });
 
     const [t] = (await ledgerBalances("L1")).transfers;
     expect(t!.amount).toBe(3_000); // ₹50.00 - ₹20.00
@@ -119,7 +169,11 @@ describe("GET /ledgers/:ledgerId/balances", () => {
   });
 
   it("puts a partial settle in the trail, so it still explains the amount exactly", async () => {
-    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00
     await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 2_000 }); // ₹20.00
 
     const [t] = (await ledgerBalances("L1")).transfers;
@@ -130,9 +184,18 @@ describe("GET /ledgers/:ledgerId/balances", () => {
 
   it("stops counting a soft-deleted expense", async () => {
     const { id } = (await (
-      await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }) // ₹100.00
-    ).json()) as { id: string };
-    await expense("L1", { total: 2_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹20.00
+      await expense("L1", {
+        total: 10_000,
+        payerMemberId: "m_bob",
+        participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+      })
+    ) // ₹100.00
+      .json()) as { id: string };
+    await expense("L1", {
+      total: 2_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹20.00
     expect(net(await ledgerBalances("L1")).get("m_ada")).toBe(-6_000);
 
     await app.request(req(h, `/api/ledgers/L1/expenses/${id}`, { method: "DELETE" }));
@@ -144,13 +207,21 @@ describe("GET /ledgers/:ledgerId/balances", () => {
   });
 
   it("nets a settlement out of the gross pairs too", async () => {
-    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00
     await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 5_000 }); // ₹50.00 - all of it
     expect((await ledgerBalances("L1")).pairs).toEqual([]);
   });
 
   it("counts settlements as well as expenses", async () => {
-    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00
     await app.request(
       req(h, "/api/ledgers/L1/settlements", {
         method: "POST",
@@ -170,8 +241,16 @@ describe("GET /balances", () => {
   const cross = async () => (await (await app.request(req(h, "/api/balances"))).json()) as Cross;
 
   it("sums one number per friend across every shared ledger", async () => {
-    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00 - Bob +₹50.00
-    await expense("L2", { total: 6_000, payerMemberId: "n_cy", participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }] }); // ₹60.00 - Cy +₹30.00
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00 - Bob +₹50.00
+    await expense("L2", {
+      total: 6_000,
+      payerMemberId: "n_cy",
+      participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }],
+    }); // ₹60.00 - Cy +₹30.00
 
     const rows = await cross();
     expect(rows.sort((a, b) => a.userId.localeCompare(b.userId))).toEqual([
@@ -183,43 +262,76 @@ describe("GET /balances", () => {
   it("adds a friend's positions from several ledgers into one figure", async () => {
     // Ada and Cy share only L2 here; Bob appears twice would need a second shared
     // ledger, so use two expenses in L2 with opposite signs instead.
-    await expense("L2", { total: 6_000, payerMemberId: "n_cy", participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }] }); // ₹60.00
-    await expense("L2", { total: 2_000, payerMemberId: "n_ada", participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }] }); // ₹20.00
+    await expense("L2", {
+      total: 6_000,
+      payerMemberId: "n_cy",
+      participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }],
+    }); // ₹60.00
+    await expense("L2", {
+      total: 2_000,
+      payerMemberId: "n_ada",
+      participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }],
+    }); // ₹20.00
 
     expect((await cross()).find((r) => r.userId === "u_cy")!.net).toBe(2_000); // ₹30.00 - ₹10.00
   });
 
   it("excludes guests - they are per-ledger entities with no user and no VPA", async () => {
-    await expense("L1", { total: 4_000, payerMemberId: "m_guest", participants: [{ memberId: "m_ada" }, { memberId: "m_guest" }] }); // ₹40.00
+    await expense("L1", {
+      total: 4_000,
+      payerMemberId: "m_guest",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_guest" }],
+    }); // ₹40.00
     const rows = await cross();
     expect(rows.map((r) => r.userId)).not.toContain("m_guest");
     expect(rows.every((r) => r.userId.startsWith("u_"))).toBe(true);
   });
 
   it("excludes the viewer", async () => {
-    await expense("L1", { total: 10_000, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_ada",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00
     expect((await cross()).map((r) => r.userId)).toEqual(["u_bob"]);
   });
-
 
   it("is the viewer's own obligation, not what a third member owes that friend", async () => {
     // Bob pays ₹60.00 split with the guest. Ada is not in it at all, and owes
     // Bob nothing - the tab used to read "you owe Bob ₹30.00" here.
-    await expense("L1", { total: 6_000, payerMemberId: "m_bob", participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }] });
+    await expense("L1", {
+      total: 6_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }],
+    });
     expect(await cross()).toEqual([]);
   });
 
   it("reports a figure that bulk settle can actually clear", async () => {
-    await expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00
-    await expense("L2", { total: 6_000, payerMemberId: "n_cy", participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }] }); // ₹60.00
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00
+    await expense("L2", {
+      total: 6_000,
+      payerMemberId: "n_cy",
+      participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }],
+    }); // ₹60.00
     expect((await cross()).find((r) => r.userId === "u_bob")!.net).toBe(5_000);
 
-    await app.request(req(h, "/api/settlements/bulk", { method: "POST", json: { toUserId: "u_bob", method: "manual", note: null } }));
+    await app.request(
+      req(h, "/api/settlements/bulk", { method: "POST", json: { toUserId: "u_bob", method: "manual", note: null } }),
+    );
     expect((await cross()).map((r) => r.userId)).toEqual(["u_cy"]); // Bob's row is gone, not merely smaller
   });
 
   it("drops a friend whose figure nets to zero", async () => {
-    await expense("L2", { total: 6_000, payerMemberId: "n_cy", participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }] }); // ₹60.00
+    await expense("L2", {
+      total: 6_000,
+      payerMemberId: "n_cy",
+      participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }],
+    }); // ₹60.00
     await settle("L2", { fromMemberId: "n_ada", toMemberId: "n_cy", amount: 3_000 }); // ₹30.00 - all of it
     expect(await cross()).toEqual([]);
   });

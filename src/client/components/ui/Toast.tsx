@@ -33,7 +33,12 @@ const subscribe = (cb: () => void) => {
   return () => listeners.delete(cb);
 };
 
-const useToasts = () => useSyncExternalStore(subscribe, () => toasts, () => []);
+const useToasts = () =>
+  useSyncExternalStore(
+    subscribe,
+    () => toasts,
+    () => [],
+  );
 
 /** Mounted once in App.tsx, above the tab bar. `aria-live="assertive"` on the
  *  region (not per-toast) so screen readers announce each arrival without

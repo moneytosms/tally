@@ -121,7 +121,12 @@ recurring.patch(ITEM, async (c) => {
     body.startAt > existing.nextOccurrenceAt
       ? body.startAt
       : nextOccurrence(
-          { startAt: body.startAt, intervalUnit: body.intervalUnit, intervalCount: body.intervalCount, endAt: body.endAt },
+          {
+            startAt: body.startAt,
+            intervalUnit: body.intervalUnit,
+            intervalCount: body.intervalCount,
+            endAt: body.endAt,
+          },
           Date.now(),
         );
 
@@ -153,7 +158,8 @@ recurring.post(`${ITEM}/pause`, async (c) => {
   const pausedAt = existing.pausedAt === null ? Date.now() : null;
   // Resuming does NOT rewind the cursor: a series paused for three months
   // generates from today, not three months of back-dated rent nobody agreed to.
-  const patch = pausedAt === null ? { pausedAt, nextOccurrenceAt: Math.max(existing.nextOccurrenceAt, Date.now()) } : { pausedAt };
+  const patch =
+    pausedAt === null ? { pausedAt, nextOccurrenceAt: Math.max(existing.nextOccurrenceAt, Date.now()) } : { pausedAt };
   await db.updateSeries(seriesId, patch);
 
   await pokeRecurring(c.env.RECURRING);

@@ -40,11 +40,7 @@ export const signInWithPassword = async (body: { email: string; password: string
  * ignores it once an address is set, so passing it is harmless either way.
  * `currentPassword` is required only once a password exists.
  */
-export const setPassword = async (body: {
-  email: string;
-  currentPassword?: string;
-  password: string;
-}): Promise<Me> =>
+export const setPassword = async (body: { email: string; currentPassword?: string; password: string }): Promise<Me> =>
   api<Me>("/api/me/password", {
     method: "POST",
     body: JSON.stringify({

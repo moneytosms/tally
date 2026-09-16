@@ -3,6 +3,7 @@
 Major errors only. Claude appends; humans review. Never delete entries.
 
 Format:
+
 ```
 ## [YYYY-MM-DD] <title>
 What: <what went wrong>

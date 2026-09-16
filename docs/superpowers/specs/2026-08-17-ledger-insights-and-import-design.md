@@ -7,10 +7,12 @@ architecture.
 ## A. Per-ledger insights
 
 ### Goal
+
 Give a per-ledger breakdown (who spent/paid what, by category, by month),
 distinct from the existing lifetime/global `InsightsTab`.
 
 ### Server
+
 `GET /api/ledgers/:ledgerId/insights` — `requireSession, requireMember`.
 
 Walks `db.listExpenses(ledgerId)` (soft-delete already filtered structurally,
@@ -41,6 +43,7 @@ type LedgerInsights = {
   reasoning as the existing activity feed) — don't filter them out.
 
 ### Client
+
 - `qk.ledgerInsights = (ledgerId) => ["ledgers", ledgerId, "insights"]`,
   `useLedgerInsights(ledgerId)` in `queries.ts`.
 - New route `src/client/routes/LedgerInsights.tsx` mounted at
@@ -59,6 +62,7 @@ type LedgerInsights = {
 - Empty state (`data.totals.expenseCount === 0`) reuses `t("empty.insights")`.
 
 ### New i18n keys
+
 `insights.ledgerTitle`, `insights.byMember`, `insights.paid`,
 `insights.share`, `ledger.menu.insights` (nav link label) — under existing
 `insights.*` / `ledger.*` namespaces.
@@ -66,21 +70,24 @@ type LedgerInsights = {
 ## B. Splid / Splitwise import
 
 ### Goal
+
 Import expenses from a Splid `.xls` export or a Splitwise `.csv` export into
 an existing ledger, with a mapping step for names that don't match a current
 member (map to existing member, or — Owner only — create a new guest).
 
 ### Formats (both are a "balance matrix": one row per expense, one block of
+
 columns per person)
 
 **Splid `.xls`** (binary OLE `CDFV2`, not a zip/xlsx) — confirmed from the
 sample file:
+
 - Row 0-1: title/attribution, ignore.
 - Row 3: header — `Title, Amount, Currency, By, Date, Created on`, then two
   columns per person (name, blank).
 - Data rows: `Title, Amount, Currency, By(payer display name), Date(often
-  garbled — Splid's ₹-adjacent unicode bug corrupts this cell), Created on
-  ("M/D/YY")`, then per person: `[paidAmount, -share]` — blank cell pair if
+garbled — Splid's ₹-adjacent unicode bug corrupts this cell), Created on
+("M/D/YY")`, then per person: `[paidAmount, -share]` — blank cell pair if
   that person wasn't involved. `paidAmount` is redundant with
   `By`+`Amount`; only `-share` is used. Use `Created on` for the date, not
   the `Date` column.
@@ -89,6 +96,7 @@ sample file:
   real binary OLE spreadsheet format has no few-line parser.
 
 **Splitwise `.csv`**:
+
 - Header: `Date, Description, Category, Cost, Currency`, then one column per
   person = **net balance** = `paid − share` (positive = they're owed,
   negative = they owe). Confirmed via
@@ -104,21 +112,24 @@ sample file:
   parser, no new dependency.
 
 ### Normalized intermediate shape
+
 Both parsers produce:
+
 ```ts
 type ParsedImportRow = {
   title: string;
-  amountPaise: Paise;      // Math.round(amount * 100)
+  amountPaise: Paise; // Math.round(amount * 100)
   dateMs: number;
-  payerName: string;       // raw source-file name, unmapped
+  payerName: string; // raw source-file name, unmapped
   shares: Array<{ name: string; sharePaise: Paise }>; // raw source-file names
 };
 type ParseResult = {
-  sourceNames: string[];   // union of payerName + all shares[].name, stable order of first appearance
+  sourceNames: string[]; // union of payerName + all shares[].name, stable order of first appearance
   rows: ParsedImportRow[];
-  warnings: string[];      // one per skipped/unparseable row, human-readable
+  warnings: string[]; // one per skipped/unparseable row, human-readable
 };
 ```
+
 - Currency: reject (warning, skip row) any row whose `Currency` isn't `INR`
   — this app is INR-only (ADR 0003).
 - Rounding: source values are rupee floats with float-division tails (e.g.
@@ -130,6 +141,7 @@ type ParseResult = {
   a warning + skip, not a throw — one bad row must not fail the whole import.
 
 ### Server: preview
+
 `POST /api/ledgers/:ledgerId/import/preview` — `requireSession,
 requireMember`. Multipart body, one file field. Sniffs parser by extension
 (`.xls` → Splid, `.csv` → Splitwise); unrecognized extension → 400. Runs the
@@ -137,8 +149,10 @@ parser, returns `ParseResult` as JSON. **No DB writes** — this is read-only
 against the uploaded bytes, not the ledger.
 
 ### Client: mapping UI
+
 New panel in `LedgerMenu.tsx`'s ⋯ menu ("Import"), same `Sheet` pattern as
 the existing panels:
+
 1. File input (`accept=".xls,.csv"`).
 2. On select, POST to `/import/preview`, show a summary (row count, date
    range, any warnings) and the source-name mapping table.
@@ -154,9 +168,11 @@ the existing panels:
    server-side session state for the parse.
 
 ### Server: commit
+
 `POST /api/ledgers/:ledgerId/import/commit` — `requireSession,
 requireMember, rejectArchivedWrites` (same guard `expenses.ts` uses — an
 archived ledger is read-only). Body:
+
 ```ts
 {
   rows: ParsedImportRow[];              // echoed back from preview, re-validated server-side
@@ -164,6 +180,7 @@ archived ledger is read-only). Body:
   newGuests: Record<string, string>;    // sourceName -> guest display name (only if isOwner)
 }
 ```
+
 - If `newGuests` is non-empty and `!c.var.user.isOwner`, `403`.
 - Re-validate every `sourceName` in `rows` resolves via `mapping` or
   `newGuests` — an unmapped name is a `400`, not a silent drop.
@@ -174,7 +191,7 @@ archived ledger is read-only). Body:
   building `sourceName -> memberId` from mapping ∪ new guests.
 - For each row: resolve `payerIndex` from the mapped payer, call
   `resolveSplits({ total: amountPaise, mode: "shares", participantCount,
-  payerIndex, values: shares.map(mappedSharePaise) })` — identical function
+payerIndex, values: shares.map(mappedSharePaise) })` — identical function
   `expenses.ts` already uses, so rounding/remainder behavior matches every
   other expense in the app.
 - One `db.batch([...])` for all guest inserts + all expense/split inserts —
@@ -182,16 +199,18 @@ archived ledger is read-only). Body:
   of cross-request transactions.
 - `categoryId: null` on every imported expense (no source category data).
   `notes`: the uploaded filename, e.g. `"Imported from Summary 10 gpa
-  gang.xls"` — traceability without a new schema column.
+gang.xls"` — traceability without a new schema column.
 - Response: `{ created: number, skipped: number }` (skipped = warnings from
   preview that the user chose to import anyway).
 
 ### New i18n keys
+
 `ledger.menu.import`, `import.fileLabel`, `import.mapping`,
 `import.mapUnmapped`, `import.createGuest`, `import.confirm`,
 `import.warnings`, `import.done`, `import.failed`.
 
 ## Testing
+
 - `resolveSplits` already covers the `"shares"` mode — no new coverage
   needed there.
 - New: `parseSplidXls`/`parseSplitwiseCsv` unit tests against small
@@ -206,6 +225,7 @@ archived ledger is read-only). Body:
   paid expense still appears with `paid: 0`).
 
 ## Non-goals (explicit, YAGNI)
+
 - Splid's second sheet ("Suggested payments" — precomputed settle-up debts)
   is not imported. The imported expenses already let this app derive its
   own settle-up suggestions.

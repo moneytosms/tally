@@ -72,8 +72,7 @@ const post = (env: Env, path: string, body?: unknown, cookie?: string) =>
     env,
   );
 
-const get = (env: Env, path: string, cookie?: string) =>
-  app.request(path, { headers: cookie ? { cookie } : {} }, env);
+const get = (env: Env, path: string, cookie?: string) => app.request(path, { headers: cookie ? { cookie } : {} }, env);
 
 const del = (env: Env, path: string, cookie?: string) =>
   app.request(path, { method: "DELETE", headers: cookie ? { cookie } : {} }, env);
@@ -240,7 +239,7 @@ describe("ledgers", () => {
     const res = await post(env, `/api/ledgers/${ledgerId}/archive`, {}, a.cookie);
     expect(res.status).toBe(409);
     expect((await res.json()) as { code: string }).toMatchObject({ code: "not_settled" });
-    expect(((await db.findLedger(ledgerId))!).archivedAt).toBeNull();
+    expect((await db.findLedger(ledgerId))!.archivedAt).toBeNull();
   });
 
   it("refuses to let a member leave while their net position is non-zero", async () => {
@@ -307,9 +306,9 @@ describe("ledgers", () => {
       await post(env, "/api/ledgers", { name: "Goa", invitesEnabled: true }, a.cookie)
     ).json()) as { id: string };
 
-    const invite = (await (
-      await post(env, `/api/ledgers/${created.id}/invites`, {}, a.cookie)
-    ).json()) as { token: string };
+    const invite = (await (await post(env, `/api/ledgers/${created.id}/invites`, {}, a.cookie)).json()) as {
+      token: string;
+    };
 
     expect((await post(env, `/api/invites/${invite.token}/accept`, {}, b.cookie)).status).toBe(201);
     expect(await db.listMembers(created.id)).toHaveLength(2);
@@ -378,9 +377,9 @@ describe("invite redemption sets the account ceiling", () => {
     const ledger = (await (
       await post(env, "/api/ledgers", { name: "Goa", invitesEnabled: true }, owner.cookie)
     ).json()) as { id: string };
-    const invite = (await (
-      await post(env, `/api/ledgers/${ledger.id}/invites`, {}, owner.cookie)
-    ).json()) as { token: string };
+    const invite = (await (await post(env, `/api/ledgers/${ledger.id}/invites`, {}, owner.cookie)).json()) as {
+      token: string;
+    };
 
     const res = await signUp(env, invite.token, "Bob", "bob@example.com");
     expect(res.status).toBe(201);
@@ -515,11 +514,13 @@ describe("account recovery", () => {
   it("a recovery token is single-use and rejects a replay", async () => {
     const { env, db } = setup();
     const { cookie, member } = await ownerAnd(db, "Ada");
-    const { token } = (await (
-      await post(env, `/api/admin/users/${member.id}/recovery`, {}, cookie)
-    ).json()) as { token: string };
+    const { token } = (await (await post(env, `/api/admin/users/${member.id}/recovery`, {}, cookie)).json()) as {
+      token: string;
+    };
 
-    expect((await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: token })).status).toBe(200);
+    expect((await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: token })).status).toBe(
+      200,
+    );
     const replay = await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: token });
     expect(replay.status).toBe(403);
   });
@@ -535,7 +536,9 @@ describe("account recovery", () => {
   it("a forged or expired recovery token is refused", async () => {
     const { env, db } = setup();
     const { member } = await ownerAnd(db, "Ada");
-    expect((await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: "made-up" })).status).toBe(403);
+    expect(
+      (await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: "made-up" })).status,
+    ).toBe(403);
 
     await db.insertRecoveryToken({
       id: uuidv7(),
@@ -545,6 +548,8 @@ describe("account recovery", () => {
       createdAt: NOW - 7_200_000,
       expiresAt: NOW - 3_600_000,
     });
-    expect((await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: "stale" })).status).toBe(403);
+    expect((await post(env, "/api/auth/register/options", { displayName: "Ada", recoveryToken: "stale" })).status).toBe(
+      403,
+    );
   });
 });

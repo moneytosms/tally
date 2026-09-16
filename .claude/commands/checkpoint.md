@@ -12,6 +12,7 @@ Write current session state to `.claude/checkpoint.md`. Run before ending a mid-
 
 ```markdown
 ## Checkpoint [YYYY-MM-DD HH:MM]
+
 Status: <done | in-progress | blocked>
 In progress: <what is currently mid-flight — be specific about file/function/step>
 Next step: <exact next action to take when resuming — one line>

@@ -18,7 +18,14 @@ const expense = (ledgerId: string, body: object) =>
   app.request(
     req(h, `/api/ledgers/${ledgerId}/expenses`, {
       method: "POST",
-      json: { description: "x", paidAtEpochMs: 1_760_000_000_000, categoryId: null, notes: null, mode: "equal", ...body },
+      json: {
+        description: "x",
+        paidAtEpochMs: 1_760_000_000_000,
+        categoryId: null,
+        notes: null,
+        mode: "equal",
+        ...body,
+      },
     }),
   );
 
@@ -37,7 +44,11 @@ async function positions(ledgerId: string) {
 
 /** Bob pays ₹100.00 split equally: Ada owes Bob ₹50.00. */
 const adaOwesBob = () =>
-  expense("L1", { total: 10_000, payerMemberId: "m_bob", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] });
+  expense("L1", {
+    total: 10_000,
+    payerMemberId: "m_bob",
+    participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+  });
 
 describe("POST /ledgers/:ledgerId/settlements", () => {
   it("moves the balance on declaration, with no acknowledgement", async () => {
@@ -66,7 +77,13 @@ describe("POST /ledgers/:ledgerId/settlements", () => {
 
   it("records `forgiven` as an ordinary settlement, never a silent write-off", async () => {
     await adaOwesBob();
-    const res = await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 5_000, method: "forgiven", note: "on me" });
+    const res = await settle("L1", {
+      fromMemberId: "m_ada",
+      toMemberId: "m_bob",
+      amount: 5_000,
+      method: "forgiven",
+      note: "on me",
+    });
     expect(res.status).toBe(201);
 
     const [row] = await h.db.listSettlements("L1");
@@ -104,9 +121,7 @@ describe("POST /ledgers/:ledgerId/settlements", () => {
     const [row] = await h.db.listSettlements("L1");
 
     const before = await positions("L1");
-    const res = await app.request(
-      req(h, `/api/ledgers/L1/settlements/${row!.id}/acknowledge`, { method: "POST" }),
-    );
+    const res = await app.request(req(h, `/api/ledgers/L1/settlements/${row!.id}/acknowledge`, { method: "POST" }));
     expect(res.status).toBe(200);
     expect((await h.db.listSettlements("L1"))[0]!.acknowledgedAt).toBeGreaterThan(0);
     // the money did not move
@@ -116,10 +131,31 @@ describe("POST /ledgers/:ledgerId/settlements", () => {
 
 describe("net positions sum to zero", () => {
   it("after any sequence of expenses, refunds and settlements", async () => {
-    await expense("L1", { total: 10_001, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }, { memberId: "m_guest" }] }); // ₹100.01
-    await expense("L1", { total: 7_777, payerMemberId: "m_guest", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹77.77
-    await expense("L1", { mode: "percent", total: 9_999, payerMemberId: "m_bob", participants: [{ memberId: "m_ada", value: 33 }, { memberId: "m_bob", value: 33 }, { memberId: "m_guest", value: 34 }] }); // ₹99.99
-    await expense("L1", { total: -2_500, payerMemberId: "m_ada", participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // -₹25.00 refund
+    await expense("L1", {
+      total: 10_001,
+      payerMemberId: "m_ada",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }, { memberId: "m_guest" }],
+    }); // ₹100.01
+    await expense("L1", {
+      total: 7_777,
+      payerMemberId: "m_guest",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹77.77
+    await expense("L1", {
+      mode: "percent",
+      total: 9_999,
+      payerMemberId: "m_bob",
+      participants: [
+        { memberId: "m_ada", value: 33 },
+        { memberId: "m_bob", value: 33 },
+        { memberId: "m_guest", value: 34 },
+      ],
+    }); // ₹99.99
+    await expense("L1", {
+      total: -2_500,
+      payerMemberId: "m_ada",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // -₹25.00 refund
     await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 1_234 }); // ₹12.34
     await settle("L1", { fromMemberId: "m_bob", toMemberId: "m_guest", amount: 99, method: "forgiven" }); // ₹0.99
 
@@ -129,29 +165,39 @@ describe("net positions sum to zero", () => {
   });
 });
 
-  it("refuses a settlement on an archived ledger", async () => {
-    await adaOwesBob();
-    await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 5_000 }); // ₹50.00, so it can be archived
-    h.sql.prepare("UPDATE ledgers SET archived_at = ? WHERE id = 'L1'").run(Date.now());
+it("refuses a settlement on an archived ledger", async () => {
+  await adaOwesBob();
+  await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 5_000 }); // ₹50.00, so it can be archived
+  h.sql.prepare("UPDATE ledgers SET archived_at = ? WHERE id = 'L1'").run(Date.now());
 
-    const res = await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 1_000 });
-    expect(res.status).toBe(409);
-    expect(await h.db.listSettlements("L1")).toHaveLength(1);
-    // SPEC §12: an archived ledger has every net position at zero, and stays there.
-    expect([...(await positions("L1")).values()].every((n) => n === 0)).toBe(true);
-  });
+  const res = await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 1_000 });
+  expect(res.status).toBe(409);
+  expect(await h.db.listSettlements("L1")).toHaveLength(1);
+  // SPEC §12: an archived ledger has every net position at zero, and stays there.
+  expect([...(await positions("L1")).values()].every((n) => n === 0)).toBe(true);
+});
 
 describe("POST /settlements/bulk", () => {
   /** Ada owes Bob ₹50.00 and the guest ₹20.00 in L1, and Cy ₹30.00 in L2. */
   async function owingEverywhere() {
     await adaOwesBob();
-    await expense("L1", { total: 4_000, payerMemberId: "m_guest", participants: [{ memberId: "m_ada" }, { memberId: "m_guest" }] }); // ₹40.00
-    await expense("L2", { total: 6_000, payerMemberId: "n_cy", participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }] }); // ₹60.00
+    await expense("L1", {
+      total: 4_000,
+      payerMemberId: "m_guest",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_guest" }],
+    }); // ₹40.00
+    await expense("L2", {
+      total: 6_000,
+      payerMemberId: "n_cy",
+      participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }],
+    }); // ₹60.00
   }
 
   it("writes into every contributing ledger and skips guests explicitly", async () => {
     await owingEverywhere();
-    const res = await app.request(req(h, "/api/settlements/bulk", { method: "POST", json: { method: "upi", note: null } }));
+    const res = await app.request(
+      req(h, "/api/settlements/bulk", { method: "POST", json: { method: "upi", note: null } }),
+    );
     expect(res.status).toBe(200);
 
     const body = (await res.json()) as {
@@ -195,14 +241,18 @@ describe("POST /settlements/bulk", () => {
     await owingEverywhere();
     h.sql.prepare("UPDATE ledgers SET archived_at = ? WHERE id = 'L2'").run(Date.now());
 
-    const res = await app.request(req(h, "/api/settlements/bulk", { method: "POST", json: { method: "upi", note: null } }));
+    const res = await app.request(
+      req(h, "/api/settlements/bulk", { method: "POST", json: { method: "upi", note: null } }),
+    );
     const body = (await res.json()) as { total: number; settlements: Array<{ ledgerId: string }> };
     expect(body.settlements.map((s) => s.ledgerId)).toEqual(["L1"]);
     expect(await h.db.listSettlements("L2")).toHaveLength(0);
   });
 
   it("writes nothing when the viewer owes nothing", async () => {
-    const res = await app.request(req(h, "/api/settlements/bulk", { method: "POST", json: { method: "upi", note: null } }));
+    const res = await app.request(
+      req(h, "/api/settlements/bulk", { method: "POST", json: { method: "upi", note: null } }),
+    );
     const body = (await res.json()) as { total: number; settlements: unknown[] };
     expect(body.total).toBe(0);
     expect(body.settlements).toHaveLength(0);

@@ -106,9 +106,7 @@ describe("the twelve worked examples", () => {
 
   it("11 - refund", () => {
     // -50.00 between A(P) and B
-    expect(resolveSplits({ total: -5000, mode: "equal", participantCount: 2, payerIndex: 0 })).toEqual([
-      -2500, -2500,
-    ]);
+    expect(resolveSplits({ total: -5000, mode: "equal", participantCount: 2, payerIndex: 0 })).toEqual([-2500, -2500]);
   });
 
   it("12 - refund with remainder: truncation toward zero, payer takes the larger magnitude", () => {
@@ -166,9 +164,7 @@ describe("rejections", () => {
     expect(() =>
       resolveSplits({ total: 10000, mode: "exact", participantCount: 3, payerIndex: 0, values: [10000] }),
     ).toThrow();
-    expect(() =>
-      resolveSplits({ total: 10000, mode: "shares", participantCount: 3, payerIndex: 0 }),
-    ).toThrow();
+    expect(() => resolveSplits({ total: 10000, mode: "shares", participantCount: 3, payerIndex: 0 })).toThrow();
   });
 
   it("rejects a payerIndex outside the participant list", () => {

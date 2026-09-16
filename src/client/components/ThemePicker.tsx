@@ -19,7 +19,10 @@ const LABEL: Record<Theme, string> = {
 function Swatch({ theme }: { theme: Theme }) {
   return (
     <span aria-hidden className="flex flex-none gap-1" data-theme={theme === "system" ? undefined : theme}>
-      <span className="size-3.5 rounded-full border" style={{ background: "var(--paper)", borderColor: "var(--line-2)" }} />
+      <span
+        className="size-3.5 rounded-full border"
+        style={{ background: "var(--paper)", borderColor: "var(--line-2)" }}
+      />
       <span className="size-3.5 rounded-full" style={{ background: "var(--moss)" }} />
       <span className="size-3.5 rounded-full" style={{ background: "var(--clay)" }} />
     </span>
@@ -30,7 +33,10 @@ export function ThemePicker() {
   const [theme, setCurrent] = useState<Theme>(getTheme);
 
   return (
-    <div className="rounded-[7px] border px-3.5 py-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+    <div
+      className="rounded-[7px] border px-3.5 py-3.5"
+      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+    >
       <div className="flex items-center gap-3">
         {/* A native <select> cannot render a swatch per option, so the preview
             sits beside it and follows the selection. */}

@@ -25,7 +25,12 @@ describe("POST /ledgers with cloneFrom", () => {
     const members = await h.db.listMembers(id);
     // Ada (the creator, whose own row carries no nickname), Bob, and the guest Dee.
     expect(members).toHaveLength(3);
-    expect(members.filter((m) => m.userId !== null).map((m) => m.userId).sort()).toEqual(["u_ada", "u_bob"]);
+    expect(
+      members
+        .filter((m) => m.userId !== null)
+        .map((m) => m.userId)
+        .sort(),
+    ).toEqual(["u_ada", "u_bob"]);
     expect(members.filter((m) => m.guestName !== null).map((m) => m.guestName)).toEqual(["Dee"]);
     expect(members.filter((m) => m.userId === "u_ada")).toHaveLength(1);
   });
@@ -150,7 +155,9 @@ describe("per-ledger invite toggle", () => {
 // is the caller against L1: Ada, Bob, guest Dee.
 describe("DELETE /ledgers/:ledgerId/members/:memberId", () => {
   const remove = (memberId: string, cookie?: string) =>
-    app.request(req(h, `/api/ledgers/L1/members/${memberId}`, { method: "DELETE", ...(cookie ? { headers: { cookie } } : {}) }));
+    app.request(
+      req(h, `/api/ledgers/L1/members/${memberId}`, { method: "DELETE", ...(cookie ? { headers: { cookie } } : {}) }),
+    );
 
   it("removes a member with a zero balance", async () => {
     const res = await remove("m_bob");
@@ -310,9 +317,11 @@ describe("POST /ledgers/:ledgerId/members/:guestMemberId/merge", () => {
   });
 
   it("400s when the target is itself a guest", async () => {
-    h.sql.prepare(
-      "INSERT INTO ledger_members (id, ledger_id, user_id, guest_name, nickname, joined_at) VALUES (?,?,?,?,?,?)",
-    ).run("m_guest2", "L1", null, "Fen", "Fen", Date.now());
+    h.sql
+      .prepare(
+        "INSERT INTO ledger_members (id, ledger_id, user_id, guest_name, nickname, joined_at) VALUES (?,?,?,?,?,?)",
+      )
+      .run("m_guest2", "L1", null, "Fen", "Fen", Date.now());
     const res = await merge("m_guest", "m_guest2");
     expect(res.status).toBe(400);
   });

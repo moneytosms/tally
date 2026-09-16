@@ -22,12 +22,21 @@ function csvFile(text: string, name = "trip.csv") {
 
 describe("POST /ledgers/:ledgerId/import/preview", () => {
   it("parses a Splitwise CSV and returns rows + source names, without writing anything", async () => {
-    const csv = ["Date,Description,Category,Cost,Currency,Ada,Bob", "2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00"].join("\n");
+    const csv = [
+      "Date,Description,Category,Cost,Currency,Ada,Bob",
+      "2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00",
+    ].join("\n");
 
     const form = new FormData();
     form.append("file", csvFile(csv));
 
-    const res = await app.request(new Request("http://tally.test/api/ledgers/L1/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/preview", {
+        method: "POST",
+        headers: { cookie: h.cookie },
+        body: form,
+      }),
+    );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { sourceNames: string[]; rows: unknown[]; warnings: string[] };
     expect(body.sourceNames.sort()).toEqual(["Ada", "Bob"]);
@@ -41,16 +50,29 @@ describe("POST /ledgers/:ledgerId/import/preview", () => {
     const form = new FormData();
     form.append("file", new File(["x"], "trip.txt", { type: "text/plain" }));
 
-    const res = await app.request(new Request("http://tally.test/api/ledgers/L1/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/preview", {
+        method: "POST",
+        headers: { cookie: h.cookie },
+        body: form,
+      }),
+    );
     expect(res.status).toBe(400);
   });
 
   it("403s an unknown ledger", async () => {
-    const csv = "Date,Description,Category,Cost,Currency,Ada,Bob\n2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00";
+    const csv =
+      "Date,Description,Category,Cost,Currency,Ada,Bob\n2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00";
     const form = new FormData();
     form.append("file", csvFile(csv));
 
-    const res = await app.request(new Request("http://tally.test/api/ledgers/does-not-exist/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/does-not-exist/import/preview", {
+        method: "POST",
+        headers: { cookie: h.cookie },
+        body: form,
+      }),
+    );
     expect(res.status).toBe(403);
   });
 });
@@ -152,7 +174,10 @@ describe("POST /ledgers/:ledgerId/import/commit", () => {
     );
     expect(res.status).toBe(200);
 
-    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{ nickname: string; guestName: string | null }>;
+    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{
+      nickname: string;
+      guestName: string | null;
+    }>;
     expect(members.some((m) => m.guestName === "Charlie")).toBe(true);
   });
 
@@ -171,7 +196,9 @@ describe("POST /ledgers/:ledgerId/import/commit", () => {
     );
     expect(res.status).toBe(200);
 
-    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{ guestName: string | null }>;
+    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{
+      guestName: string | null;
+    }>;
     expect(members.some((m) => m.guestName === "Bob (imported)")).toBe(false);
   });
 
@@ -190,7 +217,9 @@ describe("POST /ledgers/:ledgerId/import/commit", () => {
     );
     expect(res.status).toBe(200);
 
-    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{ guestName: string | null }>;
+    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{
+      guestName: string | null;
+    }>;
     expect(members.some((m) => m.guestName === "Charlie")).toBe(false);
   });
 

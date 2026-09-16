@@ -26,13 +26,39 @@ describe("POST /ledgers/:ledgerId/expenses", () => {
   it("stores splits summing exactly to the total, in all four modes", async () => {
     const cases = [
       // ₹100.01 three ways - 1 paise remainder, absorbed by the payer
-      { mode: "equal", total: 10_001, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }, { memberId: "m_guest" }] },
+      {
+        mode: "equal",
+        total: 10_001,
+        participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }, { memberId: "m_guest" }],
+      },
       // ₹120.00 stated exactly
-      { mode: "exact", total: 12_000, participants: [{ memberId: "m_ada", value: 5_000 }, { memberId: "m_bob", value: 7_000 }] },
+      {
+        mode: "exact",
+        total: 12_000,
+        participants: [
+          { memberId: "m_ada", value: 5_000 },
+          { memberId: "m_bob", value: 7_000 },
+        ],
+      },
       // ₹100.00 in 1:2 shares
-      { mode: "shares", total: 10_000, participants: [{ memberId: "m_ada", value: 1 }, { memberId: "m_bob", value: 2 }] },
+      {
+        mode: "shares",
+        total: 10_000,
+        participants: [
+          { memberId: "m_ada", value: 1 },
+          { memberId: "m_bob", value: 2 },
+        ],
+      },
       // ₹99.99 at 33/33/34
-      { mode: "percent", total: 9_999, participants: [{ memberId: "m_ada", value: 33 }, { memberId: "m_bob", value: 33 }, { memberId: "m_guest", value: 34 }] },
+      {
+        mode: "percent",
+        total: 9_999,
+        participants: [
+          { memberId: "m_ada", value: 33 },
+          { memberId: "m_bob", value: 33 },
+          { memberId: "m_guest", value: 34 },
+        ],
+      },
     ];
 
     for (const c of cases) {
@@ -64,7 +90,10 @@ describe("POST /ledgers/:ledgerId/expenses", () => {
     const res = await create({
       mode: "shares",
       total: 10_000, // ₹100.00
-      participants: [{ memberId: "m_ada", value: 1 }, { memberId: "m_bob", value: 3 }],
+      participants: [
+        { memberId: "m_ada", value: 1 },
+        { memberId: "m_bob", value: 3 },
+      ],
     });
     const body = (await res.json()) as { mode: string; splits: Array<{ inputValue: number | null }> };
     expect(body.mode).toBe("shares");
@@ -121,7 +150,10 @@ describe("POST /ledgers/:ledgerId/expenses", () => {
     const res = await create({
       mode: "percent",
       total: 10_000, // ₹100.00
-      participants: [{ memberId: "m_ada", value: 40 }, { memberId: "m_bob", value: 40 }],
+      participants: [
+        { memberId: "m_ada", value: 40 },
+        { memberId: "m_bob", value: 40 },
+      ],
     });
     expect(res.status).toBe(400);
     expect(await h.db.listExpenses("L1")).toHaveLength(0);
@@ -131,7 +163,10 @@ describe("POST /ledgers/:ledgerId/expenses", () => {
     const res = await create({
       mode: "exact",
       total: 10_000, // ₹100.00
-      participants: [{ memberId: "m_ada", value: 4_000 }, { memberId: "m_bob", value: 5_000 }],
+      participants: [
+        { memberId: "m_ada", value: 4_000 },
+        { memberId: "m_bob", value: 5_000 },
+      ],
     });
     expect(res.status).toBe(400);
     expect(await h.db.listExpenses("L1")).toHaveLength(0);
@@ -161,7 +196,13 @@ describe("PATCH /ledgers/:ledgerId/expenses/:expenseId", () => {
     const res = await app.request(
       req(h, `/api/ledgers/L1/expenses/${id}`, {
         method: "PATCH",
-        json: { ...base, description: "Dinner (corrected)", mode: "equal", total: 12_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }, // ₹120.00
+        json: {
+          ...base,
+          description: "Dinner (corrected)",
+          mode: "equal",
+          total: 12_000,
+          participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+        }, // ₹120.00
       }),
     );
     expect(res.status).toBe(200);
@@ -237,8 +278,19 @@ describe("GET /ledgers/:ledgerId/expenses (search & filter)", () => {
 
   it("matches q against description and notes, literally on a %", async () => {
     await create({ description: "50% off dinner", mode: "equal", total: 1_000, participants: [{ memberId: "m_ada" }] });
-    await create({ description: "Groceries", notes: "had a 50% coupon", mode: "equal", total: 500, participants: [{ memberId: "m_ada" }] });
-    await create({ description: "Something else entirely", mode: "equal", total: 700, participants: [{ memberId: "m_ada" }] });
+    await create({
+      description: "Groceries",
+      notes: "had a 50% coupon",
+      mode: "equal",
+      total: 500,
+      participants: [{ memberId: "m_ada" }],
+    });
+    await create({
+      description: "Something else entirely",
+      mode: "equal",
+      total: 700,
+      participants: [{ memberId: "m_ada" }],
+    });
 
     const res = await list("q=" + encodeURIComponent("50%"));
     const body = (await res.json()) as Array<{ description: string }>;
@@ -247,8 +299,20 @@ describe("GET /ledgers/:ledgerId/expenses (search & filter)", () => {
   });
 
   it("filters by categoryId", async () => {
-    await create({ description: "Lunch", categoryId: "cat_food", mode: "equal", total: 1_000, participants: [{ memberId: "m_ada" }] });
-    await create({ description: "Bus", categoryId: "cat_transport", mode: "equal", total: 500, participants: [{ memberId: "m_ada" }] });
+    await create({
+      description: "Lunch",
+      categoryId: "cat_food",
+      mode: "equal",
+      total: 1_000,
+      participants: [{ memberId: "m_ada" }],
+    });
+    await create({
+      description: "Bus",
+      categoryId: "cat_transport",
+      mode: "equal",
+      total: 500,
+      participants: [{ memberId: "m_ada" }],
+    });
 
     const res = await list("categoryId=cat_food");
     const body = (await res.json()) as Array<{ description: string }>;
@@ -257,8 +321,20 @@ describe("GET /ledgers/:ledgerId/expenses (search & filter)", () => {
   });
 
   it("filters by from/to date range", async () => {
-    await create({ description: "Early", paidAtEpochMs: 1_000, mode: "equal", total: 1_000, participants: [{ memberId: "m_ada" }] });
-    await create({ description: "Late", paidAtEpochMs: 9_000, mode: "equal", total: 1_000, participants: [{ memberId: "m_ada" }] });
+    await create({
+      description: "Early",
+      paidAtEpochMs: 1_000,
+      mode: "equal",
+      total: 1_000,
+      participants: [{ memberId: "m_ada" }],
+    });
+    await create({
+      description: "Late",
+      paidAtEpochMs: 9_000,
+      mode: "equal",
+      total: 1_000,
+      participants: [{ memberId: "m_ada" }],
+    });
 
     const res = await list("from=5000&to=10000");
     const body = (await res.json()) as Array<{ description: string }>;
@@ -302,13 +378,20 @@ describe("GET /ledgers/:ledgerId/expenses (search & filter)", () => {
 describe("GET /ledgers/:ledgerId/expenses/:expenseId/revisions", () => {
   it("returns revisions newest-first with parsed snapshots and reviser names", async () => {
     const { id } = (await (
-      await create({ mode: "equal", total: 10_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }) // ₹100.00
-    ).json()) as { id: string };
+      await create({ mode: "equal", total: 10_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] })
+    ) // ₹100.00
+      .json()) as { id: string };
 
     await app.request(
       req(h, `/api/ledgers/L1/expenses/${id}`, {
         method: "PATCH",
-        json: { ...base, description: "v2", mode: "equal", total: 12_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }, // ₹120.00
+        json: {
+          ...base,
+          description: "v2",
+          mode: "equal",
+          total: 12_000,
+          participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+        }, // ₹120.00
       }),
     );
     await app.request(
@@ -330,7 +413,12 @@ describe("GET /ledgers/:ledgerId/expenses/:expenseId/revisions", () => {
 
 describe("POST /ledgers/:ledgerId/expenses/:expenseId/undo", () => {
   const createOne = () =>
-    create({ description: "Dinner", mode: "equal", total: 10_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }); // ₹100.00
+    create({
+      description: "Dinner",
+      mode: "equal",
+      total: 10_000,
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00
 
   it("400s when there are no revisions", async () => {
     const { id } = (await (await createOne()).json()) as { id: string };
@@ -343,7 +431,13 @@ describe("POST /ledgers/:ledgerId/expenses/:expenseId/undo", () => {
     await app.request(
       req(h, `/api/ledgers/L1/expenses/${id}`, {
         method: "PATCH",
-        json: { ...base, description: "Dinner (edited)", mode: "exact", total: 15_000, participants: [{ memberId: "m_ada", value: 15_000 }] }, // ₹150.00
+        json: {
+          ...base,
+          description: "Dinner (edited)",
+          mode: "exact",
+          total: 15_000,
+          participants: [{ memberId: "m_ada", value: 15_000 }],
+        }, // ₹150.00
       }),
     );
 
@@ -373,7 +467,13 @@ describe("POST /ledgers/:ledgerId/expenses/:expenseId/undo", () => {
     await app.request(
       req(h, `/api/ledgers/L1/expenses/${id}`, {
         method: "PATCH",
-        json: { ...base, description: "Dinner (edited)", mode: "equal", total: 20_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }, // ₹200.00
+        json: {
+          ...base,
+          description: "Dinner (edited)",
+          mode: "equal",
+          total: 20_000,
+          participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+        }, // ₹200.00
       }),
     );
 
@@ -395,9 +495,23 @@ describe("POST /ledgers/:ledgerId/expenses/:expenseId/revisions/:revisionId/rest
   /** v1 -> v2 -> v3, so there is a genuine MIDDLE revision to aim at. */
   const threeVersions = async () => {
     const { id } = (await (
-      await create({ description: "v1", mode: "equal", total: 10_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }) // ₹100.00
-    ).json()) as { id: string };
-    await patch(id, { description: "v2", mode: "exact", total: 12_000, participants: [{ memberId: "m_ada", value: 5_000 }, { memberId: "m_bob", value: 7_000 }] }); // ₹120.00
+      await create({
+        description: "v1",
+        mode: "equal",
+        total: 10_000,
+        participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+      })
+    ) // ₹100.00
+      .json()) as { id: string };
+    await patch(id, {
+      description: "v2",
+      mode: "exact",
+      total: 12_000,
+      participants: [
+        { memberId: "m_ada", value: 5_000 },
+        { memberId: "m_bob", value: 7_000 },
+      ],
+    }); // ₹120.00
     await patch(id, { description: "v3", mode: "equal", total: 13_000, participants: [{ memberId: "m_ada" }] }); // ₹130.00
     return id;
   };
@@ -464,8 +578,9 @@ describe("POST /ledgers/:ledgerId/expenses/:expenseId/revisions/:revisionId/rest
 describe("DELETE /ledgers/:ledgerId/expenses/:expenseId", () => {
   it("soft-deletes: the row survives, the read path stops returning it", async () => {
     const { id } = (await (
-      await create({ mode: "equal", total: 10_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] }) // ₹100.00
-    ).json()) as { id: string };
+      await create({ mode: "equal", total: 10_000, participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }] })
+    ) // ₹100.00
+      .json()) as { id: string };
 
     const res = await app.request(req(h, `/api/ledgers/L1/expenses/${id}`, { method: "DELETE" }));
     expect(res.status).toBe(200);

@@ -25,13 +25,16 @@
 ### Task 1: `xlsx` dependency + Splid `.xls` parser
 
 **Files:**
+
 - Modify: `package.json` (add dependency)
 - Create: `src/shared/import/splid.ts`
 - Test: `src/shared/import/splid.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from other tasks.
 - Produces (for Task 2's preview route and Task 3's Splitwise parser to share the same shape):
+
 ```ts
 export type ParsedImportRow = {
   title: string;
@@ -125,7 +128,20 @@ describe("parseSplidXls", () => {
     const buf = buildSplidWorkbook([
       ["Title", "Amount", "Currency", "By", "Date", "Created on", "A", "", "B", "", "C", ""],
       // ₹50 split three ways: 16.666666666666668 repeating.
-      ["Auto", 50, "INR", "A", "", "8/16/26", 50, -16.666666666666668, "", -16.666666666666668, "", -16.666666666666664],
+      [
+        "Auto",
+        50,
+        "INR",
+        "A",
+        "",
+        "8/16/26",
+        50,
+        -16.666666666666668,
+        "",
+        -16.666666666666668,
+        "",
+        -16.666666666666664,
+      ],
     ]);
 
     const result = parseSplidXls(buf);
@@ -276,10 +292,12 @@ git commit -m "feat(import): add Splid .xls parser"
 ### Task 2: Splitwise `.csv` parser
 
 **Files:**
+
 - Create: `src/shared/import/splitwise.ts`
 - Test: `src/shared/import/splitwise.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ParseResult`, `ParsedImportRow` from `src/shared/import/types.ts` (Task 1).
 - Produces: `parseSplitwiseCsv(text: string): ParseResult`, same shape as `parseSplidXls`, for Task 3 (the preview route) to dispatch to by file extension.
 
@@ -294,7 +312,10 @@ import { parseSplitwiseCsv } from "~/shared/import/splitwise";
 describe("parseSplitwiseCsv", () => {
   it("derives payer and shares from net-balance columns", () => {
     // Ada paid ₹100, split evenly with Bob (₹50 each). Ada's net = +50, Bob's = -50.
-    const csv = ["Date,Description,Category,Cost,Currency,Ada,Bob", "2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00"].join("\n");
+    const csv = [
+      "Date,Description,Category,Cost,Currency,Ada,Bob",
+      "2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00",
+    ].join("\n");
 
     const result = parseSplitwiseCsv(csv);
     expect(result.warnings).toEqual([]);
@@ -331,16 +352,19 @@ describe("parseSplitwiseCsv", () => {
   });
 
   it("handles quoted fields with embedded commas", () => {
-    const csv = ['Date,Description,Category,Cost,Currency,Ada,Bob', '2026-08-16,"Dinner, drinks incl.",Food,100.00,INR,50.00,-50.00'].join(
-      "\n",
-    );
+    const csv = [
+      "Date,Description,Category,Cost,Currency,Ada,Bob",
+      '2026-08-16,"Dinner, drinks incl.",Food,100.00,INR,50.00,-50.00',
+    ].join("\n");
 
     const result = parseSplitwiseCsv(csv);
     expect(result.rows[0]!.title).toBe("Dinner, drinks incl.");
   });
 
   it("rejects non-INR rows with a warning", () => {
-    const csv = ["Date,Description,Category,Cost,Currency,Ada,Bob", "2026-08-16,Coffee,Food,5.00,USD,2.50,-2.50"].join("\n");
+    const csv = ["Date,Description,Category,Cost,Currency,Ada,Bob", "2026-08-16,Coffee,Food,5.00,USD,2.50,-2.50"].join(
+      "\n",
+    );
 
     const result = parseSplitwiseCsv(csv);
     expect(result.rows).toHaveLength(0);
@@ -408,9 +432,16 @@ export function parseSplitwiseCsv(text: string): ParseResult {
 
   const header = parseCsvLine(lines[0]!);
   if (FIXED_COLUMNS.some((c, i) => header[i] !== c)) {
-    return { sourceNames: [], rows: [], warnings: ["Unrecognized CSV header - expected Date,Description,Category,Cost,Currency,..."] };
+    return {
+      sourceNames: [],
+      rows: [],
+      warnings: ["Unrecognized CSV header - expected Date,Description,Category,Cost,Currency,..."],
+    };
   }
-  const people = header.slice(FIXED_COLUMNS.length).map((n) => n.trim()).filter((n) => n);
+  const people = header
+    .slice(FIXED_COLUMNS.length)
+    .map((n) => n.trim())
+    .filter((n) => n);
 
   const rows: ParsedImportRow[] = [];
   const warnings: string[] = [];
@@ -482,11 +513,13 @@ git commit -m "feat(import): add Splitwise .csv parser"
 ### Task 3: Server preview route
 
 **Files:**
+
 - Create: `src/server/routes/import.ts`
 - Modify: `src/server/index.ts` (mount the router)
 - Test: `src/server/routes/import.test.ts`
 
 **Interfaces:**
+
 - Consumes: `parseSplidXls` (Task 1), `parseSplitwiseCsv` (Task 2), `requireMember` (`~/server/middleware/membership`, already used by `expenses.ts`), `requireSession` (`~/server/middleware/session`).
 - Produces: `POST /api/ledgers/:ledgerId/import/preview` returning `ParseResult` as JSON — for Task 5 (client mapping panel) to call. Router exported as default from `src/server/routes/import.ts`, mounted in `index.ts` as `app.route("/api", importRouter)`.
 
@@ -519,12 +552,21 @@ function csvFile(text: string, name = "trip.csv") {
 
 describe("POST /ledgers/:ledgerId/import/preview", () => {
   it("parses a Splitwise CSV and returns rows + source names, without writing anything", async () => {
-    const csv = ["Date,Description,Category,Cost,Currency,Ada,Bob", "2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00"].join("\n");
+    const csv = [
+      "Date,Description,Category,Cost,Currency,Ada,Bob",
+      "2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00",
+    ].join("\n");
 
     const form = new FormData();
     form.append("file", csvFile(csv));
 
-    const res = await app.request(new Request("http://tally.test/api/ledgers/L1/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/preview", {
+        method: "POST",
+        headers: { cookie: h.cookie },
+        body: form,
+      }),
+    );
     expect(res.status).toBe(200);
     const body = (await res.json()) as { sourceNames: string[]; rows: unknown[]; warnings: string[] };
     expect(body.sourceNames.sort()).toEqual(["Ada", "Bob"]);
@@ -538,19 +580,38 @@ describe("POST /ledgers/:ledgerId/import/preview", () => {
     const form = new FormData();
     form.append("file", new File(["x"], "trip.txt", { type: "text/plain" }));
 
-    const res = await app.request(new Request("http://tally.test/api/ledgers/L1/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L1/import/preview", {
+        method: "POST",
+        headers: { cookie: h.cookie },
+        body: form,
+      }),
+    );
     expect(res.status).toBe(400);
   });
 
   it("403s a non-member", async () => {
-    const csv = "Date,Description,Category,Cost,Currency,Ada,Bob\n2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00";
+    const csv =
+      "Date,Description,Category,Cost,Currency,Ada,Bob\n2026-08-16,Auto,Transportation,100.00,INR,50.00,-50.00";
     const form = new FormData();
     form.append("file", csvFile(csv));
 
-    const res = await app.request(new Request("http://tally.test/api/ledgers/L2/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
+    const res = await app.request(
+      new Request("http://tally.test/api/ledgers/L2/import/preview", {
+        method: "POST",
+        headers: { cookie: h.cookie },
+        body: form,
+      }),
+    );
     // Ada IS a member of L2 in the harness (n_ada) - use a nonexistent ledger instead.
     void res;
-    const res2 = await app.request(new Request("http://tally.test/api/ledgers/does-not-exist/import/preview", { method: "POST", headers: { cookie: h.cookie }, body: form }));
+    const res2 = await app.request(
+      new Request("http://tally.test/api/ledgers/does-not-exist/import/preview", {
+        method: "POST",
+        headers: { cookie: h.cookie },
+        body: form,
+      }),
+    );
     expect(res2.status).toBe(403);
   });
 });
@@ -635,10 +696,12 @@ git commit -m "feat(import): add preview endpoint for Splid/Splitwise files"
 ### Task 4: Server commit route
 
 **Files:**
+
 - Modify: `src/server/routes/import.ts`
 - Modify: `src/server/routes/import.test.ts`
 
 **Interfaces:**
+
 - Consumes: `ParsedImportRow` (Task 1's `types.ts`), `resolveSplits` (`~/shared/money`, already used by `expenses.ts`), `uuidv7` (`~/shared/id`), `rejectArchivedWrites` (exported from `~/server/routes/expenses`), `db.insertMember`, `db.insertExpense`, `db.insertSplits`, `db.batch`, `db.listMembers` (all already used by `ledgers.ts`/`expenses.ts`).
 - Produces: `POST /api/ledgers/:ledgerId/import/commit` returning `{ created: number }` — for Task 5's mapping panel to call on confirm.
 
@@ -744,7 +807,10 @@ describe("POST /ledgers/:ledgerId/import/commit", () => {
     );
     expect(res.status).toBe(200);
 
-    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{ nickname: string; guestName: string | null }>;
+    const members = (await (await app.request(req(h, "/api/ledgers/L1/members"))).json()) as Array<{
+      nickname: string;
+      guestName: string | null;
+    }>;
     expect(members.some((m) => m.guestName === "Charlie")).toBe(true);
   });
 
@@ -933,9 +999,11 @@ git commit -m "feat(import): add commit endpoint that creates guests, expenses, 
 ### Task 5: Client query hooks
 
 **Files:**
+
 - Modify: `src/client/lib/queries.ts`
 
 **Interfaces:**
+
 - Consumes: nothing new (this task only adds client-side plumbing).
 - Produces: `ImportParseResult`/`ImportRow` types, `useImportPreview()` (a `useMutation`, since it's a file upload, not a cacheable query), `useImportCommit(ledgerId)` — for Task 6 (the mapping panel) to call.
 
@@ -979,7 +1047,10 @@ export const useImportCommit = (ledgerId: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { rows: ImportRow[]; mapping: Record<string, string>; newGuests: Record<string, string> }) =>
-      api<{ created: number }>(`/api/ledgers/${ledgerId}/import/commit`, { method: "POST", body: JSON.stringify(body) }),
+      api<{ created: number }>(`/api/ledgers/${ledgerId}/import/commit`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.expenses(ledgerId) });
       qc.invalidateQueries({ queryKey: qk.members(ledgerId) });
@@ -1009,10 +1080,12 @@ git commit -m "feat(import): add client hooks for import preview/commit"
 ### Task 6: Import mapping panel in the ledger ⋯ menu
 
 **Files:**
+
 - Modify: `src/client/components/LedgerMenu.tsx`
 - Modify: `locales/en.json`
 
 **Interfaces:**
+
 - Consumes: `useImportPreview`, `useImportCommit`, `ImportParseResult`, `ImportRow` (Task 5); `useMe`, `useMembers` (already imported in `LedgerMenu.tsx`).
 - Produces: nothing further consumed by other tasks — this is the leaf.
 
@@ -1114,10 +1187,7 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
 
   const onConfirm = () => {
     if (!parsed) return;
-    commit.mutate(
-      { rows: parsed.rows, mapping, newGuests: newGuestNames },
-      { onSuccess: (r) => setDone(r.created) },
-    );
+    commit.mutate({ rows: parsed.rows, mapping, newGuests: newGuestNames }, { onSuccess: (r) => setDone(r.created) });
   };
 
   return (
@@ -1133,8 +1203,16 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
         />
       </Field>
 
-      {preview.isPending && <p className="text-[12.5px]" style={hint}>{t("import.parsing")}</p>}
-      {preview.isError && <p role="alert" className="text-[12.5px]" style={{ color: "var(--clay)" }}>{t("import.parseFailed")}</p>}
+      {preview.isPending && (
+        <p className="text-[12.5px]" style={hint}>
+          {t("import.parsing")}
+        </p>
+      )}
+      {preview.isError && (
+        <p role="alert" className="text-[12.5px]" style={{ color: "var(--clay)" }}>
+          {t("import.parseFailed")}
+        </p>
+      )}
 
       {parsed && (
         <>
@@ -1169,8 +1247,16 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
             ))}
           </div>
 
-          {commit.isError && <p role="alert" className="mb-2 text-[12.5px]" style={{ color: "var(--clay)" }}>{t("import.failed")}</p>}
-          {done !== null && <p role="status" aria-live="polite" className="mb-2 text-[12.5px]" style={{ color: "var(--moss-2)" }}>{t("import.done", { count: done })}</p>}
+          {commit.isError && (
+            <p role="alert" className="mb-2 text-[12.5px]" style={{ color: "var(--clay)" }}>
+              {t("import.failed")}
+            </p>
+          )}
+          {done !== null && (
+            <p role="status" aria-live="polite" className="mb-2 text-[12.5px]" style={{ color: "var(--moss-2)" }}>
+              {t("import.done", { count: done })}
+            </p>
+          )}
 
           <Button className="w-full" disabled={!canConfirm || commit.isPending} onClick={onConfirm}>
             {commit.isPending ? t("import.confirming") : t("import.confirm")}
@@ -1193,17 +1279,17 @@ type Panel = "edit" | "members" | "invite" | "duplicate" | "import";
 In the menu's button list (right after the `duplicate` menuitem button, before the `<div className="my-1 border-t" ...>` separator that precedes archive/delete), add:
 
 ```tsx
-              <button type="button" role="menuitem" className={item} onClick={() => pick("import")}>
-                {t("import.menuLabel")}
-              </button>
+<button type="button" role="menuitem" className={item} onClick={() => pick("import")}>
+  {t("import.menuLabel")}
+</button>
 ```
 
 Alongside the other `<Sheet>` blocks (after the `duplicate` Sheet), add:
 
 ```tsx
-      <Sheet open={panel === "import"} onOpenChange={() => setPanel(null)} title={t("import.title")}>
-        <ImportPanel ledgerId={ledger.id} />
-      </Sheet>
+<Sheet open={panel === "import"} onOpenChange={() => setPanel(null)} title={t("import.title")}>
+  <ImportPanel ledgerId={ledger.id} />
+</Sheet>
 ```
 
 - [ ] **Step 4: Typecheck**
@@ -1214,6 +1300,7 @@ Expected: no errors.
 - [ ] **Step 5: Manual verification**
 
 Run: `pnpm dev`. Build a small `.csv` by hand (the format from Task 2's test) or use a real Splitwise export if available, open a ledger as the Owner, ⋯ → Import, upload the file, confirm:
+
 - Row count and any warnings show.
 - Mapping dropdowns pre-guess matches by nickname.
 - An unmapped name blocks the Import button.

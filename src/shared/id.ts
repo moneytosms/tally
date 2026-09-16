@@ -5,8 +5,12 @@ let seq = 0;
 
 export function uuidv7(): string {
   const ms = Date.now();
-  if (ms === lastMs) seq = (seq + 1) & 0xfff;
-  else ((lastMs = ms), (seq = 0));
+  if (ms === lastMs) {
+    seq = (seq + 1) & 0xfff;
+  } else {
+    lastMs = ms;
+    seq = 0;
+  }
 
   const b = new Uint8Array(16);
   crypto.getRandomValues(b);

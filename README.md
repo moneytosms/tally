@@ -68,15 +68,15 @@ The provisioning wizard walks the whole thing:
 
 ## Documentation
 
-| | |
-|---|---|
-| **[CONTEXT.md](CONTEXT.md)** | Domain language. Use these terms; don't invent synonyms. |
-| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | How it's built and why |
-| **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** | First deploy, step by step, with the secret checklist |
-| **[docs/OPERATIONS.md](docs/OPERATIONS.md)** | Running it: backups, limits, recovery |
-| **[docs/SPEC.md](docs/SPEC.md)** | The buildable v1 spec |
-| **[docs/adr/](docs/adr/)** | Irreversible decisions and their reasoning |
-| **[docs/research/](docs/research/)** | Hosting, UPI deep links, passkeys |
+|                                                  |                                                          |
+| ------------------------------------------------ | -------------------------------------------------------- |
+| **[CONTEXT.md](CONTEXT.md)**                     | Domain language. Use these terms; don't invent synonyms. |
+| **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** | How it's built and why                                   |
+| **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**     | First deploy, step by step, with the secret checklist    |
+| **[docs/OPERATIONS.md](docs/OPERATIONS.md)**     | Running it: backups, limits, recovery                    |
+| **[docs/SPEC.md](docs/SPEC.md)**                 | The buildable v1 spec                                    |
+| **[docs/adr/](docs/adr/)**                       | Irreversible decisions and their reasoning               |
+| **[docs/research/](docs/research/)**             | Hosting, UPI deep links, passkeys                        |
 
 ## The rules that aren't style choices
 

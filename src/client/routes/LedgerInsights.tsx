@@ -1,7 +1,14 @@
 import { Suspense } from "react";
 import { Link, useParams } from "react-router";
 import { Amount, EmptyState } from "~/client/components/ui";
-import { CategoryChart, ChartFallback, MemberPieChart, MonthChart, SectionHeading, type PieDatum } from "~/client/components/charts";
+import {
+  CategoryChart,
+  ChartFallback,
+  MemberPieChart,
+  MonthChart,
+  SectionHeading,
+  type PieDatum,
+} from "~/client/components/charts";
 import { useLedgerInsights, useLedger, type LedgerInsights as LedgerInsightsData } from "~/client/lib/queries";
 import { focusRing } from "~/client/components/ui/focus";
 import { t } from "~/client/i18n";
@@ -11,7 +18,10 @@ function MemberPieSection({ title, data }: { title: string; data: PieDatum[] }) 
   return (
     <section className="mb-5">
       <SectionHeading>{title}</SectionHeading>
-      <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <div
+        className="rounded-[7px] border px-3.5 py-3"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         {nonZero.length > 1 && (
           <Suspense fallback={<ChartFallback height={200} />}>
             <MemberPieChart data={nonZero} />
@@ -36,9 +46,15 @@ function Body({ data }: { data: LedgerInsightsData }) {
 
   return (
     <>
-      <div className="mb-4 rounded-[7px] border px-3.5 py-4" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <div
+        className="mb-4 rounded-[7px] border px-3.5 py-4"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         <Amount paise={data.totals.spent} label={t("insights.ledgerSpent")} tone="neutral" hero />
-        <div className="mt-3 border-t pt-2.5 text-[11.5px]" style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
+        <div
+          className="mt-3 border-t pt-2.5 text-[11.5px]"
+          style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}
+        >
           {t("insights.expenseCount", { count: data.totals.expenseCount })}
         </div>
       </div>
@@ -46,7 +62,10 @@ function Body({ data }: { data: LedgerInsightsData }) {
       {data.byCategory.length > 0 && (
         <section className="mb-5">
           <SectionHeading>{t("insights.byCategory")}</SectionHeading>
-          <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+          <div
+            className="rounded-[7px] border px-3.5 py-3"
+            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+          >
             {data.byCategory.length > 1 && (
               <Suspense fallback={<ChartFallback height={Math.max(120, data.byCategory.length * 32)} />}>
                 <CategoryChart data={data.byCategory} />
@@ -70,7 +89,10 @@ function Body({ data }: { data: LedgerInsightsData }) {
       {data.byMonth.length > 1 && (
         <section className="mb-5">
           <SectionHeading>{t("insights.byMonth")}</SectionHeading>
-          <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+          <div
+            className="rounded-[7px] border px-3.5 py-3"
+            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+          >
             <Suspense fallback={<ChartFallback height={180} />}>
               <MonthChart data={data.byMonth} />
             </Suspense>
@@ -97,7 +119,12 @@ export function LedgerInsights() {
   return (
     <>
       <header className="mb-3 flex items-end gap-2.5 border-b pb-3" style={{ borderColor: "var(--line)" }}>
-        <Link to={`/ledgers/${ledgerId}`} aria-label={t("action.back")} className={`grid min-h-11 min-w-11 place-items-center text-[17px] ${focusRing}`} style={{ color: "var(--ink-3)" }}>
+        <Link
+          to={`/ledgers/${ledgerId}`}
+          aria-label={t("action.back")}
+          className={`grid min-h-11 min-w-11 place-items-center text-[17px] ${focusRing}`}
+          style={{ color: "var(--ink-3)" }}
+        >
           ←
         </Link>
         <h1 className="serif truncate text-[21px] tracking-[-0.01em]">

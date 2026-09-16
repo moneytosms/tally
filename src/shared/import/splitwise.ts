@@ -47,9 +47,16 @@ export function parseSplitwiseCsv(text: string): ParseResult {
 
   const header = parseCsvLine(lines[0]!);
   if (FIXED_COLUMNS.some((c, i) => header[i] !== c)) {
-    return { sourceNames: [], rows: [], warnings: ["Unrecognized CSV header - expected Date,Description,Category,Cost,Currency,..."] };
+    return {
+      sourceNames: [],
+      rows: [],
+      warnings: ["Unrecognized CSV header - expected Date,Description,Category,Cost,Currency,..."],
+    };
   }
-  const people = header.slice(FIXED_COLUMNS.length).map((n) => n.trim()).filter((n) => n);
+  const people = header
+    .slice(FIXED_COLUMNS.length)
+    .map((n) => n.trim())
+    .filter((n) => n);
 
   const rows: ParsedImportRow[] = [];
   const warnings: string[] = [];

@@ -23,9 +23,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { crashed:
         <EmptyState
           title={t("error.crashed")}
           body={t("error.crashedBody")}
-          action={
-            <Button onClick={() => location.reload()}>{t("action.reload")}</Button>
-          }
+          action={<Button onClick={() => location.reload()}>{t("action.reload")}</Button>}
         />
       </div>
     );

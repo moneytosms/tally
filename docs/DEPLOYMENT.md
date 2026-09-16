@@ -10,11 +10,11 @@ secret.
 
 ## 0. Before you start
 
-| Need | Check |
-|---|---|
-| Node 20+ and pnpm 11 | `node --version && pnpm --version` |
-| A Cloudflare account (free tier is enough) | - |
-| `openssl` | `openssl version` |
+| Need                                       | Check                              |
+| ------------------------------------------ | ---------------------------------- |
+| Node 20+ and pnpm 11                       | `node --version && pnpm --version` |
+| A Cloudflare account (free tier is enough) | -                                  |
+| `openssl`                                  | `openssl version`                  |
 
 ```bash
 pnpm install
@@ -87,12 +87,12 @@ Write all three to `.dev.vars` (gitignored) so local dev matches production -
 
 ### What each value is
 
-| Value | Secret? | Where it goes | What breaks without it |
-|---|---|---|---|
-| `<D1_DATABASE_ID>` | No | `wrangler.jsonc` → `d1_databases` | Deploy fails |
-| `<VAPID_PUBLIC_KEY>` | No - browser needs it to subscribe | `wrangler.jsonc` → `vars` | Push silently stays off |
-| `<VAPID_PRIVATE_KEY>` | **Yes** | `wrangler secret` | Push silently stays off |
-| `<BOOTSTRAP_SECRET>` | **Yes** | `wrangler secret` | Nobody can claim the instance, and **nobody can log in** |
+| Value                 | Secret?                            | Where it goes                     | What breaks without it                                   |
+| --------------------- | ---------------------------------- | --------------------------------- | -------------------------------------------------------- |
+| `<D1_DATABASE_ID>`    | No                                 | `wrangler.jsonc` → `d1_databases` | Deploy fails                                             |
+| `<VAPID_PUBLIC_KEY>`  | No - browser needs it to subscribe | `wrangler.jsonc` → `vars`         | Push silently stays off                                  |
+| `<VAPID_PRIVATE_KEY>` | **Yes**                            | `wrangler secret`                 | Push silently stays off                                  |
+| `<BOOTSTRAP_SECRET>`  | **Yes**                            | `wrangler secret`                 | Nobody can claim the instance, and **nobody can log in** |
 
 `BOOTSTRAP_SECRET` is not only the one-time claim code. It also signs the
 short-lived WebAuthn challenge cookie on **every** registration and login
@@ -179,14 +179,14 @@ Then invite people. Every invite is single-use and expires in 48 hours.
 
 ## 9. Verify the deploy
 
-| Check | How | Expect |
-|---|---|---|
-| RP ID matches host | `curl https://<WORKER_NAME>.<CF_SUBDOMAIN>.workers.dev/.well-known/webauthn` | the exact live origin |
-| Push configured | Admin panel → Instance | `pushConfigured: true` |
-| Passkey login | Log out, log back in | no re-enrol prompt |
-| Recurring alarm | Create a daily series, check it fires | occurrence appears once, never twice |
-| Export works | **You → Export** | CSV downloads, one row per split |
-| Install as PWA | Add to Home Screen | offline shell loads, balances do not |
+| Check              | How                                                                          | Expect                               |
+| ------------------ | ---------------------------------------------------------------------------- | ------------------------------------ |
+| RP ID matches host | `curl https://<WORKER_NAME>.<CF_SUBDOMAIN>.workers.dev/.well-known/webauthn` | the exact live origin                |
+| Push configured    | Admin panel → Instance                                                       | `pushConfigured: true`               |
+| Passkey login      | Log out, log back in                                                         | no re-enrol prompt                   |
+| Recurring alarm    | Create a daily series, check it fires                                        | occurrence appears once, never twice |
+| Export works       | **You → Export**                                                             | CSV downloads, one row per split     |
+| Install as PWA     | Add to Home Screen                                                           | offline shell loads, balances do not |
 
 iOS: web push only works from a Home Screen install. The app says so where
 notifications are enabled.

@@ -26,13 +26,8 @@ export function base64url(bytes: Uint8Array): string {
 }
 
 export async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(value),
-  );
-  return [...new Uint8Array(digest)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /** Length-independent constant-time compare of two ASCII strings. */
@@ -96,11 +91,7 @@ export async function createSession(
 }
 
 /** Resolves a cookie token to its user, sliding the window at most once a day. */
-export async function resolveSession(
-  store: SessionStore,
-  token: string,
-  now: number,
-): Promise<SessionUser | null> {
+export async function resolveSession(store: SessionStore, token: string, now: number): Promise<SessionUser | null> {
   const row = await store.findSessionByTokenHash(await sha256Hex(token), now);
   if (!row || row.session.expiresAt <= now) return null;
   if (now - row.session.lastSeenAt > REFRESH_AFTER_MS) {
@@ -116,10 +107,7 @@ export async function resolveSession(
 }
 
 /** Logout / per-device revocation: one row delete. */
-export async function destroySession(
-  store: SessionStore,
-  token: string,
-): Promise<void> {
+export async function destroySession(store: SessionStore, token: string): Promise<void> {
   await store.deleteSessionByTokenHash(await sha256Hex(token));
 }
 

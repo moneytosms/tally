@@ -16,8 +16,7 @@ export type PushState =
   | { status: "unavailable" };
 
 const isIos = () =>
-  /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
 const isStandalone = () =>
   window.matchMedia("(display-mode: standalone)").matches ||

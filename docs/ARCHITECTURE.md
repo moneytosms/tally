@@ -28,14 +28,14 @@ and is frozen forever ([ADR 0002](adr/0002-rp-id-is-permanent.md)).
 
 ## Layers
 
-| Layer | Where | Rule it enforces |
-|---|---|---|
-| Schema | `src/db/schema.ts` | Constraints live in the DB where SQLite allows it |
-| Data access | `src/db/index.ts` | **Soft-delete filtering, structurally** |
-| Pure domain | `src/shared/` | Money, splits, recurrence, NL parsing - no I/O |
-| Derivation | `src/server/balances.ts` | Net positions and transfer plans, never stored |
-| Routes | `src/server/routes/` | Validation, authorisation, wire shapes |
-| Client | `src/client/` | Rendering only; never recomputes money |
+| Layer       | Where                    | Rule it enforces                                  |
+| ----------- | ------------------------ | ------------------------------------------------- |
+| Schema      | `src/db/schema.ts`       | Constraints live in the DB where SQLite allows it |
+| Data access | `src/db/index.ts`        | **Soft-delete filtering, structurally**           |
+| Pure domain | `src/shared/`            | Money, splits, recurrence, NL parsing - no I/O    |
+| Derivation  | `src/server/balances.ts` | Net positions and transfer plans, never stored    |
+| Routes      | `src/server/routes/`     | Validation, authorisation, wire shapes            |
+| Client      | `src/client/`            | Rendering only; never recomputes money            |
 
 ### The data-access layer is the security boundary for deletion
 
@@ -128,7 +128,7 @@ decreasing order of trust:
    alarms racing.
 
 The database is the authority. The check above it only keeps the happy path from
-throwing. The cursor is advanced *after* the inserts on purpose: advancing first
+throwing. The cursor is advanced _after_ the inserts on purpose: advancing first
 would silently skip occurrences, whereas advancing last makes a replay a no-op.
 
 ## Push encryption

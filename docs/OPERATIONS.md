@@ -41,7 +41,7 @@ It is frozen in `src/shared/rp-id.ts` and must never be derived from
 `location.hostname`. See [ADR 0002](adr/0002-rp-id-is-permanent.md).
 
 The Worker ships `/.well-known/webauthn` from the first deploy, which is what
-allows a custom domain to be added *later* without re-enrolling anyone.
+allows a custom domain to be added _later_ without re-enrolling anyone.
 
 ### After the wizard
 
@@ -64,7 +64,7 @@ npx wrangler secret put BOOTSTRAP_SECRET
 ```
 
 > **Note:** the provisioning wizard pushes `VAPID_PRIVATE_KEY` and
-> `BOOTSTRAP_SECRET` but *not* `VAPID_PUBLIC_KEY`, because a public key does not
+> `BOOTSTRAP_SECRET` but _not_ `VAPID_PUBLIC_KEY`, because a public key does not
 > belong in `wrangler secret`. Putting it in `vars` is the step that is easy to
 > miss; push notifications will silently stay unavailable without it. The admin
 > panel's Instance section shows whether push is configured.
@@ -97,10 +97,10 @@ pnpm deploy            # wrangler deploy
 There is no public signup. Two ways in, both single-use and both expiring in 48
 hours:
 
-- **Instance invite** - You tab → Admin → *Invite to tally*. Creates the account
+- **Instance invite** - You tab → Admin → _Invite to tally_. Creates the account
   and nothing else; add them to ledgers afterwards. Use this for someone who
   should be on tally before you know which ledgers they belong in.
-- **Ledger invite** - the *Invite someone* button on a ledger. Creates the
+- **Ledger invite** - the _Invite someone_ button on a ledger. Creates the
   account **and** joins that one ledger. Any member can issue one.
 
 Either link opens the sign-up screen, where they pick an email and a password
@@ -111,7 +111,7 @@ admin panel if it goes astray.
 Someone who already has an account does not need an invite at all: any member of
 a ledger can add them to it directly from the ledger screen.
 
-To remove someone: You tab → Admin → their row → *Delete account*. It is refused
+To remove someone: You tab → Admin → their row → _Delete account_. It is refused
 while they still owe or are owed anything. Their past expenses stay, because
 balances are derived from them (ADR 0004) and deleting them would move everyone
 else's numbers.
@@ -128,7 +128,7 @@ pnpm deploy
 
 > **Check drizzle-kit's output.** When SQLite cannot alter a table in place,
 > drizzle-kit emits a create-copy-drop-rename sequence - and it has been observed
-> to emit an `INSERT ... SELECT` that reads the *new* columns from the *old*
+> to emit an `INSERT ... SELECT` that reads the _new_ columns from the _old_
 > table, which fails at apply time. `migrations/0001_numerous_sunspot.sql` carries
 > a hand-edit fixing exactly that. Read every generated migration.
 
@@ -169,13 +169,13 @@ That is accepted knowingly, and CSV export is the answer to it.
 
 ## Operational limits worth knowing
 
-| Limit | Why it matters | Current margin |
-|---|---|---|
-| 10 ms CPU per Worker invocation | Kills expensive aggregation | Push is single-recipient by design; recurring catch-up is capped at 50 occurrences per run |
-| PBKDF2 cost on sign-in | Password hashing is deliberately slow and lands on the same CPU budget | The expensive 600k-iteration pass runs in the BROWSER (`src/shared/password-kdf.ts`); the Worker only does 10k over the result, ~1-3 ms. This is what keeps password auth inside the free plan's ceiling. On the paid plan, raise `ITERATIONS` in `src/server/auth/password.ts` - stored hashes carry their own count and keep verifying |
-| D1 has no cross-request transaction | A half-applied write is wrong money | Every multi-statement write uses `db.batch([...])` |
-| Bundle size | Fights "very fast" | Recharts is lazy-loaded; measure before adding anything large |
-| Free-tier D1 row reads | ~20 users is nowhere near it | Not a live concern at this scale |
+| Limit                               | Why it matters                                                         | Current margin                                                                                                                                                                                                                                                                                                                           |
+| ----------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 10 ms CPU per Worker invocation     | Kills expensive aggregation                                            | Push is single-recipient by design; recurring catch-up is capped at 50 occurrences per run                                                                                                                                                                                                                                               |
+| PBKDF2 cost on sign-in              | Password hashing is deliberately slow and lands on the same CPU budget | The expensive 600k-iteration pass runs in the BROWSER (`src/shared/password-kdf.ts`); the Worker only does 10k over the result, ~1-3 ms. This is what keeps password auth inside the free plan's ceiling. On the paid plan, raise `ITERATIONS` in `src/server/auth/password.ts` - stored hashes carry their own count and keep verifying |
+| D1 has no cross-request transaction | A half-applied write is wrong money                                    | Every multi-statement write uses `db.batch([...])`                                                                                                                                                                                                                                                                                       |
+| Bundle size                         | Fights "very fast"                                                     | Recharts is lazy-loaded; measure before adding anything large                                                                                                                                                                                                                                                                            |
+| Free-tier D1 row reads              | ~20 users is nowhere near it                                           | Not a live concern at this scale                                                                                                                                                                                                                                                                                                         |
 
 ## Recovery scenarios
 
@@ -184,7 +184,7 @@ and hand it over directly. It is single-use, expires in an hour, and re-enrols
 their existing account on the new device with their history intact. Once they
 are back in, revoke the lost passkey.
 
-Do it in that order. Revoking their *last* passkey is refused (409) precisely
+Do it in that order. Revoking their _last_ passkey is refused (409) precisely
 because an invite cannot undo it - an invite creates a new user, which would
 strand the old account and everything in it.
 

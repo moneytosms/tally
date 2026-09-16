@@ -23,12 +23,18 @@ export function parseCustomRange(fromInput: string, toInput: string): { from: nu
 function InsightsBody({ data }: { data: Insights }) {
   return (
     <>
-      <div className="mb-4 rounded-[7px] border px-3.5 py-4" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <div
+        className="mb-4 rounded-[7px] border px-3.5 py-4"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         <div className="flex flex-wrap gap-5">
           <Amount paise={data.totals.spent} label={t("insights.youSpent")} tone="neutral" hero />
           <Amount paise={data.totals.paid} label={t("insights.youPaid")} tone="neutral" hero />
         </div>
-        <div className="mt-3 border-t pt-2.5 text-[11.5px]" style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
+        <div
+          className="mt-3 border-t pt-2.5 text-[11.5px]"
+          style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}
+        >
           {t("insights.expenseCount", { count: data.totals.expenseCount })}
           {" · "}
           {t("insights.ledgerCount", { count: data.totals.ledgerCount })}
@@ -37,7 +43,10 @@ function InsightsBody({ data }: { data: Insights }) {
 
       <section className="mb-5">
         <SectionHeading>{t("insights.byCategory")}</SectionHeading>
-        <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+        <div
+          className="rounded-[7px] border px-3.5 py-3"
+          style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+        >
           {/* One bar is a rectangle, not a comparison. The list below carries the
               same numbers, so the chart only earns its space once there's a shape. */}
           {data.byCategory.length > 1 && (
@@ -62,7 +71,10 @@ function InsightsBody({ data }: { data: Insights }) {
       {data.byMonth.length > 1 && (
         <section className="mb-5">
           <SectionHeading>{t("insights.byMonth")}</SectionHeading>
-          <div className="rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+          <div
+            className="rounded-[7px] border px-3.5 py-3"
+            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+          >
             <Suspense fallback={<ChartFallback height={180} />}>
               <MonthChart data={data.byMonth} />
             </Suspense>

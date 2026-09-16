@@ -42,14 +42,14 @@ This is the case that matters for tally, and it is the least documented one. Wha
 
 Known gaps and bugs to design around:
 
-| Gap | Detail | Source |
-|---|---|---|
-| Embedded WebViews | `WKWebView` (iOS) and Android `WebView` restrict or omit WebAuthn - iOS limits passkeys to the linked domain; Android WebView needs explicit Credential Manager bridging. Use Custom Tabs / `ASWebAuthenticationSession`, never a raw WebView. | [passkeys.dev iOS](https://passkeys.dev/docs/reference/ios/), [Android](https://passkeys.dev/docs/reference/android/) |
-| In-app browsers | Instagram/TikTok/Facebook/LinkedIn open links in embedded WebViews with no WebAuthn bridge; the passkey button silently fails. **An invite link pasted into a group chat will often open here.** | see §6 |
-| Cross-origin `create()` | Safari does not support `navigator.credentials.create()` cross-origin, so passkey enrolment inside an iframe fails on Safari/iOS. Not relevant if tally enrols on its own top-level origin. | [Corbado (secondary)](https://www.corbado.com/blog/webauthn-errors) |
-| Firefox for Android | No conditional UI through v125 - autofill prompts never appear even with a valid passkey. | [passkeys.dev device support](https://passkeys.dev/device-support/) |
-| iOS conditional UI flake | WebKit bug 251817: conditional UI raises `NotAllowedError: Operation Failed` on alternating page reloads. Still open. | [bugs.webkit.org 251817](https://bugs.webkit.org/show_bug.cgi?id=251817) |
-| Android GmsCore | A widespread `NotReadableError`/`NotAllowedError` regression on Android was fixed in GmsCore 25.45.30, rollout completed 2026-01-16. Older/unupdated devices may still hit it. | [issues.chromium.org 476437881](https://issues.chromium.org/issues/476437881) |
+| Gap                      | Detail                                                                                                                                                                                                                                         | Source                                                                                                                |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Embedded WebViews        | `WKWebView` (iOS) and Android `WebView` restrict or omit WebAuthn - iOS limits passkeys to the linked domain; Android WebView needs explicit Credential Manager bridging. Use Custom Tabs / `ASWebAuthenticationSession`, never a raw WebView. | [passkeys.dev iOS](https://passkeys.dev/docs/reference/ios/), [Android](https://passkeys.dev/docs/reference/android/) |
+| In-app browsers          | Instagram/TikTok/Facebook/LinkedIn open links in embedded WebViews with no WebAuthn bridge; the passkey button silently fails. **An invite link pasted into a group chat will often open here.**                                               | see §6                                                                                                                |
+| Cross-origin `create()`  | Safari does not support `navigator.credentials.create()` cross-origin, so passkey enrolment inside an iframe fails on Safari/iOS. Not relevant if tally enrols on its own top-level origin.                                                    | [Corbado (secondary)](https://www.corbado.com/blog/webauthn-errors)                                                   |
+| Firefox for Android      | No conditional UI through v125 - autofill prompts never appear even with a valid passkey.                                                                                                                                                      | [passkeys.dev device support](https://passkeys.dev/device-support/)                                                   |
+| iOS conditional UI flake | WebKit bug 251817: conditional UI raises `NotAllowedError: Operation Failed` on alternating page reloads. Still open.                                                                                                                          | [bugs.webkit.org 251817](https://bugs.webkit.org/show_bug.cgi?id=251817)                                              |
+| Android GmsCore          | A widespread `NotReadableError`/`NotAllowedError` regression on Android was fixed in GmsCore 25.45.30, rollout completed 2026-01-16. Older/unupdated devices may still hit it.                                                                 | [issues.chromium.org 476437881](https://issues.chromium.org/issues/476437881)                                         |
 
 The practical PWA rule: **the passkey must be created in the real browser or the installed app on a
 top-level navigation.** The invite flow must not run inside an in-app browser.
@@ -65,7 +65,7 @@ Current support ([passkeys.dev](https://passkeys.dev/device-support/)):
 - Android: Chrome 108+, Edge 122+ (**not Firefox**)
 - Windows: Chrome 108+, Firefox 122+, Edge 122+
 
-Conditional *create* (silently upgrade a password login to a passkey) is newer - iOS 18+,
+Conditional _create_ (silently upgrade a password login to a passkey) is newer - iOS 18+,
 macOS Safari 18+, Android Chrome 142+, Windows/Ubuntu Chrome 136+. tally has no passwords, so
 conditional create is irrelevant here.
 
@@ -103,7 +103,7 @@ verification data lives in server-side secure enclaves that enforce a **maximum 
 [GPM PIN help](https://support.google.com/chrome/answer/16608973)).
 
 **New Android, device-to-device transfer:** keys move across, passkeys are there.
-**New Android, old phone lost/bricked:** the friend must remember their *old phone's* screen lock or
+**New Android, old phone lost/bricked:** the friend must remember their _old phone's_ screen lock or
 their GPM PIN. This is the realistic failure mode - a non-technical user who replaced a dead phone
 and never knew there was a separate GPM PIN. **This is the single most likely reason tally will
 need account recovery.**
@@ -128,7 +128,7 @@ if a friend already uses one, it's the best outcome.
 
 ### Cross-device authentication (QR)
 
-An existing phone can authenticate a *new* device by QR + Bluetooth proximity. Caveat from
+An existing phone can authenticate a _new_ device by QR + Bluetooth proximity. Caveat from
 [passkeys.dev iOS](https://passkeys.dev/docs/reference/ios/): **iOS/iPadOS as an authenticator does
 not support persistent linking, so the QR code must be scanned on every use.** Only Windows 11
 23H2+ supports persistent linking ([passkeys.dev Android](https://passkeys.dev/docs/reference/android/)).
@@ -195,7 +195,7 @@ Two mitigations:
    `example.com` as RP ID works on `tally.example.com`, `app.example.com`, etc. Narrower RP IDs
    are more tightly scoped but less movable. For a single-app self-host the extra scoping buys
    almost nothing; the movability is worth more.
-2. **Related Origin Requests** are the only escape hatch, and only in one direction. Keep the *old*
+2. **Related Origin Requests** are the only escape hatch, and only in one direction. Keep the _old_
    domain as the RP ID, serve `https://{RP ID}/.well-known/webauthn` with
    `{"origins": ["https://newdomain.example"]}` (content-type `application/json`), and keep calling
    `create()`/`get()` with the old RP ID from the new origin
@@ -219,7 +219,7 @@ Consequences:
 
 - `rp.id = "fly.dev"` → **`SecurityError`**, it's a public suffix.
 - `rp.id = "tally.fly.dev"` → **valid**, it's eTLD+1. Passkeys work fine.
-- Being a public suffix is actually a *security win* here: it guarantees `otherapp.fly.dev` cannot
+- Being a public suffix is actually a _security win_ here: it guarantees `otherapp.fly.dev` cannot
   claim your RP ID, the way `evil.example.com` could if RP ID were `example.com` on a shared domain.
 
 So `*.fly.dev` is technically fine for passkeys. The problem is not the PSL, it's **rug-pull risk**:
@@ -239,7 +239,7 @@ options.
 Framing: the threat model is a ~20-person friend circle splitting expenses. The attacker is not a
 nation state; it is a plausible-sounding stranger, or a friend's misplaced phone. The cost of a
 false recovery is "someone can see and edit who owes whom money" - embarrassing and annoying, not
-catastrophic. The cost of *failed* recovery is a friend permanently locked out of a shared ledger,
+catastrophic. The cost of _failed_ recovery is a friend permanently locked out of a shared ledger,
 which is worse. **Optimise for recoverability, with a human in the loop.**
 
 ### Option A - Recovery codes
@@ -256,7 +256,7 @@ Generate N single-use codes at signup, user stores them.
   when motivation is lowest. Realistically: ~15 of 20 friends will not save the code, and will not
   know they didn't. Codes then create false confidence - the team believes recovery is handled, and
   it isn't.
-- **Verdict:** Not as the primary mechanism. Genuinely useful for the *owner's own* account (see
+- **Verdict:** Not as the primary mechanism. Genuinely useful for the _owner's own_ account (see
   below).
 
 ### Option B - Owner-initiated re-invite
@@ -271,7 +271,7 @@ account and sends a fresh single-use invite link.
   hashed at rest, and invalidation of all prior tokens for that user on issue.
 - **UX cost:** Near zero for the friend. They already message the owner about everything else. No
   artefact to store, nothing to lose, nothing to understand at signup - and it's identical to the
-  flow they already used to *join*, so there's nothing new to learn.
+  flow they already used to _join_, so there's nothing new to learn.
 - **Weakness:** owner is a single point of failure and must be reachable. For their own account, the
   owner needs a different answer - recovery codes (Option A) or direct DB/CLI access, which they
   have anyway as the person running the server.
@@ -344,12 +344,12 @@ The RP server work is: generate challenge, verify attestation on register, verif
 login, track signature counter. All four libraries below cover discoverable credentials / passkey
 flows. Status verified via GitHub API on 2026-08-11.
 
-| Language | Library | Latest release | Last push | Stars | Status |
-|---|---|---|---|---|---|
-| TypeScript/Node | [MasterKale/SimpleWebAuthn](https://github.com/MasterKale/SimpleWebAuthn) | v13.3.2 (2026-06-24) | 2026-08-05 | 2.3k | Actively maintained. Split browser/server packages, Node + Deno. Full passkey/discoverable support, `excludeCredentials`, conditional UI helpers. **De facto standard for TS.** |
-| Python | [duo-labs/py_webauthn](https://github.com/duo-labs/py_webauthn) | v3.0.0 (2026-06-29) | 2026-06-29 | 1.1k | Actively maintained, same author as SimpleWebAuthn. Recent major version. Handles discoverable credentials. |
-| Go | [go-webauthn/webauthn](https://github.com/go-webauthn/webauthn) | v0.17.4 (2026-05-22) | 2026-08-09 | 1.3k | Actively maintained (community fork of the abandoned duo-labs Go lib - **do not use `duo-labs/webauthn`**). FIDO2 conformant, explicit passkey/discoverable support. Still pre-1.0, API shifts between minors. |
-| Rust | [kanidm/webauthn-rs](https://github.com/kanidm/webauthn-rs) | v0.5.2 (2025-07-30) | 2026-07-30 | 696 | Maintained (commits current; release cadence slow - no tagged release in ~12 months). Backs the Kanidm IDM product, so it's exercised in production. Opinionated, security-conscious API; supports passkeys/discoverable credentials as a first-class mode. |
+| Language        | Library                                                                   | Latest release       | Last push  | Stars | Status                                                                                                                                                                                                                                                      |
+| --------------- | ------------------------------------------------------------------------- | -------------------- | ---------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| TypeScript/Node | [MasterKale/SimpleWebAuthn](https://github.com/MasterKale/SimpleWebAuthn) | v13.3.2 (2026-06-24) | 2026-08-05 | 2.3k  | Actively maintained. Split browser/server packages, Node + Deno. Full passkey/discoverable support, `excludeCredentials`, conditional UI helpers. **De facto standard for TS.**                                                                             |
+| Python          | [duo-labs/py_webauthn](https://github.com/duo-labs/py_webauthn)           | v3.0.0 (2026-06-29)  | 2026-06-29 | 1.1k  | Actively maintained, same author as SimpleWebAuthn. Recent major version. Handles discoverable credentials.                                                                                                                                                 |
+| Go              | [go-webauthn/webauthn](https://github.com/go-webauthn/webauthn)           | v0.17.4 (2026-05-22) | 2026-08-09 | 1.3k  | Actively maintained (community fork of the abandoned duo-labs Go lib - **do not use `duo-labs/webauthn`**). FIDO2 conformant, explicit passkey/discoverable support. Still pre-1.0, API shifts between minors.                                              |
+| Rust            | [kanidm/webauthn-rs](https://github.com/kanidm/webauthn-rs)               | v0.5.2 (2025-07-30)  | 2026-07-30 | 696   | Maintained (commits current; release cadence slow - no tagged release in ~12 months). Backs the Kanidm IDM product, so it's exercised in production. Opinionated, security-conscious API; supports passkeys/discoverable credentials as a first-class mode. |
 
 Notes:
 
@@ -366,6 +366,7 @@ Notes:
 ## Sources
 
 Primary:
+
 - [W3C Web Authentication Level 3](https://www.w3.org/TR/webauthn-3/)
 - [NIST SP 800-63B, Authenticators](https://pages.nist.gov/800-63-4/sp800-63b/authenticators/)
 - [Public Suffix List (live, fetched 2026-08-11)](https://publicsuffix.org/list/public_suffix_list.dat)
@@ -379,6 +380,7 @@ Primary:
 - Bug trackers: [WebKit 251817](https://bugs.webkit.org/show_bug.cgi?id=251817), [Chromium 476437881](https://issues.chromium.org/issues/476437881)
 
 Secondary (used only where no primary source covered the point, flagged inline):
+
 - [Corbado - WebAuthn errors in production](https://www.corbado.com/blog/webauthn-errors)
 
 ---

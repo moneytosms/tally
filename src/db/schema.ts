@@ -7,14 +7,7 @@
 //   - deleted_at on every soft-deletable table
 //   - balances are DERIVED - there is no net-position column anywhere
 import { sql } from "drizzle-orm";
-import {
-  check,
-  index,
-  integer,
-  sqliteTable,
-  text,
-  uniqueIndex,
-} from "drizzle-orm/sqlite-core";
+import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 import { LEDGER_COLOR_VALUES } from "~/shared/schemas";
 
 export const users = sqliteTable(
@@ -34,13 +27,17 @@ export const users = sqliteTable(
     // an instance invite (or bootstrap) produces 'full'. Column default 'full' is
     // for every account that predates this - matches their actual behaviour
     // today. Promotion is one-directional; there is no demotion path.
-    accountType: text("account_type", { enum: ["full", "restricted"] }).notNull().default("full"),
+    accountType: text("account_type", { enum: ["full", "restricted"] })
+      .notNull()
+      .default("full"),
     createdAt: integer("created_at").notNull(),
     deletedAt: integer("deleted_at"),
   },
   (t) => [
     // exactly one instance owner
-    uniqueIndex("users_owner_uq").on(t.isOwner).where(sql`${t.isOwner} = 1`),
+    uniqueIndex("users_owner_uq")
+      .on(t.isOwner)
+      .where(sql`${t.isOwner} = 1`),
     // SQLite treats NULLs as distinct, so passkey-only accounts don't collide.
     uniqueIndex("users_email_uq").on(t.email),
     check("users_account_type_ck", sql`${t.accountType} IN ('full', 'restricted')`),
@@ -168,10 +165,7 @@ export const ledgerMembers = sqliteTable(
     pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
   },
   (t) => [
-    check(
-      "ledger_members_user_xor_guest",
-      sql`(${t.userId} IS NULL) <> (${t.guestName} IS NULL)`,
-    ),
+    check("ledger_members_user_xor_guest", sql`(${t.userId} IS NULL) <> (${t.guestName} IS NULL)`),
     uniqueIndex("ledger_members_ledger_user_uq").on(t.ledgerId, t.userId),
     index("ledger_members_ledger_idx").on(t.ledgerId),
     index("ledger_members_user_idx").on(t.userId),
@@ -182,9 +176,7 @@ export const categories = sqliteTable("categories", {
   id: text("id").primaryKey(),
   name: text("name").notNull().unique(),
   icon: text("icon").notNull(),
-  isDefault: integer("is_default", { mode: "boolean" })
-    .notNull()
-    .default(false),
+  isDefault: integer("is_default", { mode: "boolean" }).notNull().default(false),
   deletedAt: integer("deleted_at"),
 });
 
@@ -219,16 +211,10 @@ export const expenses = sqliteTable(
     occurrenceAt: integer("occurrence_at"),
   },
   (t) => [
-    check(
-      "expenses_mode_ck",
-      sql`${t.mode} IN ('equal', 'exact', 'shares', 'percent')`,
-    ),
+    check("expenses_mode_ck", sql`${t.mode} IN ('equal', 'exact', 'shares', 'percent')`),
     check("expenses_total_nonzero_ck", sql`${t.total} <> 0`),
     check("expenses_currency_ck", sql`${t.currency} = 'INR'`),
-    check(
-      "expenses_series_pair_ck",
-      sql`(${t.seriesId} IS NULL) = (${t.occurrenceAt} IS NULL)`,
-    ),
+    check("expenses_series_pair_ck", sql`(${t.seriesId} IS NULL) = (${t.occurrenceAt} IS NULL)`),
     index("expenses_ledger_idx").on(t.ledgerId),
     index("expenses_category_idx").on(t.categoryId),
     uniqueIndex("expenses_series_occurrence_uq").on(t.seriesId, t.occurrenceAt),
@@ -298,10 +284,7 @@ export const settlements = sqliteTable(
     deletedAt: integer("deleted_at"),
   },
   (t) => [
-    check(
-      "settlements_method_ck",
-      sql`${t.method} IN ('upi', 'manual', 'forgiven')`,
-    ),
+    check("settlements_method_ck", sql`${t.method} IN ('upi', 'manual', 'forgiven')`),
     check("settlements_amount_positive_ck", sql`${t.amount} > 0`),
     check("settlements_distinct_members_ck", sql`${t.fromMemberId} <> ${t.toMemberId}`),
     check("settlements_currency_ck", sql`${t.currency} = 'INR'`),

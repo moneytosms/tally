@@ -166,10 +166,7 @@ admin.delete("/admin/users/:userId/sessions", async (c) => {
 admin.delete("/admin/users/:userId/password", async (c) => {
   const userId = c.req.param("userId");
   if (!(await c.var.db.findUserById(userId))) return c.json({ error: "not found" }, 404);
-  await c.var.db.batch([
-    c.var.db.updateUser(userId, { passwordHash: null }),
-    c.var.db.deleteSessionsForUser(userId),
-  ]);
+  await c.var.db.batch([c.var.db.updateUser(userId, { passwordHash: null }), c.var.db.deleteSessionsForUser(userId)]);
   return c.json({ id: userId });
 });
 

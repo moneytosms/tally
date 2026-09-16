@@ -3,6 +3,7 @@
 Architecture and significant design decisions. DocWriter agent maintains. Never delete entries.
 
 Format:
+
 ```
 ## [YYYY-MM-DD] <decision>
 Context: <why this decision was needed>

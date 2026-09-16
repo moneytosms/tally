@@ -4,12 +4,7 @@ import { describe, expect, it } from "vitest";
 // @ts-expect-error node:sqlite is untyped here - @types/node is not a dependency
 import { DatabaseSync } from "node:sqlite";
 import ddl from "../../../migrations/0000_calm_malice.sql?raw";
-import {
-  INVITE_TTL_MS,
-  type InviteStore,
-  acceptInvite,
-  createInvite,
-} from "~/server/auth/invite";
+import { INVITE_TTL_MS, type InviteStore, acceptInvite, createInvite } from "~/server/auth/invite";
 import { sha256Hex } from "~/server/auth/session";
 
 const NOW = 1_760_000_000_000;
@@ -27,13 +22,9 @@ type Sqlite = {
 function setup(): { sql: Sqlite; store: InviteStore } {
   const sql = new DatabaseSync(":memory:") as Sqlite;
   sql.exec(ddl);
-  const user = sql.prepare(
-    "INSERT INTO users (id, display_name, is_owner, created_at) VALUES (?,?,0,?)",
-  );
+  const user = sql.prepare("INSERT INTO users (id, display_name, is_owner, created_at) VALUES (?,?,0,?)");
   for (const id of ["u1", "u2", "u3"]) user.run(id, id, NOW);
-  sql
-    .prepare("INSERT INTO ledgers (id, name, created_by, created_at) VALUES (?,?,?,?)")
-    .run("l1", "Goa", "u1", NOW);
+  sql.prepare("INSERT INTO ledgers (id, name, created_by, created_at) VALUES (?,?,?,?)").run("l1", "Goa", "u1", NOW);
 
   const store: InviteStore = {
     async insertInvite(r) {
@@ -52,15 +43,11 @@ function setup(): { sql: Sqlite; store: InviteStore } {
               AND i.expires_at > ? AND l.deleted_at IS NULL`,
         )
         .get(tokenHash, now);
-      return row
-        ? { invite: { id: row.id as string, ledgerId: row.ledger_id as string } }
-        : undefined;
+      return row ? { invite: { id: row.id as string, ledgerId: row.ledger_id as string } } : undefined;
     },
     async consumeInvite(id, userId, at) {
       const { changes } = sql
-        .prepare(
-          "UPDATE invites SET consumed_at = ?, consumed_by = ? WHERE id = ? AND consumed_at IS NULL",
-        )
+        .prepare("UPDATE invites SET consumed_at = ?, consumed_by = ? WHERE id = ? AND consumed_at IS NULL")
         .run(at, userId, id);
       return { meta: { changes } };
     },
@@ -74,9 +61,7 @@ function setup(): { sql: Sqlite; store: InviteStore } {
     },
     async insertMember(r) {
       sql
-        .prepare(
-          "INSERT INTO ledger_members (id, ledger_id, user_id, joined_at) VALUES (?,?,?,?)",
-        )
+        .prepare("INSERT INTO ledger_members (id, ledger_id, user_id, joined_at) VALUES (?,?,?,?)")
         .run(r.id, r.ledgerId, r.userId, r.joinedAt);
     },
   };
@@ -92,8 +77,7 @@ const memberCount = (sql: Sqlite) =>
 const inviteId = (sql: Sqlite, tokenHash: string) =>
   sql.prepare("SELECT id FROM invites WHERE token_hash = ?").get(tokenHash)!.id as string;
 
-const mint = (store: InviteStore) =>
-  createInvite(store, { ledgerId: "l1", createdBy: "u1", now: NOW });
+const mint = (store: InviteStore) => createInvite(store, { ledgerId: "l1", createdBy: "u1", now: NOW });
 
 describe("invites", () => {
   it("stores only a hash of the token", async () => {
@@ -109,13 +93,11 @@ describe("invites", () => {
     const { sql, store } = setup();
     const token = await mint(store);
 
-    await expect(
-      acceptInvite(store, { token, userId: "u2", now: NOW + 1000 }),
-    ).resolves.toMatchObject({ ledgerId: "l1" });
+    await expect(acceptInvite(store, { token, userId: "u2", now: NOW + 1000 })).resolves.toMatchObject({
+      ledgerId: "l1",
+    });
 
-    await expect(
-      acceptInvite(store, { token, userId: "u3", now: NOW + 2000 }),
-    ).rejects.toThrow("not usable");
+    await expect(acceptInvite(store, { token, userId: "u3", now: NOW + 2000 })).rejects.toThrow("not usable");
 
     expect(memberCount(sql)).toBe(1);
   });
@@ -139,9 +121,9 @@ describe("invites", () => {
   it("an expired invite fails", async () => {
     const { sql, store } = setup();
     const token = await mint(store);
-    await expect(
-      acceptInvite(store, { token, userId: "u2", now: NOW + INVITE_TTL_MS + 1 }),
-    ).rejects.toThrow("not usable");
+    await expect(acceptInvite(store, { token, userId: "u2", now: NOW + INVITE_TTL_MS + 1 })).rejects.toThrow(
+      "not usable",
+    );
     expect(memberCount(sql)).toBe(0);
   });
 
@@ -149,9 +131,7 @@ describe("invites", () => {
     const { sql, store } = setup();
     const token = await mint(store);
     revoke(sql, inviteId(sql, await sha256Hex(token)), NOW + 10);
-    await expect(
-      acceptInvite(store, { token, userId: "u2", now: NOW + 20 }),
-    ).rejects.toThrow("not usable");
+    await expect(acceptInvite(store, { token, userId: "u2", now: NOW + 20 })).rejects.toThrow("not usable");
     expect(memberCount(sql)).toBe(0);
   });
 
@@ -159,15 +139,11 @@ describe("invites", () => {
     const { sql, store } = setup();
     const token = await mint(store);
     sql.prepare("UPDATE ledgers SET deleted_at = ? WHERE id = 'l1'").run(NOW);
-    await expect(
-      acceptInvite(store, { token, userId: "u2", now: NOW + 20 }),
-    ).rejects.toThrow("not usable");
+    await expect(acceptInvite(store, { token, userId: "u2", now: NOW + 20 })).rejects.toThrow("not usable");
   });
 
   it("an unknown token fails", async () => {
     const { store } = setup();
-    await expect(
-      acceptInvite(store, { token: "nope", userId: "u2", now: NOW }),
-    ).rejects.toThrow("not usable");
+    await expect(acceptInvite(store, { token: "nope", userId: "u2", now: NOW })).rejects.toThrow("not usable");
   });
 });

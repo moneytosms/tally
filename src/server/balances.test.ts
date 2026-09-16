@@ -101,9 +101,12 @@ describe("netPositions", () => {
         { memberId: "B", amount: 64000 }, // ₹640
       ],
     };
-    const ps = netPositions([expense], [
-      { fromMemberId: "B", toMemberId: "A", amount: 50000 }, // ₹500
-    ]);
+    const ps = netPositions(
+      [expense],
+      [
+        { fromMemberId: "B", toMemberId: "A", amount: 50000 }, // ₹500
+      ],
+    );
     expect(net(ps, "B")).toBe(-14000); // ₹140 remains
     expect(net(ps, "A")).toBe(14000);
   });
@@ -205,7 +208,10 @@ describe("invariants over generated scenarios", () => {
       const positions = netPositions(expenses, settlements);
       const plan = transferPlan(positions);
       const after = netPositions(expenses, [...settlements, ...plan]);
-      expect(after.every((p) => p.net === 0), `seed ${seed}: ${JSON.stringify(after)}`).toBe(true);
+      expect(
+        after.every((p) => p.net === 0),
+        `seed ${seed}: ${JSON.stringify(after)}`,
+      ).toBe(true);
     }
   });
 

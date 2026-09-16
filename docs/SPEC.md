@@ -14,16 +14,16 @@ A single self-hosted instance, run by one person, used by their friend groups to
 
 ### Fixed constraints
 
-| | |
-|---|---|
+|            |                                                                              |
+| ---------- | ---------------------------------------------------------------------------- |
 | Deployment | One instance, run by the owner. Distributable self-hosting is not a feature. |
-| Money | Ledger only. `upi://` deep links on settle-up. No funds touch the server. |
-| Offline | Online-only with optimistic UI. No write queue, no conflict resolution. |
-| Auth | Invite link + passkey. No passwords, no SMTP. |
-| Currency | INR only. |
-| Language | English only, behind a `t()` layer so others can be added. |
-| Budget | $0/mo. |
-| Scale | ~20 people, a few ledgers, thousands of expenses over years. |
+| Money      | Ledger only. `upi://` deep links on settle-up. No funds touch the server.    |
+| Offline    | Online-only with optimistic UI. No write queue, no conflict resolution.      |
+| Auth       | Invite link + passkey. No passwords, no SMTP.                                |
+| Currency   | INR only.                                                                    |
+| Language   | English only, behind a `t()` layer so others can be added.                   |
+| Budget     | $0/mo.                                                                       |
+| Scale      | ~20 people, a few ledgers, thousands of expenses over years.                 |
 
 ---
 
@@ -33,22 +33,22 @@ A single self-hosted instance, run by one person, used by their friend groups to
 
 TypeScript end to end, one deployable.
 
-| Layer | Choice |
-|---|---|
-| Host | Cloudflare Workers |
-| Database | D1 (SQLite) |
-| Query layer | Drizzle + `drizzle-kit` |
-| API | Hono |
-| Auth | SimpleWebAuthn |
-| Frontend | React + Vite |
-| Rendering | SPA + JSON API |
-| Routing | React Router, SPA mode |
-| Server state | TanStack Query |
-| Validation | Zod, one schema shared client/server |
-| Charts | Recharts, lazy-loaded |
-| PWA | `vite-plugin-pwa` (Workbox) |
-| Scheduling | Durable Object Alarms |
-| Styling | Tailwind + shadcn/ui (restyled) |
+| Layer        | Choice                               |
+| ------------ | ------------------------------------ |
+| Host         | Cloudflare Workers                   |
+| Database     | D1 (SQLite)                          |
+| Query layer  | Drizzle + `drizzle-kit`              |
+| API          | Hono                                 |
+| Auth         | SimpleWebAuthn                       |
+| Frontend     | React + Vite                         |
+| Rendering    | SPA + JSON API                       |
+| Routing      | React Router, SPA mode               |
+| Server state | TanStack Query                       |
+| Validation   | Zod, one schema shared client/server |
+| Charts       | Recharts, lazy-loaded                |
+| PWA          | `vite-plugin-pwa` (Workbox)          |
+| Scheduling   | Durable Object Alarms                |
+| Styling      | Tailwind + shadcn/ui (restyled)      |
 
 A single Worker serves static assets and `/api/*`. One origin, so no CORS - which is a security property, not just convenience.
 
@@ -111,12 +111,12 @@ One concept. Trip, one-to-one, and long-standing group are the same entity, diff
 
 ### Split modes
 
-| Mode | Input |
-|---|---|
-| Equal | Participant set |
-| Exact | Paise per participant, must sum to total |
-| Shares | Integer weight per participant |
-| Percent | Must sum to 100 |
+| Mode    | Input                                    |
+| ------- | ---------------------------------------- |
+| Equal   | Participant set                          |
+| Exact   | Paise per participant, must sum to total |
+| Shares  | Integer weight per participant           |
+| Percent | Must sum to 100                          |
 
 Shares and percentages **resolve to paise at save time and the resolved amounts are stored** - not recomputed from weights, or editing the participant set silently rewrites history. The mode and its inputs are kept alongside so the editor reopens as the user left it.
 
@@ -201,18 +201,23 @@ Collapses to one rule: **is the caller a current member of this ledger?**
 [Feature inventory](https://github.com/moneytosms/tally/issues/2)
 
 ### Core
+
 Ledgers · expenses · splits · balances · settle-up · invites · member management
 
 ### Parity
+
 Activity feed + comments · categories + notes · search + filter · CSV export · cross-ledger net balance · recurring expenses · push notifications · full edit history + undo
 
 ### Self-hosting-native
+
 Natural-language quick add · trip budget + burn rate · bulk settle across ledgers · lifetime personal analytics · clone members on ledger creation · owner admin panel · minimal backup + restore
 
 ### Profile
+
 UPI VPA (co-members only) · display name · avatar (generated initials, no image storage) · per-ledger nickname
 
 ### Out of scope
+
 Multi-currency · Splitwise import · receipt images · OCR · real payment processing · trip kitty · payment rotation · read-only share links · in-app chat · profile reliability scores · offline-first write sync · public signup · distributable self-hosting
 
 ---
@@ -246,12 +251,12 @@ Multi-currency · Splitwise import · receipt images · OCR · real payment proc
 
 Four bottom tabs plus a persistent FAB for add-expense.
 
-| Tab | Holds |
-|---|---|
-| Ledgers | Ledger list, positions, burn-rate, recent activity. Default. |
-| Balances | Cross-ledger net per friend, bulk settle. |
-| Insights | Lifetime analytics, categories, most-spent-with. |
-| You | Profile, VPA, devices, notifications, archived ledgers, export, admin panel. |
+| Tab      | Holds                                                                        |
+| -------- | ---------------------------------------------------------------------------- |
+| Ledgers  | Ledger list, positions, burn-rate, recent activity. Default.                 |
+| Balances | Cross-ledger net per friend, bulk settle.                                    |
+| Insights | Lifetime analytics, categories, most-spent-with.                             |
+| You      | Profile, VPA, devices, notifications, archived ledgers, export, admin panel. |
 
 Balances is deliberately its own tab - "what do I owe Rahul overall" is a different question from "what happened on the Goa trip". **"You" is the pressure valve** that keeps the other three tabs to one job each.
 
@@ -314,7 +319,7 @@ Named deliberately. These are where the bugs will be.
 2. **D1 has no conventional cross-request transactions.** Two operations must not half-apply:
    - Auto-creating a 1:1 ledger with its first expense
    - Bulk settle writing across several ledgers
-   
+
    Both need batched statements or a Durable Object.
 
 3. **RP ID permanence.** Frozen constant. Any dynamic derivation is a defect.

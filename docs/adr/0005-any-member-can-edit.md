@@ -17,6 +17,6 @@ Separately, people leave groups owing money.
 ## Consequences
 
 - Only safe because edit history and undo exist. The two decisions are a package - removing undo would invalidate this one.
-- Authorisation collapses to a single question: *is the caller a current member of this ledger?* One Hono middleware, with exactly two exceptions (ledger deletion is creator-only, admin routes are owner-only).
+- Authorisation collapses to a single question: _is the caller a current member of this ledger?_ One Hono middleware, with exactly two exceptions (ledger deletion is creator-only, admin routes are owner-only).
 - The leaving rule buys a genuine system-wide invariant: **every ledger's net positions sum to zero, and every member is a current member.** No former-member state leaks into any query, screen, or analytic.
 - Accepted cost: someone can be held in a ledger by a debt they dispute. The escape hatch is explicit forgiveness, which is recorded rather than silent.

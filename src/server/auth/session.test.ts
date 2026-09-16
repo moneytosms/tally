@@ -29,9 +29,7 @@ type Sqlite = {
 function setup(): { sql: Sqlite; store: SessionStore } {
   const sql = new DatabaseSync(":memory:") as Sqlite;
   sql.exec(ddl);
-  sql
-    .prepare("INSERT INTO users (id, display_name, is_owner, created_at) VALUES (?,?,?,?)")
-    .run("u1", "Ada", 1, NOW);
+  sql.prepare("INSERT INTO users (id, display_name, is_owner, created_at) VALUES (?,?,?,?)").run("u1", "Ada", 1, NOW);
 
   const store: SessionStore = {
     async insertSession(r) {
@@ -67,9 +65,7 @@ function setup(): { sql: Sqlite; store: SessionStore } {
       };
     },
     async touchSession(id, at, expiresAt) {
-      sql
-        .prepare("UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE id = ?")
-        .run(at, expiresAt, id);
+      sql.prepare("UPDATE sessions SET last_seen_at = ?, expires_at = ? WHERE id = ?").run(at, expiresAt, id);
     },
     async deleteSessionByTokenHash(tokenHash) {
       sql.prepare("DELETE FROM sessions WHERE token_hash = ?").run(tokenHash);
@@ -83,8 +79,7 @@ describe("sessions", () => {
     const { sql, store } = setup();
     const token = await createSession(store, "u1", NOW);
 
-    const stored = sql.prepare("SELECT token_hash FROM sessions").get()!
-      .token_hash as string;
+    const stored = sql.prepare("SELECT token_hash FROM sessions").get()!.token_hash as string;
     expect(stored).not.toBe(token);
     expect(stored).toMatch(/^[0-9a-f]{64}$/);
     expect(stored).toBe(await sha256Hex(token));
@@ -120,9 +115,7 @@ describe("sessions", () => {
     expect(sql.prepare("SELECT expires_at FROM sessions").get()!.expires_at).toBe(initial);
 
     await resolveSession(store, token, NOW + 2 * DAY);
-    expect(sql.prepare("SELECT last_seen_at FROM sessions").get()!.last_seen_at).toBe(
-      NOW + 2 * DAY,
-    );
+    expect(sql.prepare("SELECT last_seen_at FROM sessions").get()!.last_seen_at).toBe(NOW + 2 * DAY);
   });
 
   it("logout deletes the row", async () => {

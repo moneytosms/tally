@@ -26,19 +26,13 @@ type Ledger = NonNullable<Awaited<ReturnType<Db["findLedger"]>>>;
 
 /** Net positions of a whole ledger. Derived on every call - never stored. */
 async function positionsOf(db: Db, ledgerId: string) {
-  const [expenses, settlements] = await Promise.all([
-    db.listExpenses(ledgerId),
-    db.listSettlements(ledgerId),
-  ]);
+  const [expenses, settlements] = await Promise.all([db.listExpenses(ledgerId), db.listSettlements(ledgerId)]);
   return { positions: netPositions(expenses, settlements), expenses };
 }
 
 /** `LedgerSummary` on the wire. `net` is the VIEWER's position in this ledger. */
 async function summarise(db: Db, ledger: Ledger, viewerMemberId: string) {
-  const [{ positions, expenses }, members] = await Promise.all([
-    positionsOf(db, ledger.id),
-    db.listMembers(ledger.id),
-  ]);
+  const [{ positions, expenses }, members] = await Promise.all([positionsOf(db, ledger.id), db.listMembers(ledger.id)]);
   return {
     id: ledger.id,
     name: ledger.name,
@@ -202,10 +196,7 @@ ledgers.post("/ledgers/:ledgerId/pin", async (c) => {
 // ---- members ----------------------------------------------------------------
 
 ledgers.get("/ledgers/:ledgerId/members", async (c) => {
-  const [members, users] = await Promise.all([
-    c.var.db.listMembers(c.req.param("ledgerId")),
-    c.var.db.listUsers(),
-  ]);
+  const [members, users] = await Promise.all([c.var.db.listMembers(c.req.param("ledgerId")), c.var.db.listUsers()]);
   const displayNames = new Map(users.map((u) => [u.id, u.displayName]));
   return c.json(members.map((m) => serialiseMember(m, displayNames)));
 });
@@ -219,14 +210,9 @@ ledgers.get("/ledgers/:ledgerId/members", async (c) => {
  * Only id and display name, which is all a picker needs.
  */
 ledgers.get("/ledgers/:ledgerId/addable-users", async (c) => {
-  const [users, members] = await Promise.all([
-    c.var.db.listUsers(),
-    c.var.db.listMembers(c.req.param("ledgerId")),
-  ]);
+  const [users, members] = await Promise.all([c.var.db.listUsers(), c.var.db.listMembers(c.req.param("ledgerId"))]);
   const already = new Set(members.map((m) => m.userId));
-  return c.json(
-    users.filter((u) => !already.has(u.id)).map((u) => ({ id: u.id, displayName: u.displayName })),
-  );
+  return c.json(users.filter((u) => !already.has(u.id)).map((u) => ({ id: u.id, displayName: u.displayName })));
 });
 
 /**

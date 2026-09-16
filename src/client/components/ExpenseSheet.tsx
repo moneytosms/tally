@@ -19,7 +19,12 @@ import {
 import { t } from "~/client/i18n";
 
 const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
-const timeFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+const timeFmt = new Intl.DateTimeFormat("en-IN", {
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+});
 
 const nameOf = (members: Member[], id: string) => members.find((m) => m.id === id)?.nickname ?? t("member.unknown");
 
@@ -50,10 +55,26 @@ export function revisionDiff(
 /** Same shape as the confirm dialogs in AdminPanel and LedgerMenu: alertdialog,
  *  modal, cancel first so the money-rewriting button is never the one under a
  *  stray tap. Native confirm() blocks the whole tab and cannot be styled. */
-function ConfirmDialog({ message, onCancel, onConfirm }: { message: string; onCancel: () => void; onConfirm: () => void }) {
+function ConfirmDialog({
+  message,
+  onCancel,
+  onConfirm,
+}: {
+  message: string;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
-      <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgb(0 0 0 / 38%)" }}
+    >
+      <div
+        role="alertdialog"
+        aria-modal="true"
+        className="w-full max-w-sm rounded-[10px] border p-4"
+        style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+      >
         <p className="mb-3 text-[14px]">{message}</p>
         <div className="flex justify-end gap-2">
           <Button variant="ghost" onClick={onCancel}>
@@ -70,7 +91,10 @@ function ConfirmDialog({ message, onCancel, onConfirm }: { message: string; onCa
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3 border-b py-2 last:border-b-0" style={{ borderColor: "var(--line)" }}>
+    <div
+      className="flex items-center justify-between gap-3 border-b py-2 last:border-b-0"
+      style={{ borderColor: "var(--line)" }}
+    >
       <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
         {label}
       </span>
@@ -148,7 +172,10 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
         )}
       </div>
 
-      <div className="mb-4 rounded-[7px] border px-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <div
+        className="mb-4 rounded-[7px] border px-3.5"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         <DetailRow label={t("expense.paidBy")}>{nameOf(members, expense.payerMemberId)}</DetailRow>
         <DetailRow label={t("expense.date")}>{dateFmt.format(expense.paidAt)}</DetailRow>
         <DetailRow label={t("expense.category")}>{category?.name ?? t("expense.categoryNone")}</DetailRow>
@@ -158,9 +185,16 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
       <div className="mx-0.5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
         {t("expense.participants")}
       </div>
-      <div className="mb-5 rounded-[7px] border px-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <div
+        className="mb-5 rounded-[7px] border px-3.5"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         {expense.splits.map((s) => (
-          <div key={s.memberId} className="flex items-center justify-between gap-3 border-b py-2 last:border-b-0" style={{ borderColor: "var(--line)" }}>
+          <div
+            key={s.memberId}
+            className="flex items-center justify-between gap-3 border-b py-2 last:border-b-0"
+            style={{ borderColor: "var(--line)" }}
+          >
             <span className="text-[13.5px]">{nameOf(members, s.memberId)}</span>
             <Amount paise={s.amount} label={t("expense.shareLabel")} tone="neutral" />
           </div>
@@ -185,7 +219,11 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
       ) : (
         <ul className="mb-3">
           {sortedComments.map((c) => (
-            <li key={c.id} className="flex items-start justify-between gap-2 border-b py-2 last:border-b-0" style={{ borderColor: "var(--line)" }}>
+            <li
+              key={c.id}
+              className="flex items-start justify-between gap-2 border-b py-2 last:border-b-0"
+              style={{ borderColor: "var(--line)" }}
+            >
               <div className="min-w-0 flex-1">
                 <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
                   {c.authorName} · {timeFmt.format(c.createdAt)}
@@ -216,14 +254,23 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
             onKeyDown={(e) => e.key === "Enter" && postComment()}
           />
         </Field>
-        <Button size="sm" onClick={postComment} disabled={!commentText.trim()} isLoading={addComment.isPending} className="mt-1">
+        <Button
+          size="sm"
+          onClick={postComment}
+          disabled={!commentText.trim()}
+          isLoading={addComment.isPending}
+          className="mt-1"
+        >
           {t("expense.commentSend")}
         </Button>
       </div>
 
       {/* ---------- history + restore ---------- */}
       <details className="mb-6">
-        <summary className={`inline-flex min-h-11 cursor-pointer list-none items-center text-[13px] underline ${focusRing}`} style={{ color: "var(--ink-3)" }}>
+        <summary
+          className={`inline-flex min-h-11 cursor-pointer list-none items-center text-[13px] underline ${focusRing}`}
+          style={{ color: "var(--ink-3)" }}
+        >
           {t("expense.history")}
         </summary>
         {revisions.isPending ? (

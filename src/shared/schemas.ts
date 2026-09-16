@@ -110,7 +110,7 @@ export const updateProfileSchema = z.object({
   vpa: z
     .string()
     .trim()
-    .regex(/^[\w.\-]{2,60}@[a-zA-Z]{2,30}$/, "a VPA looks like name@bank")
+    .regex(/^[\w.-]{2,60}@[a-zA-Z]{2,30}$/, "a VPA looks like name@bank")
     .nullable()
     .optional(),
 });

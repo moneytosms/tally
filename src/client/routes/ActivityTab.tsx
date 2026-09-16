@@ -16,7 +16,12 @@ export type ActivityFilters = { member?: string; kind?: ActivityEvent["kind"] };
 export function filterEvents(events: ActivityEvent[], filters: ActivityFilters): ActivityEvent[] {
   return events.filter((e) => {
     if (filters.kind && e.kind !== filters.kind) return false;
-    if (filters.member && e.actorName !== filters.member && e.fromName !== filters.member && e.toName !== filters.member)
+    if (
+      filters.member &&
+      e.actorName !== filters.member &&
+      e.fromName !== filters.member &&
+      e.toName !== filters.member
+    )
       return false;
     return true;
   });
@@ -135,10 +140,7 @@ export default function ActivityTab() {
       ) : (
         groups.map((g) => (
           <section key={g.day} className="mb-4">
-            <div
-              className="mx-0.5 mb-1 text-[10.5px] tracking-[0.13em] uppercase"
-              style={{ color: "var(--ink-3)" }}
-            >
+            <div className="mx-0.5 mb-1 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
               {g.day}
             </div>
             <ul

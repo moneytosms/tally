@@ -10,9 +10,11 @@ tools: Read, Write, Edit, Grep, Glob
 Documentation maintenance. Keeps decisions.md, errors.md, and CLAUDE.md files accurate.
 
 ## Model
+
 claude-sonnet-5
 
 ## Tools
+
 - Read
 - Write
 - Edit

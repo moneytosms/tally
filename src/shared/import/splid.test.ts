@@ -64,7 +64,20 @@ describe("parseSplidXls", () => {
     const buf = buildSplidWorkbook([
       ["Title", "Amount", "Currency", "By", "Date", "Created on", "A", "", "B", "", "C", ""],
       // ₹50 split three ways: 16.666666666666668 repeating.
-      ["Auto", 50, "INR", "A", "", "8/16/26", 50, -16.666666666666668, "", -16.666666666666668, "", -16.666666666666664],
+      [
+        "Auto",
+        50,
+        "INR",
+        "A",
+        "",
+        "8/16/26",
+        50,
+        -16.666666666666668,
+        "",
+        -16.666666666666668,
+        "",
+        -16.666666666666664,
+      ],
     ]);
 
     const result = parseSplidXls(buf);

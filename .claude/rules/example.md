@@ -15,11 +15,13 @@ Rules should be short, imperative, and specific. One idea per bullet.
 Tell Claude what to do, what never to do, and why in one line if the reason isn't obvious.
 
 **Good:**
+
 - Never log request bodies — they may contain PII
 - Use `db.transaction()` for any multi-step write — never raw queries in app code
 - All public API routes require the `authenticate` middleware
 
 **Too vague:**
+
 - Be careful with the database
 - Follow security best practices
 

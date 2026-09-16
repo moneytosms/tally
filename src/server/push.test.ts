@@ -199,11 +199,15 @@ describe("vapidHeaders", () => {
 
   it("rejects a public key that is not an uncompressed P-256 point", async () => {
     await expect(
-      vapidHeaders("https://push.example.com/x", {
-        publicKey: bytesToB64url(new Uint8Array(10)),
-        privateKey: "x",
-        subject: "mailto:a@b.c",
-      }, 0),
+      vapidHeaders(
+        "https://push.example.com/x",
+        {
+          publicKey: bytesToB64url(new Uint8Array(10)),
+          privateKey: "x",
+          subject: "mailto:a@b.c",
+        },
+        0,
+      ),
     ).rejects.toThrow(/uncompressed P-256 point/);
   });
 });
@@ -212,7 +216,9 @@ describe("sendPush", () => {
   it("reports 410 as gone, so the caller retires the subscription", async () => {
     const r = await makeSubscription();
     const k = await (async () => {
-      const kp = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign"])) as CryptoKeyPair;
+      const kp = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+        "sign",
+      ])) as CryptoKeyPair;
       const pub = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey));
       const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
       return { publicKey: bytesToB64url(pub), privateKey: jwk.d!, subject: "mailto:a@b.c" };
@@ -230,7 +236,9 @@ describe("sendPush", () => {
 
   it("does not treat a 429 as gone", async () => {
     const r = await makeSubscription();
-    const kp = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign"])) as CryptoKeyPair;
+    const kp = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+      "sign",
+    ])) as CryptoKeyPair;
     const pub = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey));
     const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
     const k = { publicKey: bytesToB64url(pub), privateKey: jwk.d!, subject: "mailto:a@b.c" };
@@ -247,7 +255,9 @@ describe("sendPush", () => {
 
   it("sends the aes128gcm content encoding and a VAPID authorization", async () => {
     const r = await makeSubscription();
-    const kp = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign"])) as CryptoKeyPair;
+    const kp = (await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, [
+      "sign",
+    ])) as CryptoKeyPair;
     const pub = new Uint8Array(await crypto.subtle.exportKey("raw", kp.publicKey));
     const jwk = await crypto.subtle.exportKey("jwk", kp.privateKey);
     const k = { publicKey: bytesToB64url(pub), privateKey: jwk.d!, subject: "mailto:a@b.c" };
@@ -266,8 +276,6 @@ describe("sendPush", () => {
     expect(seen!.headers.get("Content-Encoding")).toBe("aes128gcm");
     expect(seen!.headers.get("Authorization")).toMatch(/^vapid t=.+, k=.+$/);
     // and the encrypted body really is what the recipient expects
-    expect(await decrypt(new Uint8Array(await seen!.arrayBuffer()), r)).toBe(
-      JSON.stringify({ title: "t", body: "b" }),
-    );
+    expect(await decrypt(new Uint8Array(await seen!.arrayBuffer()), r)).toBe(JSON.stringify({ title: "t", body: "b" }));
   });
 });

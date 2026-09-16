@@ -44,7 +44,10 @@ function NotificationsSection() {
   };
 
   return (
-    <div className="rounded-[7px] border px-3.5 py-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+    <div
+      className="rounded-[7px] border px-3.5 py-3.5"
+      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+    >
       <p role="status" className="mb-2.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t(pushMessage[state.status])}
       </p>
@@ -115,12 +118,7 @@ function RevokeCredential({ credentialId, disabled }: { credentialId: string; di
 
   return (
     <>
-      <Button
-        variant="danger"
-        size="sm"
-        disabled={disabled || revoke.isPending}
-        onClick={() => setConfirming(true)}
-      >
+      <Button variant="danger" size="sm" disabled={disabled || revoke.isPending} onClick={() => setConfirming(true)}>
         {t("profile.revoke")}
       </Button>
       {revoke.isError && (
@@ -129,8 +127,16 @@ function RevokeCredential({ credentialId, disabled }: { credentialId: string; di
         </span>
       )}
       {confirming && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
-          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgb(0 0 0 / 38%)" }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-[10px] border p-4"
+            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+          >
             <p className="mb-3 text-[14px]">{t("profile.revokeConfirm")}</p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirming(false)}>
@@ -162,7 +168,10 @@ function SignOutSection() {
   const [confirming, setConfirming] = useState(false);
 
   return (
-    <div className="rounded-[7px] border px-3.5 py-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+    <div
+      className="rounded-[7px] border px-3.5 py-3.5"
+      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+    >
       <Button variant="danger" size="sm" disabled={logout.isPending} onClick={() => setConfirming(true)}>
         {t("profile.signOut")}
       </Button>
@@ -175,8 +184,16 @@ function SignOutSection() {
         </p>
       )}
       {confirming && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4" style={{ background: "rgb(0 0 0 / 38%)" }}>
-          <div role="alertdialog" aria-modal="true" className="w-full max-w-sm rounded-[10px] border p-4" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          style={{ background: "rgb(0 0 0 / 38%)" }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="w-full max-w-sm rounded-[10px] border p-4"
+            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+          >
             <p className="mb-3 text-[14px]">{t("profile.signOutConfirm")}</p>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" onClick={() => setConfirming(false)}>
@@ -229,9 +246,18 @@ export function YouTab() {
         <h1 className="serif text-[21px] tracking-[-0.01em]">{t("tabs.you")}</h1>
       </header>
 
-      <form onSubmit={onSubmit} className="rounded-[7px] border px-3.5 py-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <form
+        onSubmit={onSubmit}
+        className="rounded-[7px] border px-3.5 py-3.5"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         <Field label={t("profile.displayName")}>
-          <Input value={form.displayName} onChange={(e) => setDraft({ ...form, displayName: e.target.value })} required maxLength={80} />
+          <Input
+            value={form.displayName}
+            onChange={(e) => setDraft({ ...form, displayName: e.target.value })}
+            required
+            maxLength={80}
+          />
         </Field>
         <Field label={t("profile.vpa")} error={save.error ? t("profile.vpaInvalid") : undefined}>
           <Input
@@ -252,7 +278,10 @@ export function YouTab() {
       </form>
 
       <Section title={t("profile.devices")} />
-      <div className="rounded-[7px] border px-3.5 py-2" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <div
+        className="rounded-[7px] border px-3.5 py-2"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         {me.data.credentials.length === 0 ? (
           // Not a quiet list item: this is the state where closing the tab can
           // cost the account, so it is styled as the warning it is.
@@ -319,7 +348,10 @@ export function YouTab() {
       <NotificationsSection />
 
       <Section title={t("profile.export")} />
-      <div className="rounded-[7px] border px-3.5 py-3.5" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+      <div
+        className="rounded-[7px] border px-3.5 py-3.5"
+        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+      >
         <p className="mb-2.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("export.body")}
         </p>

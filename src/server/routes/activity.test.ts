@@ -62,7 +62,9 @@ describe("GET /ledgers/:ledgerId/activity", () => {
   // explicit nicknames, which is exactly why nothing caught it.
   it("names a member who has no per-ledger nickname", async () => {
     h.sql
-      .prepare("INSERT INTO ledger_members (id, ledger_id, user_id, guest_name, nickname, joined_at) VALUES (?,?,?,?,?,?)")
+      .prepare(
+        "INSERT INTO ledger_members (id, ledger_id, user_id, guest_name, nickname, joined_at) VALUES (?,?,?,?,?,?)",
+      )
       .run("m_cy", "L1", "u_cy", null, null, 1_760_000_000_000);
 
     const joined = (await feed()).filter((e) => e.kind === "joined");
@@ -157,7 +159,9 @@ describe("GET /ledgers/:ledgerId/activity", () => {
 
   it("reports a comment against the expense it was made on", async () => {
     const { id } = await createExpense("L1", { description: "Cab" });
-    await app.request(req(h, `/api/ledgers/L1/expenses/${id}/comments`, { method: "POST", json: { body: "who paid?" } }));
+    await app.request(
+      req(h, `/api/ledgers/L1/expenses/${id}/comments`, { method: "POST", json: { body: "who paid?" } }),
+    );
 
     const commented = (await feed()).find((e) => e.kind === "commented");
     expect(commented).toMatchObject({ actorName: "Ada", description: "Cab", expenseId: id });

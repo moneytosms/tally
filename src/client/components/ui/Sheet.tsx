@@ -74,7 +74,10 @@ export function Sheet({
           animation: `${open ? "sheet-panel-in" : "sheet-panel-out"} ${CLOSE_MS}ms ease-out forwards`,
         }}
       >
-        <div className="sticky top-0 flex items-center gap-3 border-b px-4 py-3" style={{ background: "var(--paper)", borderColor: "var(--line)" }}>
+        <div
+          className="sticky top-0 flex items-center gap-3 border-b px-4 py-3"
+          style={{ background: "var(--paper)", borderColor: "var(--line)" }}
+        >
           <h2 id={titleId} className="serif flex-1 text-[19px]">
             {title}
           </h2>

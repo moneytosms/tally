@@ -241,8 +241,7 @@ export const qk = {
 
 /** Nested under the ledger's expense key so any expense mutation invalidates a
  *  filtered view too - a filtered list is still the expense list. */
-const expenseSearchKey = (ledgerId: string, f: ExpenseFilters) =>
-  [...qk.expenses(ledgerId), "search", f] as const;
+const expenseSearchKey = (ledgerId: string, f: ExpenseFilters) => [...qk.expenses(ledgerId), "search", f] as const;
 
 function filterQuery(f: ExpenseFilters): string {
   const p = new URLSearchParams();
@@ -279,8 +278,7 @@ export function createQueryClient() {
 
 export const useMe = () => useQuery({ queryKey: qk.me, queryFn: () => api<Me>("/api/me"), retry: false });
 
-export const useLedgers = () =>
-  useQuery({ queryKey: qk.ledgers, queryFn: () => api<LedgerSummary[]>("/api/ledgers") });
+export const useLedgers = () => useQuery({ queryKey: qk.ledgers, queryFn: () => api<LedgerSummary[]>("/api/ledgers") });
 
 export const useLedger = (ledgerId: string) =>
   useQuery({ queryKey: qk.ledger(ledgerId), queryFn: () => api<LedgerSummary>(`/api/ledgers/${ledgerId}`) });
@@ -292,7 +290,10 @@ export const useExpenses = (ledgerId: string) =>
   useQuery({ queryKey: qk.expenses(ledgerId), queryFn: () => api<Expense[]>(`/api/ledgers/${ledgerId}/expenses`) });
 
 export const useBalances = (ledgerId: string) =>
-  useQuery({ queryKey: qk.balances(ledgerId), queryFn: () => api<LedgerBalances>(`/api/ledgers/${ledgerId}/balances`) });
+  useQuery({
+    queryKey: qk.balances(ledgerId),
+    queryFn: () => api<LedgerBalances>(`/api/ledgers/${ledgerId}/balances`),
+  });
 
 export const useCrossLedgerBalances = () =>
   useQuery({ queryKey: qk.crossLedger, queryFn: () => api<CrossLedgerBalance[]>("/api/balances") });
@@ -701,10 +702,9 @@ export function useSeriesAction(ledgerId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, action }: { id: string; action: "pause" | "delete" }) =>
-      api<Series | { id: string }>(
-        `/api/ledgers/${ledgerId}/recurring/${id}${action === "pause" ? "/pause" : ""}`,
-        { method: action === "pause" ? "POST" : "DELETE" },
-      ),
+      api<Series | { id: string }>(`/api/ledgers/${ledgerId}/recurring/${id}${action === "pause" ? "/pause" : ""}`, {
+        method: action === "pause" ? "POST" : "DELETE",
+      }),
     onSettled: () => qc.invalidateQueries({ queryKey: qk.series(ledgerId) }),
   });
 }
@@ -714,8 +714,7 @@ export function useSeriesAction(ledgerId: string) {
 export function useCreateInvite(ledgerId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: () =>
-      api<{ token: string; expiresAt: number }>(`/api/ledgers/${ledgerId}/invites`, { method: "POST" }),
+    mutationFn: () => api<{ token: string; expiresAt: number }>(`/api/ledgers/${ledgerId}/invites`, { method: "POST" }),
     onSettled: () => qc.invalidateQueries({ queryKey: qk.adminInvites }),
   });
 }
@@ -820,7 +819,10 @@ export const useImportCommit = (ledgerId: string) => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { rows: ImportRow[]; mapping: Record<string, string>; newGuests: Record<string, string> }) =>
-      api<{ created: number }>(`/api/ledgers/${ledgerId}/import/commit`, { method: "POST", body: JSON.stringify(body) }),
+      api<{ created: number }>(`/api/ledgers/${ledgerId}/import/commit`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.expenses(ledgerId) });
       qc.invalidateQueries({ queryKey: qk.members(ledgerId) });

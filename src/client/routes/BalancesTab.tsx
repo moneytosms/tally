@@ -138,7 +138,10 @@ function LedgerPlan({ ledger, onLegs }: { ledger: LedgerSummary; onLegs: (id: st
   }, [key, ledger.id, onLegs]);
 
   return (
-    <section className="mb-2 rounded-[7px] border px-3.5 py-3" style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}>
+    <section
+      className="mb-2 rounded-[7px] border px-3.5 py-3"
+      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+    >
       <div className="mb-1.5 flex items-baseline justify-between gap-2">
         <h2 className="serif truncate text-[16px]">{ledger.name}</h2>
         <span className="text-[11px]" style={{ color: "var(--ink-3)" }}>
@@ -191,7 +194,15 @@ function LedgerPlan({ ledger, onLegs }: { ledger: LedgerSummary; onLegs: (id: st
   );
 }
 
-function BulkSettle({ friend, legs, onDone }: { friend: CrossLedgerBalance; legs: Contribution[]; onDone: () => void }) {
+function BulkSettle({
+  friend,
+  legs,
+  onDone,
+}: {
+  friend: CrossLedgerBalance;
+  legs: Contribution[];
+  onDone: () => void;
+}) {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
@@ -216,7 +227,12 @@ function BulkSettle({ friend, legs, onDone }: { friend: CrossLedgerBalance; legs
         setStatus(t("balances.recordedNone"));
         return;
       }
-      setStatus(t(res.skipped.length === 0 ? "balances.recordedAll" : "balances.recordedSome", { done, total: done + res.skipped.length }));
+      setStatus(
+        t(res.skipped.length === 0 ? "balances.recordedAll" : "balances.recordedSome", {
+          done,
+          total: done + res.skipped.length,
+        }),
+      );
       onDone();
     } catch {
       setStatus(t("settle.failed"));

@@ -49,9 +49,7 @@ function base64url(bytes: Uint8Array): string {
  */
 export async function deriveAuthKey(password: string, email: string): Promise<string> {
   const salt = new TextEncoder().encode(SALT_PREFIX + email.trim().toLowerCase());
-  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, [
-    "deriveBits",
-  ]);
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits(
     { name: "PBKDF2", hash: "SHA-256", salt: salt as unknown as BufferSource, iterations: CLIENT_KDF_ITERATIONS },
     key,

@@ -26,7 +26,7 @@ it is off.
 **Disabling also kills the links already handed out.** That is enforced in the
 data-access layer, in the `redeemable` predicate shared by `findUsableInvite` and
 `listOpenInvites`, not by revoking rows: a ledger invite is only usable while its
-ledger is live *and* invite-enabled. Instance invites (`ledger_id` null) are
+ledger is live _and_ invite-enabled. Instance invites (`ledger_id` null) are
 untouched - they belong to the Owner and to no ledger.
 
 ## Consequences

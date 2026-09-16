@@ -53,7 +53,11 @@ export function ActivityRow({ event, showTime = true }: { event: ActivityEvent; 
         {who ? (
           <Avatar name={who} />
         ) : (
-          <span className="block size-2 rounded-full" style={{ background: dotColour[event.kind] }} aria-hidden="true" />
+          <span
+            className="block size-2 rounded-full"
+            style={{ background: dotColour[event.kind] }}
+            aria-hidden="true"
+          />
         )}
       </span>
       <div className="min-w-0 flex-1">

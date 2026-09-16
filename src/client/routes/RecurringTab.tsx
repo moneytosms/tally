@@ -2,7 +2,17 @@
 // The split UI is SplitEditor's job - this file only collects cadence + dates.
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router";
-import { Amount, Avatar, Button, EmptyState, Field, Input, ScreenSkeleton, Select, Sheet } from "~/client/components/ui";
+import {
+  Amount,
+  Avatar,
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  ScreenSkeleton,
+  Select,
+  Sheet,
+} from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import {
   SplitEditor,
@@ -13,11 +23,17 @@ import {
   type SplitParticipant,
 } from "~/client/components/SplitEditor";
 import { ParticipantPicker } from "~/client/components/ParticipantPicker";
-import { useCategories, useMembers, useSaveSeries, useSeries, useSeriesAction, type Series } from "~/client/lib/queries";
+import {
+  useCategories,
+  useMembers,
+  useSaveSeries,
+  useSeries,
+  useSeriesAction,
+  type Series,
+} from "~/client/lib/queries";
 import { ApiError } from "~/client/lib/api";
 import { t } from "~/client/i18n";
 import type { SplitMode } from "~/shared/money";
-
 
 type IntervalUnit = "day" | "week" | "month";
 const units: IntervalUnit[] = ["day", "week", "month"];
@@ -112,7 +128,9 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
   const [categoryId, setCategoryId] = useState<string | null>(editing?.categoryId ?? null);
   const [notes, setNotes] = useState(editing?.notes ?? "");
   const [mode, setMode] = useState<SplitMode>(editing?.mode ?? "equal");
-  const [participantIds, setParticipantIds] = useState<string[]>(editing?.participants.map((p) => p.memberId) ?? roster.map((m) => m.id));
+  const [participantIds, setParticipantIds] = useState<string[]>(
+    editing?.participants.map((p) => p.memberId) ?? roster.map((m) => m.id),
+  );
   const [raw, setRaw] = useState<Record<string, string>>(() => {
     if (!editing) return {};
     const out: Record<string, string> = {};
@@ -124,7 +142,7 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
   });
   const [intervalUnit, setIntervalUnit] = useState<IntervalUnit>(editing?.intervalUnit ?? "month");
   const [intervalCount, setIntervalCount] = useState(String(editing?.intervalCount ?? 1));
-  const [startAt, setStartAt] = useState(epochToDateInput(editing?.startAt ?? Date.now()));
+  const [startAt, setStartAt] = useState(() => epochToDateInput(editing?.startAt ?? Date.now()));
   const [hasEnd, setHasEnd] = useState(editing?.endAt !== null && editing?.endAt !== undefined);
   const [endAt, setEndAt] = useState(editing?.endAt ? epochToDateInput(editing.endAt) : "");
   const [failure, setFailure] = useState("");
@@ -194,8 +212,16 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
         <Input value={description} onChange={(e) => setDescription(e.target.value)} autoComplete="off" />
       </Field>
 
-      <Field label={t("expense.amount")} error={amountRaw.trim() && total === null ? t("expense.error.amount") : undefined}>
-        <Input inputMode="decimal" value={amountRaw} onChange={(e) => setAmountRaw(e.target.value)} placeholder="0.00" />
+      <Field
+        label={t("expense.amount")}
+        error={amountRaw.trim() && total === null ? t("expense.error.amount") : undefined}
+      >
+        <Input
+          inputMode="decimal"
+          value={amountRaw}
+          onChange={(e) => setAmountRaw(e.target.value)}
+          placeholder="0.00"
+        />
       </Field>
 
       <Field label={t("expense.paidBy")}>
@@ -323,7 +349,10 @@ export default function RecurringTab() {
 
   return (
     <>
-      <header className="mb-3 flex items-end justify-between gap-2.5 border-b pb-3" style={{ borderColor: "var(--line)" }}>
+      <header
+        className="mb-3 flex items-end justify-between gap-2.5 border-b pb-3"
+        style={{ borderColor: "var(--line)" }}
+      >
         <h1 className="serif text-[21px] tracking-[-0.01em]">{t("recurring.title")}</h1>
         <Button size="sm" onClick={openCreate}>
           {t("recurring.add")}

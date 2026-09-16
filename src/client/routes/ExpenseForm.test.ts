@@ -77,7 +77,10 @@ function renderForm() {
   );
 }
 
-function renderEdit(mode: "exact" | "percent", splits: Array<{ memberId: string; amount: number; inputValue: number | null }>) {
+function renderEdit(
+  mode: "exact" | "percent",
+  splits: Array<{ memberId: string; amount: number; inputValue: number | null }>,
+) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   client.setQueryData(qk.ledgers, [ledger]);
   client.setQueryData(qk.me, me);

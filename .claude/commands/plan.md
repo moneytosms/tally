@@ -15,25 +15,32 @@ Scaffold a structured plan file for a task or feature.
 
 ```markdown
 # Plan: <name>
+
 Date: YYYY-MM-DD
 
 ## Goal
+
 <One paragraph: what this plan accomplishes and why.>
 
 ## Constraints
+
 - <hard limits: time, tech choices, must-not-touch areas>
 
 ## Acceptance Criteria
+
 - [ ] <specific, testable condition>
 - [ ] <specific, testable condition>
 
 ## Unresolved Questions
+
 - [ ] <question that must be answered before or during execution>
 
 ## Tasks
+
 <!-- Populated as work begins -->
 
 ## Progress
+
 <!-- DocWriter appends here at session end -->
 ```
 

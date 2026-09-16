@@ -137,11 +137,7 @@ describe("occurrencesDue", () => {
   it("generates monthly occurrences across a year boundary", () => {
     const start = utc("2026-11-15T00:00:00Z");
     const due = occurrencesDue(monthly(start), start, utc("2027-02-01T00:00:00Z"));
-    expect(due).toEqual([
-      utc("2026-11-15T00:00:00Z"),
-      utc("2026-12-15T00:00:00Z"),
-      utc("2027-01-15T00:00:00Z"),
-    ]);
+    expect(due).toEqual([utc("2026-11-15T00:00:00Z"), utc("2026-12-15T00:00:00Z"), utc("2027-01-15T00:00:00Z")]);
   });
 });
 
