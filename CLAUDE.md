@@ -24,7 +24,7 @@ TS everywhere. Cloudflare Workers + D1 + Drizzle + Hono. React SPA on Vite, TanS
 
 One Worker serves static assets and `/api/*`. One origin, no CORS.
 
-**RTK wrappers:** `rtk pnpm` (dev/build/db:generate/db:migrate/deploy — all pnpm scripts), `rtk tsc` (typecheck), `rtk vitest` (test). No eslint/prettier config present yet — add `rtk lint`/`rtk format` if those land.
+**RTK wrappers:** `rtk pnpm` (dev/build/db:generate/db:migrate/deploy/lint/format — all pnpm scripts), `rtk tsc` (typecheck), `rtk vitest` (test), `rtk lint` (eslint), `rtk format` (prettier --check; `pnpm format:write` to apply).
 
 ## Tooling
 
