@@ -1,4 +1,12 @@
 {
+  "demo": {
+    "try": "Try the demo",
+    "tryBody": "Explore with sample data. Nothing is saved.",
+    "banner": "Demo mode. Sample data, nothing is saved.",
+    "exit": "Exit demo",
+    "unavailable": "Not available in the demo.",
+    "notSettled": "Settle up first."
+  },
   "app": {
     "name": "tally"
   },

@@ -1,7 +1,8 @@
 // Four bottom tabs: Ledgers, Balances, Insights, You. Persistent FAB for add-expense.
 // See docs/SPEC.md §10.
 import { lazy, Suspense, useState } from "react";
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router";
 import { TabBar } from "./components/TabBar";
 import { Fab } from "./components/Fab";
 import { Sheet } from "./components/ui/Sheet";
@@ -11,6 +12,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { LedgerForm, type LedgerKind } from "./components/LedgerForm";
 import { useLedgers, useMe, useOnline } from "./lib/queries";
 import { ApiError } from "./lib/api";
+import { exitDemo, isDemo } from "./lib/demo";
 import { t } from "./i18n";
 import { LedgersTab } from "./routes/LedgersTab";
 import { LedgerDetail } from "./routes/LedgerDetail";
@@ -43,6 +45,32 @@ function OfflineBanner() {
       style={{ background: "var(--clay-wash)", color: "var(--clay)" }}
     >
       <strong className="font-medium">{t("offline.title")}</strong> {t("offline.body")}
+    </div>
+  );
+}
+
+/** Demo mode is always labelled, with the way out one tap away. */
+function DemoBanner() {
+  const qc = useQueryClient();
+  const navigate = useNavigate();
+  return (
+    <div
+      role="status"
+      className="flex items-center justify-between gap-2 px-4 py-2 text-[12px]"
+      style={{ background: "var(--paper-sunk)", color: "var(--ink-3)" }}
+    >
+      <span>{t("demo.banner")}</span>
+      <button
+        type="button"
+        className={`font-medium underline ${focusRing}`}
+        onClick={() => {
+          exitDemo();
+          qc.clear();
+          navigate("/welcome", { replace: true });
+        }}
+      >
+        {t("demo.exit")}
+      </button>
     </div>
   );
 }
@@ -113,6 +141,7 @@ function Shell() {
   return (
     <div className="paper-ground relative flex h-full flex-col overflow-hidden">
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">
+        {isDemo() && <DemoBanner />}
         <OfflineBanner />
         <UpdatePrompt />
         <InstallPrompt />

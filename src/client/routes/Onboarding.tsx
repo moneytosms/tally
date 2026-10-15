@@ -4,6 +4,7 @@ import { startAuthentication, startRegistration } from "@simplewebauthn/browser"
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Field, Input } from "~/client/components/ui";
 import { api } from "~/client/lib/api";
+import { enterDemo } from "~/client/lib/demo";
 import { qk, useMe } from "~/client/lib/queries";
 import { classifyAuthError, isEmbeddedIosBrowser, plainFailure, type AuthFailure } from "~/client/lib/passkey";
 import { emailProblem, newPasswordProblem, passwordErrorKey, signInWithPassword, signUp } from "~/client/lib/authApi";
@@ -355,6 +356,20 @@ export function Onboarding() {
             <Button variant="ghost" size="sm" className="mt-3 w-full" onClick={() => go("signup")}>
               {t("onboarding.needAccount")}
             </Button>
+            <Button
+              variant="ghost"
+              className="mt-3 w-full"
+              onClick={() => {
+                enterDemo();
+                qc.clear();
+                navigate("/", { replace: true });
+              }}
+            >
+              {t("demo.try")}
+            </Button>
+            <p className="mt-1 text-center text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+              {t("demo.tryBody")}
+            </p>
             {!inviteToken && !owner && (
               <Button
                 variant="ghost"

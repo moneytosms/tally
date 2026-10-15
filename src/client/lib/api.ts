@@ -1,6 +1,8 @@
 // One fetch wrapper for /api. Same-origin, JSON in, JSON out.
 // Never cached by a service worker - a stale balance is worse than no balance.
 
+import { demoApi, isDemo } from "./demo";
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -13,6 +15,9 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  // Demo mode never touches the network: see lib/demo.ts.
+  if (isDemo()) return demoApi<T>(path, init);
+
   // Writes offline fail immediately and visibly. No queue, no outbox, no retry.
   const method = init?.method ?? "GET";
   if (method !== "GET" && typeof navigator !== "undefined" && !navigator.onLine) {
