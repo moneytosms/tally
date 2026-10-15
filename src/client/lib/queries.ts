@@ -7,6 +7,7 @@
 import { MutationCache, useMutation, useQuery, useQueryClient, QueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { api, ApiError } from "./api";
+import { isDemo } from "./demo";
 import { pushToast } from "~/client/components/ui/Toast";
 import { t } from "~/client/i18n";
 import { markActed } from "~/client/components/InstallPrompt";
@@ -802,6 +803,7 @@ export function useNudge() {
 export const useImportPreview = (ledgerId: string) =>
   useMutation({
     mutationFn: async (file: File): Promise<ImportParseResult> => {
+      if (isDemo()) throw new ApiError(403, t("demo.unavailable"), "demo");
       const form = new FormData();
       form.append("file", file);
       const res = await fetch(`/api/ledgers/${ledgerId}/import/preview`, {
