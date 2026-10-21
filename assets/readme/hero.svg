@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400" role="img" aria-labelledby="t d">
+  <title id="t">tally</title>
+  <desc id="d">tally, self-hosted expense splitting. A ledger shows net balances per person and the single transfer that clears the group, with a UPI settle action.</desc>
+  <rect width="1200" height="400" rx="26" fill="#f7f4ec"/>
+  <rect x="0.5" y="0.5" width="1199" height="399" rx="25.5" fill="none" stroke="#e0d9c8"/>
+  <g id="mark" transform="translate(64 56)" fill="#5c7355">
+    <rect x="0" y="0" width="12" height="76" rx="3"/><rect x="26" y="0" width="12" height="76" rx="3"/><rect x="52" y="0" width="12" height="76" rx="3"/><rect x="78" y="0" width="12" height="76" rx="3"/>
+    <path d="M-10 62 L102 14" stroke="#a85f42" stroke-width="10" stroke-linecap="round"/>
+  </g>
+  <g id="title-block" transform="translate(64 0)" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+    <text y="212" font-size="88" font-weight="800" fill="#23241d" letter-spacing="-3">tally</text>
+    <text y="262" font-size="28" fill="#4a4a3d">Split expenses with friends.</text>
+    <text y="300" font-size="28" font-weight="700" fill="#5c7355">Never touches your money.</text>
+    <text y="350" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="16" fill="#7d7a68">PWA · Cloudflare Workers + D1 · $0/month</text>
+  </g>
+  <g id="ledger" transform="translate(640 48)" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">
+    <rect width="496" height="304" rx="18" fill="#fffdf8" stroke="#e0d9c8"/>
+    <text x="28" y="46" font-size="22" font-weight="700" fill="#23241d">Goa trip</text>
+    <text x="468" y="46" text-anchor="end" font-family="ui-monospace,SFMono-Regular,Menlo,monospace" font-size="14" fill="#7d7a68">4 members · illustrative</text>
+    <path d="M28 66 H468" stroke="#e0d9c8"/>
+    <g font-size="20">
+      <text x="28" y="104" fill="#23241d">Asha</text><text x="468" y="104" text-anchor="end" font-weight="700" fill="#5c7355">is owed ₹2,140</text>
+      <text x="28" y="144" fill="#23241d">Rahul</text><text x="468" y="144" text-anchor="end" font-weight="700" fill="#a85f42">owes ₹1,260</text>
+      <text x="28" y="184" fill="#23241d">Meera</text><text x="468" y="184" text-anchor="end" font-weight="700" fill="#a85f42">owes ₹880</text>
+      <text x="28" y="224" fill="#23241d">You</text><text x="468" y="224" text-anchor="end" font-weight="700" fill="#7d7a68">settled up</text>
+    </g>
+    <rect x="28" y="244" width="440" height="40" rx="10" fill="#e6ece0"/>
+    <text x="44" y="270" font-size="17" fill="#3e5238">2 transfers clear the group</text>
+    <rect x="352" y="250" width="108" height="28" rx="8" fill="#5c7355"/><text x="406" y="270" text-anchor="middle" font-size="15" font-weight="700" fill="#fff">Pay via UPI</text>
+  </g>
+</svg>
