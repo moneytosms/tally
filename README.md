@@ -1,5 +1,11 @@
 # tally
 
+[![CI](https://github.com/moneytosms/tally/actions/workflows/ci.yml/badge.svg)](https://github.com/moneytosms/tally/actions/workflows/ci.yml)
+![Cloudflare Workers](https://img.shields.io/badge/runs%20on-Cloudflare%20Workers-F38020)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)
+![PWA](https://img.shields.io/badge/app-PWA-5A0FC8)
+![Cost](https://img.shields.io/badge/cost-%240%2Fmonth-brightgreen)
+
 Self-hosted expense splitting for friend groups. PWA.
 
 One instance, ~20 people, $0/month on Cloudflare's free tier. Tracks who owes
