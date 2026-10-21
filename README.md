@@ -1,4 +1,14 @@
-# tally
+<h1 align="center">tally</h1>
+
+<p align="center">
+  <img src="./assets/readme/hero.svg" width="100%" alt="tally: split expenses with friends. A ledger of net balances with a UPI settle action. Never touches your money.">
+</p>
+
+[![CI](https://github.com/moneytosms/tally/actions/workflows/ci.yml/badge.svg)](https://github.com/moneytosms/tally/actions/workflows/ci.yml)
+![Cloudflare Workers](https://img.shields.io/badge/runs%20on-Cloudflare%20Workers-F38020)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6)
+![PWA](https://img.shields.io/badge/app-PWA-5A0FC8)
+![Cost](https://img.shields.io/badge/cost-%240%2Fmonth-brightgreen)
 
 Self-hosted expense splitting for friend groups. PWA.
 
@@ -43,6 +53,10 @@ processing · trip kitty · payment rotation · read-only share links · in-app 
 
 Cloudflare Workers + D1 + Drizzle + Hono · React SPA on Vite · TanStack Query ·
 Zod shared client/server · Tailwind · SimpleWebAuthn · Durable Object Alarms.
+
+<p align="center">
+  <img src="./assets/readme/architecture.svg" width="100%" alt="React PWA talks to one Cloudflare Worker serving static assets and a Hono API, backed by D1 and Durable Object alarms.">
+</p>
 
 One Worker serves both the static assets and `/api/*`. One origin, no CORS.
 
