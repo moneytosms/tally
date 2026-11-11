@@ -95,7 +95,10 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
       <Field label={t("ledger.name")}>
         <Input
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            setFailure("");
+          }}
           placeholder={t(`ledger.namePlaceholder.${kind}`)}
           required
           maxLength={80}
@@ -105,24 +108,39 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
 
       <Field label={t("ledger.colorOptional")}>
         <div className="flex flex-wrap items-center gap-2">
+          {/* 44px hit targets; the visible circle inside stays small. */}
           <button
             type="button"
             aria-label={t("ledger.colorNone")}
             aria-pressed={color === null}
-            onClick={() => setColor(null)}
-            className={`h-7 w-7 rounded-full border-2 ${focusRing}`}
-            style={{ borderColor: color === null ? "var(--ink)" : "var(--line)", background: "var(--paper-sunk)" }}
-          />
+            onClick={() => {
+              setColor(null);
+              setFailure("");
+            }}
+            className={`grid h-11 w-11 place-items-center rounded-full ${focusRing}`}
+          >
+            <span
+              className="block h-7 w-7 rounded-full border-2"
+              style={{ borderColor: color === null ? "var(--ink)" : "var(--line)", background: "var(--paper-sunk)" }}
+            />
+          </button>
           {LEDGER_COLOR_VALUES.map((c) => (
             <button
               key={c}
               type="button"
-              aria-label={c}
+              aria-label={t(`ledger.color.${c}`)}
               aria-pressed={color === c}
-              onClick={() => setColor(c)}
-              className={`h-7 w-7 rounded-full border-2 ${focusRing}`}
-              style={{ borderColor: color === c ? "var(--ink)" : "transparent", background: LEDGER_COLOR_SWATCH[c] }}
-            />
+              onClick={() => {
+                setColor(c);
+                setFailure("");
+              }}
+              className={`grid h-11 w-11 place-items-center rounded-full ${focusRing}`}
+            >
+              <span
+                className="block h-7 w-7 rounded-full border-2"
+                style={{ borderColor: color === c ? "var(--ink)" : "transparent", background: LEDGER_COLOR_SWATCH[c] }}
+              />
+            </button>
           ))}
         </div>
       </Field>
@@ -130,7 +148,10 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
       <Field label={t("ledger.emojiOptional")}>
         <Input
           value={emoji}
-          onChange={(e) => setEmoji(e.target.value)}
+          onChange={(e) => {
+            setEmoji(e.target.value);
+            setFailure("");
+          }}
           placeholder={t("ledger.emojiPlaceholder")}
           maxLength={8}
         />
@@ -139,17 +160,37 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
       {kind === "trip" && (
         <>
           <Field label={t("ledger.endDate")}>
-            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+            <Input
+              type="date"
+              value={endDate}
+              onChange={(e) => {
+                setEndDate(e.target.value);
+                setFailure("");
+              }}
+              required
+            />
           </Field>
           <Field label={t("ledger.budgetOptional")}>
-            <Rupees value={budgetRaw} onChange={setBudgetRaw} />
+            <Rupees
+              value={budgetRaw}
+              onChange={(v) => {
+                setBudgetRaw(v);
+                setFailure("");
+              }}
+            />
           </Field>
         </>
       )}
 
       {cloneable.length > 0 && (
         <Field label={t("ledger.cloneFrom")}>
-          <Select value={cloneFrom} onChange={(e) => setCloneFrom(e.target.value)}>
+          <Select
+            value={cloneFrom}
+            onChange={(e) => {
+              setCloneFrom(e.target.value);
+              setFailure("");
+            }}
+          >
             <option value="">{t("ledger.cloneNone")}</option>
             {cloneable.map((l) => (
               <option key={l.id} value={l.id}>
@@ -163,30 +204,33 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
       {/* An invite is a bearer credential, so this is a decision, not a default to
           inherit silently (ADR 0007). Same label and same on/off copy as the
           ledger's ⋯ menu - one switch, described one way. */}
-      <label className="mb-1.5 flex items-center gap-2.5 text-[14px]">
+      <label className="mb-1.5 flex min-h-11 items-center gap-2.5 text-[14px]">
         <input
           type="checkbox"
           checked={invitesEnabled}
-          onChange={(e) => setInvitesEnabled(e.target.checked)}
+          onChange={(e) => {
+            setInvitesEnabled(e.target.checked);
+            setFailure("");
+          }}
           className={`h-4 w-4 ${focusRing}`}
           style={{ accentColor: "var(--moss)" }}
         />
         {t("ledger.invitesEnabled")}
       </label>
-      <p className="mb-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mb-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t(invitesEnabled ? "ledger.invitesOnHint" : "ledger.invitesOffHint")}
       </p>
-      <p className="mb-3 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("ledger.invitesCreateHint")}
       </p>
 
       {/* One hint, not two saying overlapping things. */}
-      <p className="mb-3 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t(`ledger.kindHint.${kind}`)}
       </p>
 
       {failure && (
-        <p role="alert" className="mb-3 text-[12.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mb-3 text-[13px]" style={{ color: "var(--clay)" }}>
           {failure}
         </p>
       )}

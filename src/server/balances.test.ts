@@ -1,9 +1,10 @@
 // Amounts are paise. Rupee value in a comment beside each.
 import { describe, expect, it } from "vitest";
-import { netPositions, transferPlan, type NetPosition } from "~/server/balances";
+import { memberBreakdown, netPositions, transferPlan, type NetPosition } from "~/server/balances";
 
 type Expense = Parameters<typeof netPositions>[0][number];
 type Settlement = Parameters<typeof netPositions>[1][number];
+type Breakdown = { memberId: string; paid: number; share: number; settledOut: number; settledIn: number };
 
 const net = (ps: NetPosition[], id: string) => ps.find((p) => p.memberId === id)?.net;
 const sum = (ps: NetPosition[]) => ps.reduce((a, p) => a + p.net, 0);
@@ -169,18 +170,17 @@ function scenario(seed: number) {
   const members = Array.from({ length: 2 + r(6) }, (_, i) => `m${i}`);
   const pick = () => members[r(members.length)]!;
 
-  const expenses: Expense[] = [];
+  const expenses: Array<Expense & { total: number }> = [];
   for (let i = 0; i <= r(8); i++) {
     const participants = members.filter(() => r(2) === 0);
     if (participants.length === 0) participants.push(pick());
     const sign = r(5) === 0 ? -1 : 1; // one in five is a refund
-    expenses.push({
-      payerMemberId: pick(),
-      splits: participants.map((memberId) => ({
-        memberId,
-        amount: sign * (1 + r(500000)), // up to ₹5000 per participant
-      })),
-    });
+    const splits = participants.map((memberId) => ({
+      memberId,
+      amount: sign * (1 + r(500000)), // up to ₹5000 per participant
+    }));
+    // Splits sum to total, as write-time validation guarantees.
+    expenses.push({ payerMemberId: pick(), total: splits.reduce((a, x) => a + x.amount, 0), splits });
   }
 
   const settlements: Settlement[] = [];
@@ -234,5 +234,68 @@ describe("invariants over generated scenarios", () => {
       const plan = transferPlan(positions);
       if (positions.length > 0) expect(plan.length, `seed ${seed}`).toBeLessThanOrEqual(positions.length - 1);
     }
+  });
+});
+
+describe("memberBreakdown", () => {
+  const byId = (bs: Breakdown[], id: string) => bs.find((b) => b.memberId === id);
+
+  it("the identity paid - share + settledOut - settledIn === net holds for every member, every seed", () => {
+    for (const seed of seeds) {
+      const { expenses, settlements } = scenario(seed);
+      const ps = netPositions(expenses, settlements);
+      const bs = memberBreakdown(expenses, settlements);
+      expect(bs.map((b) => b.memberId).sort(), `seed ${seed}`).toEqual(ps.map((p) => p.memberId).sort());
+      for (const p of ps) {
+        const b = byId(bs, p.memberId)!;
+        expect(b.paid - b.share + b.settledOut - b.settledIn, `seed ${seed} ${p.memberId}`).toBe(p.net);
+        expect(Number.isInteger(b.paid + b.share + b.settledOut + b.settledIn), `seed ${seed}`).toBe(true);
+      }
+    }
+  });
+
+  it("a refund (negative total) reduces both paid and share", () => {
+    // ₹100 paid by A split A/B, then a ₹40 refund paid by A split A/B
+    const bs = memberBreakdown(
+      [
+        {
+          payerMemberId: "A",
+          total: 10_000, // ₹100
+          splits: [
+            { memberId: "A", amount: 5_000 }, // ₹50
+            { memberId: "B", amount: 5_000 }, // ₹50
+          ],
+        },
+        {
+          payerMemberId: "A",
+          total: -4_000, // -₹40
+          splits: [
+            { memberId: "A", amount: -2_000 }, // -₹20
+            { memberId: "B", amount: -2_000 }, // -₹20
+          ],
+        },
+      ],
+      [],
+    );
+    expect(byId(bs, "A")).toEqual({ memberId: "A", paid: 6_000, share: 3_000, settledOut: 0, settledIn: 0 }); // ₹60 paid, ₹30 share
+    expect(byId(bs, "B")).toEqual({ memberId: "B", paid: 0, share: 3_000, settledOut: 0, settledIn: 0 }); // ₹30 share
+  });
+
+  it("a partial settlement shows on the settler's out and the receiver's in, not on paid or share", () => {
+    // ₹640 paid by A, all for B; B settles ₹500 of it
+    const bs = memberBreakdown(
+      [{ payerMemberId: "A", total: 64_000, splits: [{ memberId: "B", amount: 64_000 }] }], // ₹640
+      [{ fromMemberId: "B", toMemberId: "A", amount: 50_000 }], // ₹500
+    );
+    expect(byId(bs, "B")).toEqual({ memberId: "B", paid: 0, share: 64_000, settledOut: 50_000, settledIn: 0 });
+    expect(byId(bs, "A")).toEqual({ memberId: "A", paid: 64_000, share: 0, settledOut: 0, settledIn: 50_000 });
+  });
+
+  it("a member who appears only in a settlement still gets an entry", () => {
+    // C pays A ₹10 with no expenses at all
+    const bs = memberBreakdown([], [{ fromMemberId: "C", toMemberId: "A", amount: 1_000 }]); // ₹10
+    expect(bs).toHaveLength(2);
+    expect(byId(bs, "C")).toEqual({ memberId: "C", paid: 0, share: 0, settledOut: 1_000, settledIn: 0 });
+    expect(byId(bs, "A")).toEqual({ memberId: "A", paid: 0, share: 0, settledOut: 0, settledIn: 1_000 });
   });
 });

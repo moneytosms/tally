@@ -56,8 +56,10 @@ export async function enablePush(): Promise<PushState> {
   const { publicKey } = await api<{ publicKey: string | null }>("/api/push/key");
   if (!publicKey) return { status: "unavailable" };
 
+  // Dismissing the prompt leaves permission "default": that is off, not denied,
+  // and must stay retryable without a reload.
   const permission = await Notification.requestPermission();
-  if (permission !== "granted") return { status: "denied" };
+  if (permission !== "granted") return { status: permission === "denied" ? "denied" : "off" };
 
   const reg = await navigator.serviceWorker.ready;
   const sub =

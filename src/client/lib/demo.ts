@@ -3,7 +3,7 @@
 // Balances are still DERIVED, by the real server/balances code over this data;
 // splits are resolved by the real resolveSplits. Never a hardcoded number.
 import type { ZodType } from "zod";
-import { grossPairs, netPositions, trailFor, transferPlan } from "~/server/balances";
+import { grossPairs, memberBreakdown, netPositions, trailFor, transferPlan } from "~/server/balances";
 import { t } from "~/client/i18n";
 import { uuidv7 } from "~/shared/id";
 import { resolveSplits, type Paise } from "~/shared/money";
@@ -537,13 +537,30 @@ function handle(path: string, init?: RequestInit): unknown {
     const expenses = S.expenses.filter((e) => e.ledgerId === l);
     const settlements = S.settlements.filter((s) => s.ledgerId === l);
     const positions = netPositions(expenses, settlements);
+    const breakdown = new Map(memberBreakdown(expenses, settlements).map((b) => [b.memberId, b]));
     return {
-      positions,
+      positions: positions.map((p) => ({
+        ...p,
+        ...breakdown.get(p.memberId)!,
+        name: S.members.find((m) => m.id === p.memberId)?.nickname ?? "",
+      })),
       transfers: transferPlan(positions).map((tr) => ({
         ...tr,
         trail: trailFor(expenses, settlements, tr.fromMemberId, tr.toMemberId),
       })),
       pairs: grossPairs(expenses, settlements),
+      settlements: [...settlements]
+        .sort((a, b) => b.declaredAt - a.declaredAt)
+        .map(({ id, fromMemberId, toMemberId, amount, method, note, declaredAt }) => ({
+          id,
+          fromMemberId,
+          toMemberId,
+          amount,
+          method,
+          note,
+          declaredAt,
+        })),
+      totals: { spent: expenses.reduce((a, e) => a + e.total, 0), expenseCount: expenses.length },
     };
   }
   if (hit(/^POST \/ledgers\/([^/]+)\/settlements$/)) {

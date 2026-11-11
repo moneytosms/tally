@@ -7,7 +7,7 @@ export function Input({ className = "", ...props }: InputHTMLAttributes<HTMLInpu
   return (
     <input
       {...props}
-      className={`min-h-11 w-full rounded-[6px] border px-3 text-[14px] ${focusRing} ${className}`}
+      className={`min-h-11 w-full rounded-[6px] border px-3 text-[16px] ${focusRing} ${className}`}
       style={{
         background: "var(--paper-sunk)",
         borderColor: "var(--line)",
@@ -34,7 +34,7 @@ export function Rupees({
     <span className="relative block">
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[14px]"
+        className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[16px]"
         style={{ color: "var(--ink-3)" }}
       >
         ₹

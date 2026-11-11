@@ -146,7 +146,21 @@ Who-owes-whom is recoverable from expense history but is not the primary represe
 
 **Minimise transfers, always, as a derived view.** Never persisted, recomputed on every change.
 
+The implementation is greedy: the largest creditor is matched against the largest debtor until every position is zero. It guarantees at most n-1 transfers for n members with a non-zero position, and that applying them zeroes every position. It does not guarantee the fewest possible transfers.
+
 **Every suggested transfer carries a "why?" affordance** expanding to the expense trail. This is a requirement, not a nicety - it is the answer to the one complaint always-on simplification reliably produces.
+
+### Settle screen
+
+Each ledger has a Settle tab. It shows, in order:
+
+- For every member: paid, share of expenses, settlements sent and received, and the resulting net position. Every figure comes from the server.
+- A check that net positions sum to zero, flagged if they do not.
+- The transfer plan, each transfer with its expense trail.
+- The direct pairwise debts before simplification, collapsed under a disclosure.
+- The settlements recorded so far.
+
+The cross-ledger Balances tab does not repeat the plan. Each ledger there links to that ledger's Settle tab. Bulk settle still reads the per-ledger legs, since it writes them.
 
 ### Settle-up
 
@@ -260,9 +274,23 @@ Four bottom tabs plus a persistent FAB for add-expense.
 
 Balances is deliberately its own tab - "what do I owe Rahul overall" is a different question from "what happened on the Goa trip". **"You" is the pressure valve** that keeps the other three tabs to one job each.
 
+Inside a ledger, the viewer's position and budget card sits under the header on the Expenses tab only. Below the header are four tabs: Expenses (the default), Settle, Insights, Activity. There is no separate Settle button in the header; the Settle tab is the way in, and on an archived ledger it is read-only. Recurring expenses are reached from the ledger's menu, not a tab. The + opens the add-expense form directly in a sheet, with no intermediate menu. Ledger creation is a New ledger button on the Ledgers screen.
+
+### Wide screens
+
+At 768px and up:
+
+- The bottom tab bar becomes a left navigation rail with the same four destinations. The + moves to the top of the rail, and the floating button is hidden.
+- Content sits in a centred column, up to 720px wide.
+- Sheets render as centred dialogs, up to 520px wide, not bottom sheets.
+
 ### Add expense
 
 **Category chip row up front, structured form, always visible - never behind a toggle.** The natural-language quick-add line shipped in v1 and was dropped ([#33](https://github.com/moneytosms/tally/issues/33)): its grammar was never specified and in practice it got in the way more than it saved taps. Target: three taps from cold - open the FAB, tap a category chip, tap Save (amount and description are typed, not tapped, either way).
+
+### Confirmations
+
+Destructive actions (delete, archive, leave, remove a member, merge a guest) use one shared confirm dialog with an action-specific label, such as "Delete expense", never a generic "OK". Focus starts on the dialog, not on the destructive button, and Escape cancels. Escape closes only the topmost overlay, and the confirm dialog keeps keyboard focus inside it. Browser confirm boxes are not used. Reopening an archived ledger needs no confirmation.
 
 ### Visual system
 
@@ -280,6 +308,7 @@ Full token table on [the ticket](https://github.com/moneytosms/tally/issues/15).
 ### PWA
 
 - Precache shell and bundles. **API responses are never cached** - no stale balance can render.
+- **Push display** lives in `public/push-sw.js`, which the generated service worker imports. It shows each received push and, on click, navigates an open window to the ledger URL (or opens one). Same-origin paths only. It adds no fetch handler and no runtime caching. **Untested on a real device**: push delivery has not been verified on any phone.
 - **Offline shows an explicit state and no numbers at all.** A wrong number about money is worse than no number.
 - **Writes offline fail immediately and visibly.** No queue, no outbox, no retry.
 - **Updates prompt; never auto-reload** (it would destroy a half-filled expense form). The API must tolerate one version of skew, because people dismiss prompts.
@@ -297,7 +326,7 @@ Full token table on [the ticket](https://github.com/moneytosms/tally/issues/15).
 
 **WCAG 2.2 AA on core flows** - add expense, settle up, balances, onboarding. Verified by axe in CI **plus one manual keyboard and screen-reader pass per flow**.
 
-- Amounts are never a bare number - sign and label always.
+- Amounts are never a bare number - sign and label always. A net position also states its direction in words ("You owe", "You are owed", "Asha owes"). Totals and shares carry no direction words, because they are not anyone's balance.
 - The moss/clay pair must pass contrast against both backgrounds and differ in lightness.
 - 44×44px tap targets. Dense visuals do not mean dense touch targets.
 - `prefers-reduced-motion`, dynamic type survival, live regions for optimistic failures / offline / update prompt.

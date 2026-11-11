@@ -13,7 +13,8 @@ describe("<Amount>", () => {
     expect(html).toContain("your position");
     expect(html).toContain(">+<");
     expect(html).toContain("₹12.34");
-    expect(html).toContain("owed to you"); // sign is not the only cue for a screen reader
+    expect(html).toContain("You are owed"); // visible words, not just the sign
+    expect(html).toMatch(/sr-only[^>]*>your position</); // label is still announced, not shown
   });
 
   it("renders a sign and a label for a negative amount", () => {
@@ -22,7 +23,7 @@ describe("<Amount>", () => {
     expect(html).toContain(">−<");
     expect(html).toContain("₹12.34");
     expect(html).not.toContain("--₹");
-    expect(html).toContain("you owe");
+    expect(html).toContain("You owe");
   });
 
   it("renders a sign and a label for zero", () => {
@@ -30,7 +31,7 @@ describe("<Amount>", () => {
     expect(html).toContain("your position");
     expect(html).toContain(">±<");
     expect(html).toContain("₹0.00");
-    expect(html).toContain("settled");
+    expect(html).toContain("Settled");
   });
 
   it("never renders a number without its label", () => {
@@ -39,7 +40,7 @@ describe("<Amount>", () => {
     }
   });
 
-  // A magnitude is not a balance. Speaking "owed to you" over an expense total
+  // A magnitude is not a balance. Saying "You are owed" over an expense total
   // told every screen-reader user the opposite of the truth on half the app.
   it("speaks no direction for a neutral amount", () => {
     const html = renderToStaticMarkup(
@@ -47,8 +48,8 @@ describe("<Amount>", () => {
     );
     expect(html).toContain("total");
     expect(html).toContain("₹450.00");
-    expect(html).not.toContain("owed to you");
-    expect(html).not.toContain("you owe");
+    expect(html).not.toContain("You are owed");
+    expect(html).not.toContain("You owe");
   });
 
   it("speaks another member's position about them, not about the viewer", () => {
@@ -56,12 +57,12 @@ describe("<Amount>", () => {
       createElement(Amount, { paise: 383334, label: "net position", subject: "Priya" }),
     );
     expect(theyAreOwed).toContain("Priya is owed");
-    expect(theyAreOwed).not.toContain("owed to you");
+    expect(theyAreOwed).not.toContain("You are owed");
 
     const theyOwe = renderToStaticMarkup(
       createElement(Amount, { paise: -383334, label: "net position", subject: "Priya" }),
     );
     expect(theyOwe).toContain("Priya owes");
-    expect(theyOwe).not.toContain("you owe,");
+    expect(theyOwe).not.toContain("You owe");
   });
 });

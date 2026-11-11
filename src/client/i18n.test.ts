@@ -3,7 +3,7 @@ import { t } from "./i18n";
 
 describe("t()", () => {
   it("interpolates variables", () => {
-    expect(t("settle.payUpi", { amount: "₹640" })).toBe("Pay ₹640 with UPI");
+    expect(t("confirm.deleteLedger.title", { name: "Goa trip" })).toBe("Delete Goa trip?");
   });
 
   it("selects plural form via count", () => {

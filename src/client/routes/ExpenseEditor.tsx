@@ -6,8 +6,8 @@
 // same resolution rules. This screen only loads the expense and owns delete.
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate, useParams } from "react-router";
-import { Button, EmptyState, ScreenSkeleton, focusRing } from "~/client/components/ui";
+import { useNavigate, useParams } from "react-router";
+import { Button, ConfirmDialog, EmptyState, PageHeader, ScreenSkeleton } from "~/client/components/ui";
 import ExpenseForm, { type EditableExpense } from "~/client/routes/ExpenseForm";
 import { api } from "~/client/lib/api";
 import { qk, useDeleteExpense } from "~/client/lib/queries";
@@ -28,63 +28,72 @@ export default function ExpenseEditor() {
   const remove = useDeleteExpense(ledgerId);
   const [confirming, setConfirming] = useState(false);
 
-  if (expenses.isPending) return <ScreenSkeleton />;
-  if (expenses.error) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
+  // The optimistic delete takes the row out of the list while the DELETE is in
+  // flight. Keep the last copy so the form stays mounted and unsaved edits survive
+  // a failed delete.
+  const found = expenses.data?.find((e) => e.id === expenseId);
+  const [kept, setKept] = useState<EditableExpense>();
+  if (found && found !== kept) setKept(found);
+  const expense = found ?? (remove.isPending ? kept : undefined);
 
-  const expense = expenses.data.find((e) => e.id === expenseId);
-  if (!expense) return <EmptyState title={t("error.generic")} body={t("expense.deleted")} />;
+  // Every state below gets the header, so a failed load is never a dead end.
+  const header = <PageHeader title={t("expense.edit")} back={`/ledgers/${ledgerId}`} />;
 
-  return (
-    <>
-      <header className="mb-3 flex items-end gap-2.5 border-b pb-3" style={{ borderColor: "var(--line)" }}>
-        <Link
-          to={`/ledgers/${ledgerId}`}
-          aria-label={t("action.back")}
-          className={`grid min-h-11 min-w-11 place-items-center text-[17px] ${focusRing}`}
-          style={{ color: "var(--ink-3)" }}
-        >
-          ←
-        </Link>
-        <div className="min-w-0 flex-1">
-          <h1 className="serif truncate text-[21px] tracking-[-0.01em]">{t("expense.edit")}</h1>
-          <div className="truncate text-[12px]" style={{ color: "var(--ink-3)" }}>
-            {expense.description}
-          </div>
-        </div>
-      </header>
+  let body;
+  if (expenses.isPending) {
+    body = (
+      <>
+        {header}
+        <ScreenSkeleton />
+      </>
+    );
+  } else if (expenses.error) {
+    body = (
+      <>
+        {header}
+        <EmptyState title={t("error.generic")} body={t("error.network")} />
+      </>
+    );
+  } else if (!expense) {
+    body = (
+      <>
+        {header}
+        <EmptyState title={t("error.generic")} body={t("expense.deleted")} />
+      </>
+    );
+  } else {
+    body = (
+      <>
+        {header}
 
-      <ExpenseForm expense={expense} onDone={back} />
+        <ExpenseForm expense={expense} onDone={back} />
 
-      {/* Two steps, in the page. A browser modal is never used here: it can't be
-          styled, can't be translated, and is suppressible by the browser. */}
-      <div className="mt-6 border-t pt-4" style={{ borderColor: "var(--line)" }}>
-        {confirming ? (
-          <>
-            <p className="mb-2 text-[13px]" style={{ color: "var(--ink-2)" }}>
-              {t("expense.deleteConfirm")}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="danger"
-                disabled={remove.isPending}
-                onClick={() => remove.mutate(expense.id, { onSuccess: back })}
-              >
-                {t("action.confirm")}
-              </Button>
-              <Button variant="ghost" onClick={() => setConfirming(false)}>
-                {t("action.cancel")}
-              </Button>
-            </div>
-          </>
-        ) : (
+        <div className="mt-6 border-t pt-4" style={{ borderColor: "var(--line)" }}>
           <Button variant="danger" onClick={() => setConfirming(true)}>
             {t("action.delete")}
           </Button>
-        )}
-        <p role="alert" aria-live="assertive" className="mt-1.5 text-[12px]" style={{ color: "var(--clay)" }}>
-          {remove.isError ? t("expense.deleteFailed") : ""}
-        </p>
-      </div>
+          <p role="alert" aria-live="assertive" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
+            {remove.isError ? t("expense.deleteFailed") : ""}
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {body}
+
+      {confirming && (
+        <ConfirmDialog
+          title={t("confirm.deleteExpense.title")}
+          body={t("expense.deleteConfirm")}
+          confirmLabel={t("confirm.deleteExpense.action")}
+          busy={remove.isPending}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => remove.mutate(expenseId, { onSuccess: back, onSettled: () => setConfirming(false) })}
+        />
+      )}
     </>
   );
 }

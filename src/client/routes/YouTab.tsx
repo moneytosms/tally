@@ -2,9 +2,18 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { startRegistration } from "@simplewebauthn/browser";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, EmptyState, Field, Input, ScreenSkeleton } from "~/client/components/ui";
+import {
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Field,
+  Input,
+  PageHeader,
+  ScreenSkeleton,
+  pushToast,
+} from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
-import { api } from "~/client/lib/api";
+import { api, ApiError } from "~/client/lib/api";
 import { qk, useLedgers, useLogout, useMe, useRevokeOwnCredential, useUpdateProfile } from "~/client/lib/queries";
 import { currentPushState, disablePush, enablePush, type PushState } from "~/client/lib/push";
 import { PasswordSection } from "~/client/components/PasswordSection";
@@ -27,17 +36,34 @@ const pushMessage: Record<PushState["status"], string> = {
 function NotificationsSection() {
   const [state, setState] = useState<PushState | null>(null);
   const [pending, setPending] = useState(false);
+  const [failed, setFailed] = useState(false);
 
+  // A failed state lookup still shows the section, with the same error line as a
+  // failed enable, rather than making the whole section vanish.
   useEffect(() => {
-    currentPushState().then(setState);
+    currentPushState().then(setState, () => setFailed(true));
   }, []);
 
-  if (!state) return null;
+  if (!state && !failed) return null;
 
-  const toggle = async () => {
+  // Only enabling can fail with a message about turning notifications on.
+  // Disabling keeps its old behaviour.
+  const enable = async () => {
+    setPending(true);
+    setFailed(false);
+    try {
+      setState(await enablePush());
+    } catch {
+      setFailed(true);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const disable = async () => {
     setPending(true);
     try {
-      setState(state.status === "on" ? await disablePush() : await enablePush());
+      setState(await disablePush());
     } finally {
       setPending(false);
     }
@@ -48,11 +74,18 @@ function NotificationsSection() {
       className="rounded-[7px] border px-3.5 py-3.5"
       style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
     >
-      <p role="status" className="mb-2.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
-        {t(pushMessage[state.status])}
-      </p>
-      {(state.status === "on" || state.status === "off") && (
-        <Button variant={state.status === "on" ? "ghost" : "primary"} size="sm" disabled={pending} onClick={toggle}>
+      {state && (
+        <p role="status" className="mb-2.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
+          {t(pushMessage[state.status])}
+        </p>
+      )}
+      {failed && (
+        <p role="alert" className="mb-2.5 text-[13px]" style={{ color: "var(--clay)" }}>
+          {t("notifications.enableFailed")}
+        </p>
+      )}
+      {(state?.status === "on" || state?.status === "off") && (
+        <Button variant="ghost" size="sm" disabled={pending} onClick={state.status === "on" ? disable : enable}>
           {t(state.status === "on" ? "notifications.disable" : "notifications.enable")}
         </Button>
       )}
@@ -93,7 +126,7 @@ function AddPasskey({ displayName }: { displayName: string }) {
       <Button variant="ghost" size="sm" disabled={busy} onClick={add}>
         {t("profile.addPasskey")}
       </Button>
-      <p className="mt-2 text-[11.5px]" style={{ color: error ? "var(--clay)" : "var(--ink-3)" }}>
+      <p className="mt-2 text-[13px]" style={{ color: error ? "var(--clay)" : "var(--ink-3)" }}>
         {t(error ? "error.generic" : "profile.addPasskeyHint")}
       </p>
     </div>
@@ -110,7 +143,7 @@ function RevokeCredential({ credentialId, disabled }: { credentialId: string; di
 
   if (done) {
     return (
-      <span role="status" className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <span role="status" className="text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("profile.revoked")}
       </span>
     );
@@ -122,38 +155,21 @@ function RevokeCredential({ credentialId, disabled }: { credentialId: string; di
         {t("profile.revoke")}
       </Button>
       {revoke.isError && (
-        <span role="alert" className="text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <span role="alert" className="text-[13px]" style={{ color: "var(--clay)" }}>
           {t("profile.revokeFailed")}
         </span>
       )}
       {confirming && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgb(0 0 0 / 38%)" }}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            className="w-full max-w-sm rounded-[10px] border p-4"
-            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-          >
-            <p className="mb-3 text-[14px]">{t("profile.revokeConfirm")}</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setConfirming(false)}>
-                {t("action.cancel")}
-              </Button>
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setConfirming(false);
-                  revoke.mutate(credentialId, { onSuccess: () => setDone(true) });
-                }}
-              >
-                {t("action.confirm")}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title={t("confirm.revokePasskey.title")}
+          body={t("confirm.revokePasskey.body")}
+          confirmLabel={t("confirm.revokePasskey.action")}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            revoke.mutate(credentialId, { onSuccess: () => setDone(true) });
+          }}
+        />
       )}
     </>
   );
@@ -175,49 +191,32 @@ function SignOutSection() {
       <Button variant="danger" size="sm" disabled={logout.isPending} onClick={() => setConfirming(true)}>
         {t("profile.signOut")}
       </Button>
-      <p className="mt-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mt-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("profile.signOutHint")}
       </p>
       {logout.isError && (
-        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {t("error.generic")}
         </p>
       )}
       {confirming && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgb(0 0 0 / 38%)" }}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            className="w-full max-w-sm rounded-[10px] border p-4"
-            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-          >
-            <p className="mb-3 text-[14px]">{t("profile.signOutConfirm")}</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setConfirming(false)}>
-                {t("action.cancel")}
-              </Button>
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setConfirming(false);
-                  logout.mutate(undefined, { onSuccess: () => navigate("/welcome", { replace: true }) });
-                }}
-              >
-                {t("action.confirm")}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title={t("confirm.signOut.title")}
+          confirmLabel={t("confirm.signOut.action")}
+          danger={false}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            logout.mutate(undefined, { onSuccess: () => navigate("/welcome", { replace: true }) });
+          }}
+        />
       )}
     </div>
   );
 }
 
 const Section = ({ title }: { title: string }) => (
-  <div className="mx-0.5 mt-5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
+  <div className="mx-0.5 mt-5 mb-2 text-[13px] font-semibold" style={{ color: "var(--ink-2)" }}>
     {title}
   </div>
 );
@@ -235,16 +234,33 @@ export function YouTab() {
   const form = draft ?? { displayName: me.data.displayName, vpa: me.data.vpa ?? "" };
   const archived = (ledgers.data ?? []).filter((l) => l.archivedAt !== null);
 
+  // The server answers a bad profile body with 400 `invalid` and does not say which
+  // field, so the VPA hint is shown for that code only. Anything else is a plain failure.
+  const saveInvalid = save.error instanceof ApiError && save.error.code === "invalid";
+
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    save.mutate({ displayName: form.displayName, vpa: form.vpa.trim() === "" ? null : form.vpa.trim() });
+    save.mutate(
+      { displayName: form.displayName, vpa: form.vpa.trim() === "" ? null : form.vpa.trim() },
+      {
+        // Back to the server's copy, so later server-side changes reach the form.
+        onSuccess: () => {
+          setDraft(null);
+          pushToast(t("profile.saved"), "success");
+        },
+      },
+    );
+  };
+
+  // Typing after a failed save makes that failure stale. Only reset on error, so
+  // typing during an in-flight save does not drop its callbacks.
+  const edited = () => {
+    if (save.isError) save.reset();
   };
 
   return (
     <>
-      <header className="mb-3">
-        <h1 className="serif text-[21px] tracking-[-0.01em]">{t("tabs.you")}</h1>
-      </header>
+      <PageHeader title={t("tabs.you")} />
 
       <form
         onSubmit={onSubmit}
@@ -254,27 +270,37 @@ export function YouTab() {
         <Field label={t("profile.displayName")}>
           <Input
             value={form.displayName}
-            onChange={(e) => setDraft({ ...form, displayName: e.target.value })}
+            onChange={(e) => {
+              edited();
+              setDraft({ ...form, displayName: e.target.value });
+            }}
             required
             maxLength={80}
           />
         </Field>
-        <Field label={t("profile.vpa")} error={save.error ? t("profile.vpaInvalid") : undefined}>
+        <Field label={t("profile.vpa")} error={saveInvalid ? t("profile.vpaInvalid") : undefined}>
           <Input
             value={form.vpa}
-            onChange={(e) => setDraft({ ...form, vpa: e.target.value })}
+            onChange={(e) => {
+              edited();
+              setDraft({ ...form, vpa: e.target.value });
+            }}
             placeholder="name@bank"
             inputMode="email"
             autoComplete="off"
           />
         </Field>
-        <p className="mb-3 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        <p className="mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("profile.vpaVisibility")}
         </p>
         <Button type="submit" disabled={save.isPending}>
           {t("action.save")}
         </Button>
-        {save.isSuccess && !draft && <span className="sr-only">{t("profile.saved")}</span>}
+        {save.isError && !saveInvalid && (
+          <p role="alert" className="mt-2 text-[13px]" style={{ color: "var(--clay)" }}>
+            {t("error.generic")}
+          </p>
+        )}
       </form>
 
       <Section title={t("profile.devices")} />
@@ -294,15 +320,15 @@ export function YouTab() {
           </p>
         ) : (
           me.data.credentials.map((c) => (
-            <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[13px]">
+            <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[15px]">
               <span className="truncate">
                 {t("profile.passkey")}{" "}
-                <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                <span className="text-[13px]" style={{ color: "var(--ink-3)" }}>
                   {t("profile.passkeyAdded", { date: dayFormat.format(c.createdAt) })}
                 </span>
               </span>
               <span className="flex items-center gap-2">
-                <span className="tnum flex-none text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                <span className="tnum flex-none text-[13px]" style={{ color: "var(--ink-3)" }}>
                   {c.lastUsedAt === null
                     ? t("profile.passkeyNeverUsed")
                     : t("profile.passkeyLastUsed", { date: dayFormat.format(c.lastUsedAt) })}
@@ -313,7 +339,7 @@ export function YouTab() {
           ))
         )}
         {me.data.credentials.length === 1 && (
-          <p className="pb-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+          <p className="pb-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
             {t("profile.lastCredential")}
           </p>
         )}
@@ -336,7 +362,7 @@ export function YouTab() {
           <Link
             key={l.id}
             to={`/ledgers/${l.id}`}
-            className={`mb-2 block truncate rounded-[7px] border px-3.5 py-3 text-[14.5px] ${focusRing}`}
+            className={`mb-2 block truncate rounded-[7px] border px-3.5 py-3 text-[15px] ${focusRing}`}
             style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
           >
             {l.name}
@@ -358,24 +384,21 @@ export function YouTab() {
         <a
           href="/api/export.csv"
           download
-          className={`inline-flex min-h-11 items-center text-[14px] ${focusRing}`}
-          style={{ color: "var(--moss-2)" }}
+          className={`inline-flex min-h-11 min-w-11 items-center justify-center rounded-[7px] border px-3 text-[14px] font-medium ${focusRing}`}
+          style={{ borderColor: "var(--line-2)", color: "var(--ink)" }}
         >
-          {t("export.allCsv")} →
+          {t("export.allCsv")}
         </a>
       </div>
 
       {me.data.isOwner && (
-        <>
-          <Section title={t("admin.title")} />
-          <Link
-            to="/you/admin"
-            className={`mb-2 block rounded-[7px] border px-3.5 py-3 text-[14.5px] ${focusRing}`}
-            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-          >
-            {t("admin.open")} →
-          </Link>
-        </>
+        <Link
+          to="/you/admin"
+          className={`mt-5 mb-2 block rounded-[7px] border px-3.5 py-3 text-[15px] ${focusRing}`}
+          style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+        >
+          {t("admin.open")}
+        </Link>
       )}
 
       <SignOutSection />

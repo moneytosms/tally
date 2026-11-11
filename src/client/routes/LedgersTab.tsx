@@ -1,6 +1,6 @@
-import { useState } from "react";
-import { Link } from "react-router";
-import { Amount, Button, EmptyState, Skeleton } from "~/client/components/ui";
+import { useState, type ReactNode } from "react";
+import { Link, useNavigate } from "react-router";
+import { Amount, Button, EmptyState, PageHeader, Skeleton } from "~/client/components/ui";
 import { Sheet } from "~/client/components/ui/Sheet";
 import { focusRing } from "~/client/components/ui/focus";
 import { ActivityRow } from "~/client/components/ActivityRow";
@@ -9,6 +9,7 @@ import { useLedgers, useMe, useRecentActivity, useTogglePin, type LedgerSummary 
 import { t } from "~/client/i18n";
 
 const DAY = 86_400_000;
+const KINDS: LedgerKind[] = ["trip", "group", "pair"];
 export const daysLeft = (endDate: number) => Math.ceil((endDate - Date.now()) / DAY);
 
 /** "standing" / "4 days left" / "ended" - the same phrase on the card and in the
@@ -54,8 +55,8 @@ export function BurnRate({ ledger }: { ledger: LedgerSummary }) {
   );
 }
 
-/** Pin toggle (issue #26). Sits on top of the card's own Link, so it needs its
- *  own stopped click - otherwise "pin" also navigates into the ledger. */
+/** Pin toggle (issue #26). A sibling of the card's Link, not a child of it: nested
+ *  interactive elements are invalid. Sits over the card's top-right corner. */
 function PinButton({ ledger }: { ledger: LedgerSummary }) {
   const togglePin = useTogglePin(ledger.id);
   return (
@@ -63,12 +64,8 @@ function PinButton({ ledger }: { ledger: LedgerSummary }) {
       type="button"
       aria-label={t(ledger.pinned ? "ledger.unpin" : "ledger.pin")}
       aria-pressed={ledger.pinned}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        togglePin.mutate(!ledger.pinned);
-      }}
-      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${focusRing}`}
+      onClick={() => togglePin.mutate(!ledger.pinned)}
+      className={`absolute top-0 right-0 flex h-11 w-11 items-center justify-center rounded-[7px] ${focusRing}`}
       style={{ color: ledger.pinned ? "var(--ochre)" : "var(--ink-3)" }}
     >
       {/* A plain filled/outline star - colour alone is never the only cue, the
@@ -89,9 +86,8 @@ function PinButton({ ledger }: { ledger: LedgerSummary }) {
 
 function LedgerCard({ ledger }: { ledger: LedgerSummary }) {
   return (
-    <Link
-      to={`/ledgers/${ledger.id}`}
-      className={`row-in mb-2 block rounded-[7px] border px-3.5 py-3 ${focusRing}`}
+    <div
+      className="row-in relative mb-2 rounded-[7px] border"
       style={{
         background: "var(--paper-2)",
         borderColor: "var(--line)",
@@ -100,36 +96,41 @@ function LedgerCard({ ledger }: { ledger: LedgerSummary }) {
         borderLeft: ledger.color ? `3px solid ${LEDGER_COLOR_SWATCH[ledger.color]}` : undefined,
       }}
     >
-      <div className="flex items-center justify-between gap-2.5">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5">
-            {ledger.emoji && (
-              <span className="shrink-0" aria-hidden="true">
-                {ledger.emoji}
-              </span>
-            )}
-            <div className="truncate text-[14.5px] font-medium">{ledger.name}</div>
-          </div>
-          <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-            {t("expense.member", { count: ledger.memberCount })}
-            {" · "}
-            {runFor(ledger.endDate)}
-          </div>
+      <Link to={`/ledgers/${ledger.id}`} className={`block rounded-[7px] py-3 pr-3.5 pl-3.5 ${focusRing}`}>
+        {/* pr-12 keeps the name clear of the pin button in the corner; row 2 is full width. min-h-11 keeps the 44px star off row 2. */}
+        <div className="flex min-h-11 items-center gap-1.5 pr-12">
+          {ledger.emoji && (
+            <span className="shrink-0" aria-hidden="true">
+              {ledger.emoji}
+            </span>
+          )}
+          <div className="min-w-0 truncate text-[15px] font-medium">{ledger.name}</div>
         </div>
-        <Amount paise={ledger.net} label={t("ledger.yourPosition")} />
-        <PinButton ledger={ledger} />
-      </div>
-      <BurnRate ledger={ledger} />
-    </Link>
+        <div className="mt-0.5 flex items-center justify-between gap-2.5">
+          <div className="min-w-0 truncate text-[13px]" style={{ color: "var(--ink-3)" }}>
+            {t("home.ledgerMeta", {
+              members: t("expense.member", { count: ledger.memberCount }),
+              run: runFor(ledger.endDate),
+            })}
+          </div>
+          <Amount paise={ledger.net} label={t("ledger.yourPosition")} className="shrink-0 whitespace-nowrap" />
+        </div>
+        <BurnRate ledger={ledger} />
+      </Link>
+      <PinButton ledger={ledger} />
+    </div>
   );
 }
 
-/** Small uppercase rule above a block. Used often enough that keeping it here
- *  stops three screens from drifting to three different sizes. */
-function SectionLabel({ children }: { children: React.ReactNode }) {
+/** Section heading, with an optional control on the same row. Used often enough
+ *  that keeping it here stops three screens from drifting to three different sizes. */
+function SectionLabel({ children, action }: { children: ReactNode; action?: ReactNode }) {
   return (
-    <div className="mx-0.5 mt-1 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
-      {children}
+    <div className="mx-0.5 mt-1 mb-2 flex items-center justify-between gap-2">
+      <h2 className="text-[13px] font-semibold" style={{ color: "var(--ink-2)" }}>
+        {children}
+      </h2>
+      {action}
     </div>
   );
 }
@@ -158,9 +159,9 @@ function RecentActivity() {
 export function LedgersTab() {
   const { data, isPending, error } = useLedgers();
   const me = useMe();
-  // The empty state is the first thing a new account sees, so it carries its own
-  // way out rather than pointing at the FAB and hoping.
-  const [kind, setKind] = useState<LedgerKind | null>(null);
+  const navigate = useNavigate();
+  // "choose" shows the three kinds; a kind shows its form. One sheet for both.
+  const [sheet, setSheet] = useState<"choose" | LedgerKind | null>(null);
 
   if (isPending)
     return (
@@ -180,32 +181,33 @@ export function LedgersTab() {
   // same situation as owing nothing, and only one of them needs settling.
   const owed = active.reduce((sum, l) => sum + Math.max(0, l.net), 0);
   const owe = active.reduce((sum, l) => sum + Math.min(0, l.net), 0);
+  // The one place a settle-up is the next step. Any ledger where the viewer owes counts.
+  const needsSettle = overall < 0 || active.some((l) => l.net < 0);
+  // ADR 0008: a restricted account has no self-service way to create a ledger -
+  // it waits on the owner to add it to one, or to promote it.
+  const restricted = me.data?.accountType === "restricted";
 
   return (
     <>
-      <header className="mb-3">
-        <h1 className="serif text-[21px] tracking-[-0.01em]">{t("app.name")}</h1>
-        {me.data && (
-          <p className="text-[12px]" style={{ color: "var(--ink-3)" }}>
-            {t("home.greeting", { name: me.data.displayName })}
-          </p>
-        )}
-      </header>
+      <PageHeader
+        title={t("app.name")}
+        subtitle={me.data ? t("home.greeting", { name: me.data.displayName }) : undefined}
+      />
 
       {active.length === 0 ? (
+        // The empty state is the first thing a new account sees, so it carries its own
+        // way out rather than pointing at the FAB and hoping.
         <EmptyState
           title={t("empty.ledgers")}
           body={t("empty.ledgersBody")}
-          // ADR 0008: a restricted account has no self-service way to create a
-          // ledger - it waits on the owner to add it to one, or to promote it.
           action={
-            me.data?.accountType === "restricted" ? undefined : (
+            restricted ? undefined : (
               <div className="flex flex-wrap justify-center gap-2">
-                <Button onClick={() => setKind("trip")}>{t("add.trip")}</Button>
-                <Button variant="ghost" onClick={() => setKind("group")}>
+                <Button onClick={() => setSheet("trip")}>{t("add.trip")}</Button>
+                <Button variant="ghost" onClick={() => setSheet("group")}>
                   {t("add.group")}
                 </Button>
-                <Button variant="ghost" onClick={() => setKind("pair")}>
+                <Button variant="ghost" onClick={() => setSheet("pair")}>
                   {t("add.pair")}
                 </Button>
               </div>
@@ -219,49 +221,88 @@ export function LedgersTab() {
             style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
           >
             <Amount paise={overall} label={t("balances.overall")} hero />
-            {(owed !== 0 || owe !== 0) && (
+            <p className="mt-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
+              {t("home.overallCaption")}
+            </p>
+            {/* With one side at zero, that side is just the hero figure again. */}
+            {owed !== 0 && owe !== 0 && (
               <div className="mt-3 grid grid-cols-2 gap-x-3 border-t pt-2.5" style={{ borderColor: "var(--line)" }}>
-                <Amount paise={owed} label={t("home.owed")} tone="neutral" />
-                <Amount paise={Math.abs(owe)} label={t("home.owe")} tone="neutral" />
+                <Amount
+                  paise={owed}
+                  label={t("home.owed")}
+                  tone="neutral"
+                  className="flex-col! items-start! whitespace-nowrap"
+                />
+                <Amount
+                  paise={Math.abs(owe)}
+                  label={t("home.owe")}
+                  tone="neutral"
+                  className="flex-col! items-start! whitespace-nowrap"
+                />
               </div>
             )}
-            <div className="mt-2.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-              <Link
-                to="/balances"
-                className={`${focusRing} inline-flex min-h-11 items-center`}
-                style={{ color: "var(--moss-2)" }}
-              >
-                {t("balances.settleAcross")} →
-              </Link>
-            </div>
+            {needsSettle && (
+              <Button block className="mt-3" onClick={() => navigate("/balances")}>
+                {t("home.settleUp")}
+              </Button>
+            )}
           </div>
 
-          <SectionLabel>{t("tabs.ledgers")}</SectionLabel>
+          <SectionLabel
+            action={
+              restricted ? undefined : (
+                <Button variant="ghost" size="sm" onClick={() => setSheet("choose")}>
+                  {t("home.newLedger")}
+                </Button>
+              )
+            }
+          >
+            {t("tabs.ledgers")}
+          </SectionLabel>
           {active.map((ledger) => (
             <LedgerCard key={ledger.id} ledger={ledger} />
           ))}
 
           <RecentActivity />
-
-          {/* Archived ledgers are settled history: present, but folded away so
-              they never compete with the ledgers people are actually spending on. */}
-          {archived.length > 0 && (
-            <details className="mt-5">
-              <summary className={`cursor-pointer text-[12px] ${focusRing}`} style={{ color: "var(--ink-3)" }}>
-                {t("home.archived", { count: archived.length })}
-              </summary>
-              <div className="mt-2">
-                {archived.map((ledger) => (
-                  <LedgerCard key={ledger.id} ledger={ledger} />
-                ))}
-              </div>
-            </details>
-          )}
         </>
       )}
 
-      <Sheet open={kind !== null} onOpenChange={(o) => !o && setKind(null)} title={kind ? t(`add.${kind}`) : ""}>
-        {kind && <LedgerForm kind={kind} onDone={() => setKind(null)} />}
+      {/* Archived ledgers are settled history: present, but folded away so they never
+          compete with the ledgers people are actually spending on. Shown even with no
+          active ledgers, or they would vanish from home. */}
+      {archived.length > 0 && (
+        <details className="mt-5">
+          <summary
+            className={`flex min-h-11 cursor-pointer items-center rounded-[7px] border px-4 text-[14px] font-medium ${focusRing}`}
+            style={{ borderColor: "var(--line-2)", color: "var(--ink-2)" }}
+          >
+            {t("home.archived", { count: archived.length })}
+          </summary>
+          <div className="mt-2">
+            {archived.map((ledger) => (
+              <LedgerCard key={ledger.id} ledger={ledger} />
+            ))}
+          </div>
+        </details>
+      )}
+
+      <Sheet open={sheet !== null} onOpenChange={(o) => !o && setSheet(null)} title={t("home.newLedger")}>
+        {sheet === "choose" ? (
+          <div className="flex flex-col gap-2">
+            {KINDS.map((k) => (
+              <Button key={k} variant="ghost" block onClick={() => setSheet(k)}>
+                <span className="flex flex-col items-center gap-0.5 py-1">
+                  <span className="text-[15px] font-semibold">{t(`add.${k}`)}</span>
+                  <span className="text-[13px] font-normal" style={{ color: "var(--ink-3)" }}>
+                    {t(`add.${k}Body`)}
+                  </span>
+                </span>
+              </Button>
+            ))}
+          </div>
+        ) : (
+          sheet && <LedgerForm kind={sheet} onDone={() => setSheet(null)} />
+        )}
       </Sheet>
     </>
   );

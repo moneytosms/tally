@@ -5,7 +5,7 @@
 // Mounted at `/api` by the root app; paths below are relative to that.
 import { Hono } from "hono";
 import type { Env } from "~/server/context";
-import { grossPairs, netPositions, transferPlan, trailFor } from "~/server/balances";
+import { grossPairs, memberBreakdown, netPositions, transferPlan, trailFor } from "~/server/balances";
 import { requireMember } from "~/server/middleware/membership";
 import { requireSession } from "~/server/middleware/session";
 import type { Paise } from "~/shared/money";
@@ -18,16 +18,41 @@ const balances = new Hono<Env>();
 balances.get("/ledgers/:ledgerId/balances", requireSession, requireMember, async (c) => {
   const db = c.var.db;
   const ledgerId = c.req.param("ledgerId");
-  const [expenses, settlements] = await Promise.all([db.listExpenses(ledgerId), db.listSettlements(ledgerId)]);
+  // listMembersForActivity, not listMembers: a member who left still needs a name here.
+  const [expenses, settlements, members, users] = await Promise.all([
+    db.listExpenses(ledgerId),
+    db.listSettlements(ledgerId),
+    db.listMembersForActivity(ledgerId),
+    db.listUsers(),
+  ]);
 
   const positions = netPositions(expenses, settlements);
+  const breakdown = new Map(memberBreakdown(expenses, settlements).map((b) => [b.memberId, b]));
+  const displayNames = new Map(users.map((u) => [u.id, u.displayName]));
+  const nameOf = new Map(
+    members.map((m) => [m.id, m.nickname ?? m.guestName ?? (m.userId && displayNames.get(m.userId)) ?? ""]),
+  );
   return c.json({
-    positions,
+    positions: positions.map((p) => ({
+      ...p,
+      ...breakdown.get(p.memberId)!,
+      name: nameOf.get(p.memberId) ?? "",
+    })),
     transfers: transferPlan(positions).map((t) => ({
       ...t,
       trail: trailFor(expenses, settlements, t.fromMemberId, t.toMemberId),
     })),
     pairs: grossPairs(expenses, settlements),
+    settlements: settlements.map(({ id, fromMemberId, toMemberId, amount, method, note, declaredAt }) => ({
+      id,
+      fromMemberId,
+      toMemberId,
+      amount,
+      method,
+      note,
+      declaredAt,
+    })),
+    totals: { spent: expenses.reduce((a, e) => a + e.total, 0), expenseCount: expenses.length },
   });
 });
 

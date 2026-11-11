@@ -20,6 +20,14 @@ describe("ledgerPatch", () => {
     expect(result).toEqual({ ok: true, patch: {} });
   });
 
+  it("diffs against the baseline the panel opened with, not a ledger renamed since", () => {
+    // EditPanel passes its opening baseline. Diffing against the live ledger would
+    // send "Goa" back over someone else's rename "Goa Trip".
+    const renamedSinceOpen = { ...ledger, name: "Goa Trip" };
+    expect(ledgerPatch(ledger, edit)).toEqual({ ok: true, patch: {} });
+    expect(ledgerPatch(renamedSinceOpen, edit)).toEqual({ ok: true, patch: { name: "Goa" } });
+  });
+
   it("sends only the field that changed", () => {
     const result = ledgerPatch(ledger, { ...edit, name: "  Goa, December  " });
     expect(result).toEqual({ ok: true, patch: { name: "Goa, December" } });

@@ -21,7 +21,7 @@ export function Avatar({ name, size = 29 }: { name: string; size?: number }) {
   return (
     <span
       aria-hidden="true"
-      className="grid flex-none place-items-center rounded-[6px] border text-[11.5px] font-semibold"
+      className="grid flex-none place-items-center rounded-[6px] border text-[12px] font-semibold"
       style={{ width: size, height: size, borderColor: "var(--line)", ...tone }}
     >
       {initials(name)}

@@ -4,6 +4,8 @@ import { focusRing } from "./focus";
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "ghost" | "danger";
   size?: "md" | "sm";
+  /** Full width of its container. */
+  block?: boolean;
   /** issue #44: a mutation's `isPending` - shows a spinner in place of the
    *  label instead of just going `disabled`, which reads as "broken", not "working". */
   isLoading?: boolean;
@@ -27,6 +29,7 @@ function Spinner() {
 export function Button({
   variant = "primary",
   size = "md",
+  block = false,
   isLoading = false,
   disabled,
   className = "",
@@ -40,9 +43,9 @@ export function Button({
       aria-busy={isLoading || undefined}
       {...props}
       // 44px minimum tap target - dense visuals do not mean dense touch targets.
-      className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[6px] border text-[14px] ${
-        size === "sm" ? "px-3 font-normal" : "px-4 font-medium"
-      } disabled:opacity-50 ${focusRing} ${className}`}
+      className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[7px] border ${
+        size === "sm" ? "px-3 text-[14px] font-medium" : "px-4 text-[15px] font-semibold"
+      } ${block ? "w-full" : ""} disabled:opacity-50 ${focusRing} ${className}`}
       style={{ ...styles[variant], ...props.style }}
     >
       {isLoading && <Spinner />}

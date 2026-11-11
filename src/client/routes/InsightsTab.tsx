@@ -1,5 +1,5 @@
 import { Suspense, useMemo, useState } from "react";
-import { Amount, Avatar, EmptyState } from "~/client/components/ui";
+import { Amount, Avatar, EmptyState, PageHeader } from "~/client/components/ui";
 import { CategoryChart, ChartFallback, MonthChart, SectionHeading } from "~/client/components/charts";
 import { useInsights, type Insights } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
@@ -31,13 +31,11 @@ function InsightsBody({ data }: { data: Insights }) {
           <Amount paise={data.totals.spent} label={t("insights.youSpent")} tone="neutral" hero />
           <Amount paise={data.totals.paid} label={t("insights.youPaid")} tone="neutral" hero />
         </div>
-        <div
-          className="mt-3 border-t pt-2.5 text-[11.5px]"
-          style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}
-        >
-          {t("insights.expenseCount", { count: data.totals.expenseCount })}
-          {" · "}
-          {t("insights.ledgerCount", { count: data.totals.ledgerCount })}
+        <div className="mt-3 border-t pt-2.5 text-[13px]" style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
+          {t("insightsTab.totalsLine", {
+            expenses: t("insights.expenseCount", { count: data.totals.expenseCount }),
+            ledgers: t("insights.ledgerCount", { count: data.totals.ledgerCount }),
+          })}
         </div>
       </div>
 
@@ -57,7 +55,7 @@ function InsightsBody({ data }: { data: Insights }) {
           <ul className="mt-2">
             {data.byCategory.map((c) => (
               <li key={c.categoryId ?? "none"} className="flex items-center justify-between gap-2.5 py-1">
-                <span className="min-w-0 flex-1 truncate text-[13.5px]">
+                <span className="min-w-0 flex-1 truncate text-[15px]">
                   {c.icon && <span aria-hidden="true">{c.icon} </span>}
                   {c.name}
                 </span>
@@ -93,8 +91,8 @@ function InsightsBody({ data }: { data: Insights }) {
             <div className="flex min-w-0 items-center gap-2.5">
               <Avatar name={p.displayName} />
               <div className="min-w-0">
-                <div className="truncate text-[14.5px]">{p.displayName}</div>
-                <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                <div className="truncate text-[15px]">{p.displayName}</div>
+                <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
                   {t("insights.sharedExpenses", { count: p.sharedExpenseCount })}
                 </div>
               </div>
@@ -126,9 +124,7 @@ export function InsightsTab() {
 
   return (
     <>
-      <header className="mb-3">
-        <h1 className="serif text-[21px] tracking-[-0.01em]">{t("tabs.insights")}</h1>
-      </header>
+      <PageHeader title={t("tabs.insights")} />
 
       <div className="mb-4 flex gap-2">
         {(
@@ -143,6 +139,7 @@ export function InsightsTab() {
             key={r}
             type="button"
             onClick={() => setRange(r)}
+            aria-pressed={range === r}
             className="min-h-11 flex-1 rounded-[6px] border px-2 text-[13px]"
             style={{
               borderColor: range === r ? "var(--moss)" : "var(--line)",
@@ -186,8 +183,13 @@ export function InsightsTab() {
             </label>
           </div>
           {customInvalid && (
-            <p className="mt-1.5 text-[12px]" style={{ color: "var(--clay)" }}>
+            <p className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
               {t("insights.invalidRange")}
+            </p>
+          )}
+          {!customBounds && !customInvalid && (
+            <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
+              {t("insightsTab.pickBoth")}
             </p>
           )}
         </div>

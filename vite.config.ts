@@ -45,6 +45,8 @@ export default defineConfig({
       workbox: {
         // Precache the built shell and bundles — and NOTHING else.
         globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+        // Push handlers live in public/push-sw.js; generateSW emits none of its own.
+        importScripts: ["/push-sw.js"],
         navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/api\//],
         // There is deliberately NO runtimeCaching rule.

@@ -14,7 +14,15 @@ beforeEach(async () => {
 });
 
 type Ledger = {
-  positions: Array<{ memberId: string; net: number }>;
+  positions: Array<{
+    memberId: string;
+    net: number;
+    paid: number;
+    share: number;
+    settledOut: number;
+    settledIn: number;
+    name: string;
+  }>;
   transfers: Array<{
     fromMemberId: string;
     toMemberId: string;
@@ -29,6 +37,8 @@ type Ledger = {
     }>;
   }>;
   pairs: Array<{ fromMemberId: string; toMemberId: string; amount: number }>;
+  settlements: Array<{ id: string; fromMemberId: string; toMemberId: string; amount: number; declaredAt: number }>;
+  totals: { spent: number; expenseCount: number };
 };
 
 const expense = (ledgerId: string, body: object) =>
@@ -229,6 +239,81 @@ describe("GET /ledgers/:ledgerId/balances", () => {
       }),
     );
     expect(net(await ledgerBalances("L1")).get("m_ada")).toBe(-3_000);
+  });
+
+  it("breaks each position into paid, share, settlements, and keeps the identity", async () => {
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00
+    await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 2_000 }); // ₹20.00
+
+    const b = await ledgerBalances("L1");
+    for (const p of b.positions) expect(p.paid - p.share + p.settledOut - p.settledIn).toBe(p.net);
+    const ada = b.positions.find((p) => p.memberId === "m_ada")!;
+    expect(ada).toMatchObject({ paid: 0, share: 5_000, settledOut: 2_000, settledIn: 0, name: "Ada" });
+    const bob = b.positions.find((p) => p.memberId === "m_bob")!;
+    expect(bob).toMatchObject({ paid: 10_000, share: 5_000, settledOut: 0, settledIn: 2_000, name: "Bob" });
+  });
+
+  it("names a guest by guest name, and keeps the positions order", async () => {
+    await expense("L1", {
+      total: 4_000,
+      payerMemberId: "m_guest",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_guest" }],
+    }); // ₹40.00
+    const b = await ledgerBalances("L1");
+    expect(b.positions.find((p) => p.memberId === "m_guest")!.name).toBe("Dee");
+  });
+
+  it("lists recorded settlements newest first, and totals the live expenses", async () => {
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00
+    const gone = (await (
+      await expense("L1", {
+        total: 3_000,
+        payerMemberId: "m_bob",
+        participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+      })
+    ).json()) as { id: string }; // ₹30.00
+    await app.request(req(h, `/api/ledgers/L1/expenses/${gone.id}`, { method: "DELETE" }));
+    const s1 = (await (await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 1_000 })).json()) as {
+      id: string;
+    };
+    const s2 = (await (await settle("L1", { fromMemberId: "m_ada", toMemberId: "m_bob", amount: 2_000 })).json()) as {
+      id: string;
+    };
+
+    const b = await ledgerBalances("L1");
+    expect(b.settlements.map((s) => s.id).sort()).toEqual([s1.id, s2.id].sort());
+    const declared = b.settlements.map((s) => s.declaredAt);
+    expect(declared).toEqual([...declared].sort((x, y) => y - x)); // newest first
+    expect(b.settlements.find((s) => s.id === s2.id)).toMatchObject({
+      fromMemberId: "m_ada",
+      toMemberId: "m_bob",
+      amount: 2_000,
+    });
+    // soft-deleted ₹30.00 expense is excluded from the total and count
+    expect(b.totals).toEqual({ spent: 10_000, expenseCount: 1 });
+  });
+
+  it("a soft-deleted expense is excluded from paid, share and totals", async () => {
+    const { id } = (await (
+      await expense("L1", {
+        total: 10_000,
+        payerMemberId: "m_bob",
+        participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+      })
+    ).json()) as { id: string }; // ₹100.00
+    await app.request(req(h, `/api/ledgers/L1/expenses/${id}`, { method: "DELETE" }));
+
+    const b = await ledgerBalances("L1");
+    expect(b.positions.every((p) => p.paid === 0 && p.share === 0)).toBe(true);
+    expect(b.totals).toEqual({ spent: 0, expenseCount: 0 });
   });
 
   it("403s a non-member", async () => {

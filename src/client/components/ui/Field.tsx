@@ -7,12 +7,12 @@ import type { ReactNode } from "react";
 export function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (
     <label className="mb-3 block">
-      <span className="mb-1.5 block text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
+      <span className="mb-1.5 block text-[13px]" style={{ color: "var(--ink-3)" }}>
         {label}
       </span>
       {children}
       {error && (
-        <span role="alert" className="mt-1.5 block text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <span role="alert" className="mt-1.5 block text-[12px]" style={{ color: "var(--clay)" }}>
           {error}
         </span>
       )}

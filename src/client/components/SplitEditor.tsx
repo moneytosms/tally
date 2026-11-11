@@ -119,6 +119,12 @@ export function remainingToAllocate(input: PreviewInput): { unit: "paise" | "per
   return amount === 0 ? null : { unit: mode === "percent" ? "percent" : "paise", amount };
 }
 
+/** Per-person text only means something in the mode it was typed in ("250" is
+ *  rupees in exact, a weight in shares), so switching mode starts those inputs empty. */
+export function rawForMode(from: SplitMode, to: SplitMode, raw: Record<string, string>): Record<string, string> {
+  return from === to ? raw : {};
+}
+
 const modes: SplitMode[] = ["equal", "exact", "shares", "percent"];
 
 /**
@@ -137,7 +143,7 @@ function PerHead({ each, count }: { each: number; count: number }) {
       style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
     >
       <Amount paise={each} label={t("expense.splitEvenly")} tone="neutral" />
-      <span className="flex-none text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <span className="flex-none text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("expense.selectedCount", { count })}
       </span>
     </div>
@@ -165,29 +171,14 @@ export function SplitEditor({
   // "Equal" is the mode; "even" is whether it actually came out that way.
   const evenSplit =
     mode === "equal" && splits !== undefined && splits.length > 0 && splits.every((s) => s === splits[0]);
+  // Equal with no amount yet: no share to show and nothing to type, so no list.
+  const equalPending = mode === "equal" && splits === undefined;
 
   return (
     <section className="mb-3">
-      <div
-        className="mb-3 flex items-center justify-between gap-3 rounded-[7px] border px-3.5 py-3"
-        style={{
-          background: "var(--paper-2)",
-          borderColor: isRefund ? "var(--moss)" : "var(--line)",
-          borderLeft: isRefund ? "2px solid var(--moss)" : undefined,
-        }}
-      >
-        <Amount paise={total} label={t("expense.total")} tone="neutral" />
-        {isRefund && (
-          <span
-            className="rounded-[5px] border px-1.5 py-0.5 text-[10.5px] tracking-[0.13em] uppercase"
-            style={{ borderColor: "var(--moss)", background: "var(--moss-wash)", color: "var(--moss-2)" }}
-          >
-            {t("expense.refund")}
-          </span>
-        )}
-      </div>
+      {/* The amount field above already shows the total, so no card repeats it. */}
       {isRefund && (
-        <p className="mb-3 text-[11.5px]" style={{ color: "var(--ink-2)" }}>
+        <p className="mb-3 text-[13px]" style={{ color: "var(--ink-2)" }}>
           {t("expense.refundNote")}
         </p>
       )}
@@ -204,8 +195,11 @@ export function SplitEditor({
                 key={m}
                 type="button"
                 aria-pressed={on}
-                onClick={() => onModeChange(m)}
-                className={`min-h-11 min-w-11 rounded-[6px] border px-3 text-[13.5px] ${focusRing}`}
+                onClick={() => {
+                  onRawChange(rawForMode(mode, m, raw));
+                  onModeChange(m);
+                }}
+                className={`min-h-11 min-w-11 rounded-[6px] border px-3 text-[15px] ${focusRing}`}
                 style={{
                   background: on ? "var(--moss-wash)" : "transparent",
                   borderColor: on ? "var(--moss)" : "var(--line-2)",
@@ -225,7 +219,7 @@ export function SplitEditor({
           picker's job now, so no row carries a remove button. */}
       {evenSplit ? (
         <PerHead each={splits?.[0] ?? 0} count={participants.length} />
-      ) : (
+      ) : equalPending ? null : (
         <ul
           className="rounded-[7px] border px-3.5 py-1"
           style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
@@ -237,14 +231,7 @@ export function SplitEditor({
               style={{ borderColor: "var(--line)" }}
             >
               <Avatar name={p.name} />
-              <span className="min-w-0 flex-1 truncate text-[14px]">
-                {p.name}
-                {i === payerIndex && (
-                  <span className="ml-1.5 text-[11px]" style={{ color: "var(--ink-3)" }}>
-                    {t("expense.payerMark")}
-                  </span>
-                )}
-              </span>
+              <span className="min-w-0 flex-1 truncate text-[15px]">{p.name}</span>
               {/* An equal split reaches this list only to SHOW an uneven
                   remainder. There is nothing to type in that mode. */}
               {mode !== "equal" && (
@@ -261,7 +248,7 @@ export function SplitEditor({
                 {splits ? (
                   <Amount paise={splits[i] ?? 0} label={t("expense.shareLabel")} tone="neutral" />
                 ) : (
-                  <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                  <span className="text-[13px]" style={{ color: "var(--ink-3)" }}>
                     {t("expense.sharePending")}
                   </span>
                 )}
@@ -272,8 +259,8 @@ export function SplitEditor({
       )}
       {/* Only worth saying when there IS a remainder to explain. On an even
           split it is a warning about something that did not happen. */}
-      {!evenSplit && (
-        <p className="mt-1.5 text-[11px]" style={{ color: "var(--ink-3)" }}>
+      {!evenSplit && !equalPending && (
+        <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("expense.remainderNote")}
         </p>
       )}

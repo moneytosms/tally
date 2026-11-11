@@ -40,22 +40,20 @@ const useToasts = () =>
     () => [],
   );
 
-/** Mounted once in App.tsx, above the tab bar. `aria-live="assertive"` on the
- *  region (not per-toast) so screen readers announce each arrival without
- *  re-reading the whole stack. */
+/** Mounted once in App.tsx, above the tab bar. Errors are `role="alert"` (assertive);
+ *  successes are `role="status"` (polite). The region itself stays mounted so the
+ *  live-region announcements are not lost on first insert. */
 export function ToastViewport() {
   const items = useToasts();
-  if (items.length === 0) return null;
   return (
     <div
-      role="status"
-      aria-live="assertive"
-      className="pointer-events-none fixed inset-x-0 z-[60] flex flex-col items-center gap-2 px-3.5"
-      style={{ bottom: "calc(78px + env(safe-area-inset-bottom))" }}
+      className="pointer-events-none fixed inset-x-0 z-[60] flex flex-col items-center gap-2 px-3.5 md:left-[232px]"
+      style={{ bottom: "calc(var(--bar-h) + 12px + env(safe-area-inset-bottom))" }}
     >
       {items.map((toast) => (
         <div
           key={toast.id}
+          role={toast.kind === "error" ? "alert" : "status"}
           className="animate-[toast-in_.18s_ease-out] pointer-events-auto flex w-full max-w-sm items-center gap-2.5 rounded-[7px] border px-3.5 py-2.5 text-[13px] shadow-sm"
           style={
             toast.kind === "error"
@@ -68,7 +66,7 @@ export function ToastViewport() {
             type="button"
             onClick={() => dismiss(toast.id)}
             aria-label={t("action.close")}
-            className="min-h-8 min-w-8 shrink-0 rounded-[5px] text-[13px] opacity-70 hover:opacity-100"
+            className="min-h-11 min-w-11 shrink-0 rounded-[5px] text-[13px] opacity-70 hover:opacity-100"
           >
             ✕
           </button>

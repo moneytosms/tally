@@ -8,7 +8,7 @@
 //
 // Excluded people stay on screen, dimmed. A picker that hides what you did not
 // choose makes you remember the roster; this one shows it.
-import { Avatar } from "~/client/components/ui";
+import { Avatar, Button } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import { t } from "~/client/i18n";
 
@@ -37,19 +37,14 @@ export function ParticipantPicker({
 
   return (
     <div>
-      <div className="mb-1.5 flex items-baseline justify-between gap-3">
-        <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <div className="mb-1.5 flex items-center justify-between gap-3">
+        <span className="text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("expense.participants")}
         </span>
         {!allIn && (
-          <button
-            type="button"
-            onClick={() => onChange(members.map((m) => m.id))}
-            className={`rounded-[5px] px-1.5 py-0.5 text-[11.5px] ${focusRing}`}
-            style={{ color: "var(--moss-2)" }}
-          >
+          <Button variant="ghost" size="sm" onClick={() => onChange(members.map((m) => m.id))}>
             {t("expense.everyone")}
-          </button>
+          </Button>
         )}
       </div>
 
@@ -76,7 +71,7 @@ export function ParticipantPicker({
               >
                 <Avatar name={m.name} size={34} />
                 <span
-                  className="w-full truncate text-center text-[11px]"
+                  className="w-full truncate text-center text-[13px]"
                   style={{ color: on ? "var(--ink)" : "var(--ink-3)" }}
                 >
                   {m.name}

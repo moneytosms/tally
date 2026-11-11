@@ -8,12 +8,13 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Amount, Avatar, Button, Field, Input, Rupees, Select } from "~/client/components/ui";
+import { Amount, Avatar, Button, ConfirmDialog, Field, Input, Rupees, Select } from "~/client/components/ui";
 import { Sheet } from "~/client/components/ui/Sheet";
 import { focusRing } from "~/client/components/ui/focus";
 import { guessMapping } from "~/client/lib/guessMapping";
 import { rupeesToPaise, paiseToRupeeString } from "~/client/components/SplitEditor";
 import { api, ApiError } from "~/client/lib/api";
+import { useCopied } from "~/client/lib/useCopied";
 import {
   qk,
   useAddGuest,
@@ -80,26 +81,46 @@ export function ledgerPatch(
 }
 
 const hint = { color: "var(--ink-3)" } as const;
+const sectionLabel = { color: "var(--ink-2)" } as const;
 const rule = { borderColor: "var(--line)" } as const;
 
 /** Rename, re-date, re-budget. Nothing here is destructive, so it saves on
  *  submit and says so rather than confirming first. */
 function EditPanel({ ledger }: { ledger: LedgerSummary }) {
   const update = useUpdateLedger(ledger.id);
-  const [name, setName] = useState(ledger.name);
-  const [endDate, setEndDate] = useState(localDateValue(ledger.endDate));
-  const [budget, setBudget] = useState(ledger.budget === null ? "" : paiseToRupeeString(ledger.budget));
+  // What the form was opened with. The diff is against this, not the live ledger:
+  // if someone else renames it while this is open, an untouched field must not
+  // send the old name back.
+  const [baseline, setBaseline] = useState<Pick<LedgerSummary, "name" | "endDate" | "budget">>(ledger);
+  const [name, setName] = useState(baseline.name);
+  const [endDate, setEndDate] = useState(localDateValue(baseline.endDate));
+  const [budget, setBudget] = useState(baseline.budget === null ? "" : paiseToRupeeString(baseline.budget));
   const [failure, setFailure] = useState("");
   const [saved, setSaved] = useState(false);
+
+  const edited = () => {
+    setSaved(false);
+    setFailure("");
+  };
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     setFailure("");
     setSaved(false);
-    const result = ledgerPatch(ledger, { name, endDate, budget });
+    const result = ledgerPatch(baseline, { name, endDate, budget });
     if (!result.ok) return setFailure(t(result.error));
-    update.mutate(result.patch, {
-      onSuccess: () => setSaved(true),
+    const { patch } = result;
+    update.mutate(patch, {
+      onSuccess: () => {
+        // Saved values become the baseline, or a later edit back to the old value
+        // would diff as "unchanged" and never reach the server.
+        setBaseline((b) => ({
+          name: patch.name ?? b.name,
+          endDate: patch.endDate === undefined ? b.endDate : patch.endDate,
+          budget: patch.budget === undefined ? b.budget : patch.budget,
+        }));
+        setSaved(true);
+      },
       onError: () => setFailure(t("ledger.saveFailed")),
     });
   };
@@ -109,28 +130,49 @@ function EditPanel({ ledger }: { ledger: LedgerSummary }) {
     // the single mechanism, native bubbles are not always shown.
     <form onSubmit={onSubmit} noValidate>
       <Field label={t("ledger.name")}>
-        <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} />
+        <Input
+          value={name}
+          onChange={(e) => {
+            edited();
+            setName(e.target.value);
+          }}
+          required
+          maxLength={80}
+        />
       </Field>
       <Field label={t("ledger.endDateOptional")}>
-        <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+        <Input
+          type="date"
+          value={endDate}
+          onChange={(e) => {
+            edited();
+            setEndDate(e.target.value);
+          }}
+        />
       </Field>
-      <p className="mb-3 text-[11.5px]" style={hint}>
+      <p className="mb-3 text-[13px]" style={hint}>
         {t("ledger.endDateHint")}
       </p>
       <Field label={t("ledger.budgetOptional")}>
-        <Rupees value={budget} onChange={setBudget} />
+        <Rupees
+          value={budget}
+          onChange={(v) => {
+            edited();
+            setBudget(v);
+          }}
+        />
       </Field>
-      <p className="mb-3 text-[11.5px]" style={hint}>
+      <p className="mb-3 text-[13px]" style={hint}>
         {t("ledger.budgetHint")}
       </p>
 
       {failure && (
-        <p role="alert" className="mb-3 text-[12.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mb-3 text-[13px]" style={{ color: "var(--clay)" }}>
           {failure}
         </p>
       )}
       {saved && (
-        <p role="status" aria-live="polite" className="mb-3 text-[12.5px]" style={{ color: "var(--moss-2)" }}>
+        <p role="status" aria-live="polite" className="mb-3 text-[13px]" style={{ color: "var(--moss-2)" }}>
           {t("ledger.saved")}
         </p>
       )}
@@ -170,22 +212,25 @@ function AddExistingMember({ ledgerId }: { ledgerId: string }) {
   });
 
   const candidates = addable.data ?? [];
+  // Derived: if the picked person was added from elsewhere and left the list,
+  // nothing is picked any more and Add stays disabled.
+  const pickedUser = candidates.find((u) => u.id === picked);
 
   return (
     <div className="mt-1 border-t pt-2.5" style={rule}>
-      <div className="mb-1.5 text-[10.5px] tracking-[0.13em] uppercase" style={hint}>
+      <div className="mb-1.5 text-[13px] font-semibold" style={sectionLabel}>
         {t("member.addExisting")}
       </div>
       {candidates.length === 0 ? (
-        <p className="text-[11.5px]" style={hint}>
+        <p className="text-[13px]" style={hint}>
           {t("member.addExistingNone")}
         </p>
       ) : (
         <div className="flex items-end gap-2">
           <span className="min-w-0 flex-1">
             <Field label={t("member.pick")}>
-              <Select value={picked} onChange={(e) => setPicked(e.target.value)}>
-                <option value="">{t("member.pick")}</option>
+              <Select value={pickedUser?.id ?? ""} onChange={(e) => setPicked(e.target.value)}>
+                <option value="">{t("action.select")}</option>
                 {candidates.map((u) => (
                   <option key={u.id} value={u.id}>
                     {u.displayName}
@@ -197,23 +242,24 @@ function AddExistingMember({ ledgerId }: { ledgerId: string }) {
           <Button
             size="sm"
             className="mb-3"
-            disabled={!picked || add.isPending}
+            disabled={!pickedUser || add.isPending}
             onClick={() => {
+              if (!pickedUser) return;
               setAdded("");
-              add.mutate(picked);
+              add.mutate(pickedUser.id);
             }}
           >
             {t("member.addExistingAction")}
           </Button>
         </div>
       )}
-      <p className="text-[11.5px]" style={hint}>
+      <p className="text-[13px]" style={hint}>
         {t("member.addExistingHint")}
       </p>
       <p
         role="status"
         aria-live="polite"
-        className="mt-1.5 text-[11.5px]"
+        className="mt-1.5 text-[13px]"
         style={{ color: add.isError ? "var(--clay)" : "var(--moss-2)" }}
       >
         {add.isError ? t("member.addExistingFailed") : added}
@@ -245,7 +291,7 @@ function AddGuest({ ledgerId }: { ledgerId: string }) {
 
   return (
     <form onSubmit={onSubmit} noValidate className="mt-1 border-t pt-2.5" style={rule}>
-      <div className="mb-1.5 text-[10.5px] tracking-[0.13em] uppercase" style={hint}>
+      <div className="mb-1.5 text-[13px] font-semibold" style={sectionLabel}>
         {t("member.addGuest")}
       </div>
       <div className="flex items-end gap-2">
@@ -258,13 +304,13 @@ function AddGuest({ ledgerId }: { ledgerId: string }) {
           {t("member.addGuestAction")}
         </Button>
       </div>
-      <p className="text-[11.5px]" style={hint}>
+      <p className="text-[13px]" style={hint}>
         {t("member.addGuestHint")}
       </p>
       <p
         role="status"
         aria-live="polite"
-        className="mt-1.5 text-[11.5px]"
+        className="mt-1.5 text-[13px]"
         style={{ color: addGuest.isError ? "var(--clay)" : "var(--moss-2)" }}
       >
         {addGuest.isError ? t("member.addGuestFailed") : added}
@@ -291,17 +337,19 @@ function LeaveLedger({ ledgerId }: { ledgerId: string }) {
       <Button variant="danger" size="sm" disabled={leave.isPending} onClick={() => setConfirming(true)}>
         {t("member.leave")}
       </Button>
-      <p className="mt-1.5 text-[11.5px]" style={hint}>
+      <p className="mt-1.5 text-[13px]" style={hint}>
         {t("member.leaveHint")}
       </p>
       {leave.isError && (
-        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {failure}
         </p>
       )}
       {confirming && (
         <ConfirmDialog
-          message={t("member.leaveConfirm")}
+          title={t("confirm.leaveLedger.title")}
+          body={t("member.leaveConfirm")}
+          confirmLabel={t("confirm.leaveLedger.action")}
           onCancel={() => setConfirming(false)}
           onConfirm={() => {
             setConfirming(false);
@@ -325,11 +373,21 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
   const mergeGuest = useMergeGuest(ledgerId);
   const [confirmingRemove, setConfirmingRemove] = useState<Member | null>(null);
   const [removeFailure, setRemoveFailure] = useState("");
-  const [mergingGuest, setMergingGuest] = useState<Member | null>(null);
-  const [mergeTarget, setMergeTarget] = useState("");
-  const [mergeFailure, setMergeFailure] = useState("");
+  // One value for the whole merge flow. The guest and target are looked up from
+  // the live roster each render, so a member removed mid-flow drops out here
+  // instead of leaving a stale select or a dialog for someone who is gone.
+  const [merge, setMerge] = useState<{
+    guestId: string;
+    targetId: string | null;
+    confirming: boolean;
+    failed: boolean;
+  } | null>(null);
 
   const realMembers = (members.data ?? []).filter((m) => m.guestName === null);
+  const guest = merge ? (members.data ?? []).find((m) => m.id === merge.guestId && m.guestName !== null) : undefined;
+  const mergeTargetMember = merge?.targetId ? realMembers.find((rm) => rm.id === merge.targetId) : undefined;
+  // The viewer's own position is "You owe"; everyone else's needs naming.
+  const myMemberId = (members.data ?? []).find((m) => m.userId === me.data?.id)?.id;
 
   const positionByMemberId = new Map((balances.data?.positions ?? []).map((p) => [p.memberId, p.net]));
 
@@ -343,37 +401,35 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
               <div className="flex min-w-0 items-center gap-2.5">
                 <Avatar name={m.nickname} />
                 <div className="min-w-0">
-                  <div className="truncate text-[14px]">{m.nickname}</div>
+                  <div className="truncate text-[15px]">{m.nickname}</div>
                   {m.guestName !== null && (
-                    <span className="text-[11.5px]" style={hint}>
+                    <span className="text-[13px]" style={hint}>
                       {t("member.guest")}
                     </span>
                   )}
                 </div>
               </div>
-              <Amount paise={net} label={t("ledger.netPosition")} />
+              <Amount
+                paise={net}
+                label={t("ledger.netPosition")}
+                subject={m.id === myMemberId ? undefined : m.nickname}
+              />
             </div>
             <div className="mt-1 flex gap-1.5">
               {m.guestName !== null && (
-                <button
-                  type="button"
-                  className={`self-start px-1.5 py-1 text-[11.5px] ${focusRing}`}
-                  style={{ color: "var(--moss-2)" }}
+                <Button
+                  variant="ghost"
+                  size="sm"
                   disabled={mergeGuest.isPending || realMembers.length === 0}
-                  onClick={() => {
-                    setMergeFailure("");
-                    setMergeTarget("");
-                    setMergingGuest(m);
-                  }}
+                  onClick={() => setMerge({ guestId: m.id, targetId: null, confirming: false, failed: false })}
                 >
                   {t("member.merge")}
-                </button>
+                </Button>
               )}
               {me.data?.isOwner && m.userId !== me.data.id && (
-                <button
-                  type="button"
-                  className={`self-start px-1.5 py-1 text-[11.5px] ${focusRing}`}
-                  style={{ color: "var(--clay)" }}
+                <Button
+                  variant="danger"
+                  size="sm"
                   disabled={removeMember.isPending}
                   onClick={() => {
                     setRemoveFailure("");
@@ -381,7 +437,7 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
                   }}
                 >
                   {t("member.remove")}
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -392,14 +448,16 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
       <LeaveLedger ledgerId={ledgerId} />
 
       {removeFailure && (
-        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {removeFailure}
         </p>
       )}
 
       {confirmingRemove && (
         <ConfirmDialog
-          message={t("member.removeConfirm", { name: confirmingRemove.nickname })}
+          title={t("confirm.removeMember.title", { name: confirmingRemove.nickname })}
+          body={t("member.removeConfirm")}
+          confirmLabel={t("confirm.removeMember.action", { name: confirmingRemove.nickname })}
           onCancel={() => setConfirmingRemove(null)}
           onConfirm={() => {
             const target = confirmingRemove;
@@ -417,16 +475,21 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
         />
       )}
 
-      {mergingGuest && (
+      {merge && guest && (
         <div className="mt-1 border-t pt-2.5" style={rule}>
-          <div className="mb-1.5 text-[10.5px] tracking-[0.13em] uppercase" style={hint}>
-            {t("member.mergeTitle", { name: mergingGuest.nickname })}
+          <div className="mb-1.5 text-[13px] font-semibold" style={sectionLabel}>
+            {t("member.mergeTitle", { name: guest.nickname })}
           </div>
           <div className="flex items-end gap-2">
             <span className="min-w-0 flex-1">
               <Field label={t("member.mergeTarget")}>
-                <Select value={mergeTarget} onChange={(e) => setMergeTarget(e.target.value)}>
-                  <option value="">{t("member.mergeTarget")}</option>
+                <Select
+                  value={mergeTargetMember?.id ?? ""}
+                  onChange={(e) =>
+                    setMerge({ ...merge, targetId: e.target.value || null, confirming: false, failed: false })
+                  }
+                >
+                  <option value="">{t("action.select")}</option>
                   {realMembers.map((rm) => (
                     <option key={rm.id} value={rm.id}>
                       {rm.nickname}
@@ -438,31 +501,40 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
             <Button
               size="sm"
               className="mb-3"
-              disabled={!mergeTarget || mergeGuest.isPending}
-              onClick={() => {
-                const guest = mergingGuest;
-                mergeGuest.mutate(
-                  { guestMemberId: guest.id, targetMemberId: mergeTarget },
-                  {
-                    onSuccess: () => setMergingGuest(null),
-                    onError: () => setMergeFailure(t("member.mergeFailed")),
-                  },
-                );
-              }}
+              disabled={!mergeTargetMember || mergeGuest.isPending}
+              onClick={() => setMerge({ ...merge, confirming: true })}
             >
               {t("member.mergeAction")}
             </Button>
-            <Button variant="ghost" size="sm" className="mb-3" onClick={() => setMergingGuest(null)}>
+            <Button variant="ghost" size="sm" className="mb-3" onClick={() => setMerge(null)}>
               {t("member.mergeCancel")}
             </Button>
           </div>
-          <p className="text-[11.5px]" style={hint}>
+          <p className="text-[13px]" style={hint}>
             {t("member.mergeHint")}
           </p>
-          {mergeFailure && (
-            <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
-              {mergeFailure}
+          {merge.failed && (
+            <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
+              {t("member.mergeFailed")}
             </p>
+          )}
+          {merge.confirming && mergeTargetMember && (
+            <ConfirmDialog
+              title={t("confirm.mergeGuest.title", { guest: guest.nickname, name: mergeTargetMember.nickname })}
+              body={t("member.mergeHint")}
+              confirmLabel={t("confirm.mergeGuest.action")}
+              onCancel={() => setMerge({ ...merge, confirming: false })}
+              onConfirm={() => {
+                setMerge({ ...merge, confirming: false });
+                mergeGuest.mutate(
+                  { guestMemberId: guest.id, targetMemberId: mergeTargetMember.id },
+                  {
+                    onSuccess: () => setMerge(null),
+                    onError: () => setMerge((s) => (s?.guestId === guest.id ? { ...s, failed: true } : s)),
+                  },
+                );
+              }}
+            />
           )}
         </div>
       )}
@@ -482,27 +554,32 @@ function InvitePanel({ ledger }: { ledger: LedgerSummary }) {
   const update = useUpdateLedger(ledger.id);
   const create = useCreateInvite(ledger.id);
   const [link, setLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const copy = useCopied();
+
+  // A link minted before the switch went off stops working, so the one on screen
+  // is stale the moment invites are disabled - here or on another device. Dropped
+  // rather than left to reappear when the switch goes back on.
+  const [wasEnabled, setWasEnabled] = useState(ledger.invitesEnabled);
+  if (wasEnabled !== ledger.invitesEnabled) {
+    setWasEnabled(ledger.invitesEnabled);
+    if (!ledger.invitesEnabled) setLink(null);
+  }
 
   const mint = () =>
     create.mutate(undefined, {
       onSuccess: ({ token }) => {
         setLink(`${window.location.origin}/welcome?invite=${encodeURIComponent(token)}`);
-        setCopied(false);
       },
     });
 
   const toggle = (enabled: boolean) => {
-    // A link minted before the switch went off stops working, so the one on
-    // screen is stale the moment it is disabled - drop it rather than let it be
-    // copied.
-    setLink(null);
+    if (!enabled) setLink(null);
     update.mutate({ invitesEnabled: enabled });
   };
 
   return (
     <>
-      <label className="flex items-center gap-2.5 text-[14px]">
+      <label className="flex items-center gap-2.5 text-[15px]">
         <input
           type="checkbox"
           checked={ledger.invitesEnabled}
@@ -513,14 +590,14 @@ function InvitePanel({ ledger }: { ledger: LedgerSummary }) {
         />
         {t("ledger.invitesEnabled")}
       </label>
-      <p className="mt-1.5 text-[11.5px]" style={hint}>
+      <p className="mt-1.5 text-[13px]" style={hint}>
         {t(ledger.invitesEnabled ? "ledger.invitesOnHint" : "ledger.invitesOffHint")}
       </p>
-      <p className="mt-1.5 text-[11.5px]" style={hint}>
+      <p className="mt-1.5 text-[13px]" style={hint}>
         {t("ledger.invitesRevival")}
       </p>
       {update.isError && (
-        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {t("ledger.invitesToggleFailed")}
         </p>
       )}
@@ -533,7 +610,7 @@ function InvitePanel({ ledger }: { ledger: LedgerSummary }) {
                 {t("ledger.invite")}
               </Button>
               {create.isError && (
-                <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+                <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
                   {t("error.generic")}
                 </p>
               )}
@@ -541,24 +618,17 @@ function InvitePanel({ ledger }: { ledger: LedgerSummary }) {
           ) : (
             <>
               <p
-                className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all"
+                className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[13px] break-all"
                 style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
               >
                 {link}
               </p>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard?.writeText(link);
-                    setCopied(true);
-                  }}
-                >
-                  {t(copied ? "ledger.inviteCopied" : "ledger.inviteCopy")}
+                <Button variant="ghost" size="sm" onClick={() => copy.copy(link)}>
+                  {t(copy.copied === link ? "ledger.inviteCopied" : "ledger.inviteCopy")}
                 </Button>
               </div>
-              <p className="mt-1.5 text-[11.5px]" style={hint}>
+              <p className="mt-1.5 text-[13px]" style={hint}>
                 {t("ledger.inviteHint")}
               </p>
             </>
@@ -600,11 +670,11 @@ function DuplicatePanel({ ledger, onDone }: { ledger: LedgerSummary; onDone: (le
       <Field label={t("ledger.duplicateName")}>
         <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} autoFocus />
       </Field>
-      <p className="mb-3 text-[11.5px]" style={hint}>
+      <p className="mb-3 text-[13px]" style={hint}>
         {t("ledger.duplicateHint")}
       </p>
       {failure && (
-        <p role="alert" className="mb-3 text-[12.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mb-3 text-[13px]" style={{ color: "var(--clay)" }}>
           {failure}
         </p>
       )}
@@ -688,41 +758,43 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
           accept=".xls,.csv"
           onChange={(e) => {
             const file = e.target.files?.[0];
+            // Cleared so picking the same file again fires onChange again.
+            e.target.value = "";
             if (file) onFile(file);
           }}
         />
       </Field>
 
       {preview.isPending && (
-        <p className="text-[12.5px]" style={hint}>
+        <p className="text-[13px]" style={hint}>
           {t("import.parsing")}
         </p>
       )}
       {preview.isError && (
-        <p role="alert" className="text-[12.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="text-[13px]" style={{ color: "var(--clay)" }}>
           {t("import.parseFailed")}
         </p>
       )}
       {done !== null && (
-        <p role="status" aria-live="polite" className="mb-2 text-[12.5px]" style={{ color: "var(--moss-2)" }}>
+        <p role="status" aria-live="polite" className="mb-2 text-[13px]" style={{ color: "var(--moss-2)" }}>
           {t("import.done", { count: done })}
         </p>
       )}
 
       {parsed && (
         <>
-          <p className="mb-2 text-[12.5px]" style={hint}>
+          <p className="mb-2 text-[13px]" style={hint}>
             {t("import.rowCount", { count: parsed.rows.length })}
             {parsed.warnings.length > 0 && ` · ${t("import.warnings", { count: parsed.warnings.length })}`}
           </p>
 
           <div className="mb-3 border-t pt-2.5" style={rule}>
-            <div className="mb-1.5 text-[10.5px] tracking-[0.13em] uppercase" style={hint}>
+            <div className="mb-1.5 text-[13px] font-semibold" style={sectionLabel}>
               {t("import.mapping")}
             </div>
             {parsed.sourceNames.map((name) => (
               <div key={name} className="mb-2 flex items-center gap-2">
-                <span className="min-w-0 flex-1 truncate text-[13.5px]">{name}</span>
+                <span className="min-w-0 flex-1 truncate text-[15px]">{name}</span>
                 <Select
                   value={mapping[name] ?? (name in newGuestNames ? "__guest__" : "")}
                   onChange={(e) => {
@@ -743,7 +815,7 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
           </div>
 
           {commit.isError && (
-            <p role="alert" className="mb-2 text-[12.5px]" style={{ color: "var(--clay)" }}>
+            <p role="alert" className="mb-2 text-[13px]" style={{ color: "var(--clay)" }}>
               {t("import.failed")}
             </p>
           )}
@@ -753,42 +825,6 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
           </Button>
         </>
       )}
-    </div>
-  );
-}
-
-/** Same shape as the confirm dialogs in AdminPanel: alertdialog, modal, cancel
- *  first so the destructive button is never the one under a stray tap. */
-function ConfirmDialog({
-  message,
-  onCancel,
-  onConfirm,
-}: {
-  message: string;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgb(0 0 0 / 38%)" }}
-    >
-      <div
-        role="alertdialog"
-        aria-modal="true"
-        className="w-full max-w-sm rounded-[10px] border p-4"
-        style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-      >
-        <p className="mb-3 text-[14px]">{message}</p>
-        <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onCancel}>
-            {t("action.cancel")}
-          </Button>
-          <Button variant="danger" onClick={onConfirm}>
-            {t("action.confirm")}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -837,7 +873,7 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
       ? t("ledger.deleteBlocked")
       : t("ledger.deleteFailed");
 
-  const item = `block w-full px-3.5 py-2.5 text-left text-[14px] ${focusRing}`;
+  const item = `flex min-h-11 w-full items-center px-3.5 py-2.5 text-left text-[15px] ${focusRing}`;
 
   return (
     <>
@@ -870,14 +906,28 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
               <button type="button" role="menuitem" className={item} onClick={() => pick("members")}>
                 {t("ledger.menu.members")}
               </button>
+              <button
+                type="button"
+                role="menuitem"
+                className={item}
+                onClick={() => {
+                  trigger.current?.focus();
+                  setOpen(false);
+                  navigate(`/ledgers/${ledger.id}/recurring`);
+                }}
+              >
+                {t("ledgerNav.recurring")}
+              </button>
               {me.data?.accountType !== "restricted" && (
                 <button type="button" role="menuitem" className={item} onClick={() => pick("invite")}>
                   {t("ledger.menu.invite")}
                 </button>
               )}
-              <button type="button" role="menuitem" className={item} onClick={() => pick("duplicate")}>
-                {t("ledger.menu.duplicate")}
-              </button>
+              {me.data?.accountType !== "restricted" && (
+                <button type="button" role="menuitem" className={item} onClick={() => pick("duplicate")}>
+                  {t("ledger.menu.duplicate")}
+                </button>
+              )}
               <button type="button" role="menuitem" className={item} onClick={() => pick("import")}>
                 {t("import.menuLabel")}
               </button>
@@ -946,14 +996,16 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
       </Sheet>
 
       {(lifecycle.isError || remove.isError) && (
-        <p role="alert" className="mx-0.5 mb-2 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mx-0.5 mb-2 text-[13px]" style={{ color: "var(--clay)" }}>
           {lifecycle.isError ? lifecycleFailure : deleteFailure}
         </p>
       )}
 
       {confirming === "archive" && (
         <ConfirmDialog
-          message={t("ledger.archiveConfirm")}
+          title={t("confirm.archiveLedger.title")}
+          body={t("confirm.archiveLedger.body")}
+          confirmLabel={t("confirm.archiveLedger.action")}
           onCancel={() => setConfirming(null)}
           onConfirm={() => {
             setConfirming(null);
@@ -963,7 +1015,9 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
       )}
       {confirming === "delete" && (
         <ConfirmDialog
-          message={t("ledger.deleteConfirm", { name: ledger.name })}
+          title={t("confirm.deleteLedger.title", { name: ledger.name })}
+          body={t("confirm.deleteLedger.body")}
+          confirmLabel={t("confirm.deleteLedger.action")}
           onCancel={() => setConfirming(null)}
           onConfirm={() => {
             setConfirming(null);
