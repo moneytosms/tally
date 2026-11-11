@@ -1,6 +1,16 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Avatar, Button, EmptyState, Field, Input, ScreenSkeleton, Skeleton } from "~/client/components/ui";
+import {
+  Avatar,
+  Button,
+  ConfirmDialog,
+  EmptyState,
+  Field,
+  Input,
+  PageHeader,
+  ScreenSkeleton,
+  Skeleton,
+} from "~/client/components/ui";
 import { api, ApiError } from "~/client/lib/api";
 import { qk } from "~/client/lib/queries";
 import {
@@ -18,10 +28,11 @@ import {
   useDeleteCategory,
   useMe,
 } from "~/client/lib/queries";
+import { useCopied } from "~/client/lib/useCopied";
 import { t } from "~/client/i18n";
 
 const Section = ({ title }: { title: string }) => (
-  <div className="mx-0.5 mt-5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
+  <div className="mx-0.5 mt-5 mb-2 text-[13px] font-semibold" style={{ color: "var(--ink-2)" }}>
     {title}
   </div>
 );
@@ -44,26 +55,26 @@ function InstanceSection() {
   const d = instance.data;
   return (
     <div className="rounded-[7px] border px-3.5 py-3.5" style={card}>
-      <div className="flex items-center justify-between py-1 text-[13px]">
+      <div className="flex items-center justify-between py-1 text-[15px]">
         <span style={{ color: "var(--ink-3)" }}>{t("admin.rpId")}</span>
         <span className="tnum">{d.rpId}</span>
       </div>
-      <p className="mb-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mb-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("admin.rpIdFrozen")}
       </p>
-      <div className="flex items-center justify-between py-1 text-[13px]">
+      <div className="flex items-center justify-between py-1 text-[15px]">
         <span style={{ color: "var(--ink-3)" }}>{t("admin.people")}</span>
         <span className="tnum">{d.userCount}</span>
       </div>
-      <div className="flex items-center justify-between py-1 text-[13px]">
+      <div className="flex items-center justify-between py-1 text-[15px]">
         <span style={{ color: "var(--ink-3)" }}>{t("admin.ledgers")}</span>
         <span className="tnum">{d.ledgerCount}</span>
       </div>
-      <div className="flex items-center justify-between py-1 text-[13px]">
+      <div className="flex items-center justify-between py-1 text-[15px]">
         <span style={{ color: "var(--ink-3)" }}>{t("notifications.title")}</span>
         <span>{d.pushConfigured ? "✓" : "-"}</span>
       </div>
-      <div className="flex items-center justify-between py-1 text-[13px]">
+      <div className="flex items-center justify-between py-1 text-[15px]">
         <span style={{ color: "var(--ink-3)" }}>{t("recurring.title")}</span>
         <span>{d.recurringConfigured ? "✓" : "-"}</span>
       </div>
@@ -76,13 +87,12 @@ function InstanceSection() {
 function RecoveryRow({ userId }: { userId: string }) {
   const create = useCreateRecovery();
   const [link, setLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const copy = useCopied();
 
   const mint = () =>
     create.mutate(userId, {
       onSuccess: ({ token }) => {
         setLink(`${window.location.origin}/welcome?recovery=${encodeURIComponent(token)}`);
-        setCopied(false);
       },
     });
 
@@ -90,22 +100,15 @@ function RecoveryRow({ userId }: { userId: string }) {
     return (
       <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
         <p
-          className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all"
+          className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[13px] break-all"
           style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
         >
           {link}
         </p>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            navigator.clipboard?.writeText(link);
-            setCopied(true);
-          }}
-        >
-          {t(copied ? "ledger.inviteCopied" : "ledger.inviteCopy")}
+        <Button variant="ghost" size="sm" onClick={() => copy.copy(link)}>
+          {t(copy.copied === link ? "ledger.inviteCopied" : "ledger.inviteCopy")}
         </Button>
-        <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("admin.recoveryHint")}
         </p>
       </div>
@@ -118,7 +121,7 @@ function RecoveryRow({ userId }: { userId: string }) {
         {t("admin.recovery")}
       </Button>
       {create.isError && (
-        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {t("error.generic")}
         </p>
       )}
@@ -132,16 +135,17 @@ function RecoveryRow({ userId }: { userId: string }) {
  * forgets the hash. Passkeys and history survive both, so the way back in is
  * the recovery link above.
  */
-function EmergencyRow({ userId, hasPassword }: { userId: string; hasPassword: boolean }) {
+function EmergencyRow({ userId, name, hasPassword }: { userId: string; name: string; hasPassword: boolean }) {
   const signOut = useSignOutUser();
   const clearPassword = useClearPassword();
-  // Clearing a password takes a real sign-in route away, so it confirms first.
+  // Both levers take access away from someone, so both confirm first.
+  const [confirmingSignOut, setConfirmingSignOut] = useState(false);
   const [confirmingClear, setConfirmingClear] = useState(false);
 
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="ghost" size="sm" isLoading={signOut.isPending} onClick={() => signOut.mutate(userId)}>
+        <Button variant="ghost" size="sm" isLoading={signOut.isPending} onClick={() => setConfirmingSignOut(true)}>
           {t("admin.signOutUser")}
         </Button>
         <Button
@@ -154,46 +158,47 @@ function EmergencyRow({ userId, hasPassword }: { userId: string; hasPassword: bo
           {t("admin.clearPassword")}
         </Button>
       </div>
-      <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("admin.emergencyHint")}
       </p>
       {signOut.isSuccess && (
-        <p role="status" className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        <p role="status" className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("admin.signOutUserDone")}
         </p>
       )}
       {clearPassword.isSuccess && (
-        <p role="status" className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        <p role="status" className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("admin.clearPasswordDone")}
         </p>
       )}
       {(signOut.isError || clearPassword.isError) && (
-        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {t("error.generic")}
         </p>
       )}
+      {confirmingSignOut && (
+        <ConfirmDialog
+          title={t("confirm.signOutEverywhere.title", { name })}
+          body={t("confirm.signOutEverywhere.body")}
+          confirmLabel={t("confirm.signOutEverywhere.action")}
+          onCancel={() => setConfirmingSignOut(false)}
+          onConfirm={() => {
+            setConfirmingSignOut(false);
+            signOut.mutate(userId);
+          }}
+        />
+      )}
       {confirmingClear && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgb(0 0 0 / 38%)" }}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            className="w-full max-w-sm rounded-[10px] border p-4"
-            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-          >
-            <p className="mb-3 text-[14px]">{t("admin.clearPasswordConfirm")}</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setConfirmingClear(false)}>
-                {t("action.cancel")}
-              </Button>
-              <Button variant="danger" onClick={() => (clearPassword.mutate(userId), setConfirmingClear(false))}>
-                {t("action.confirm")}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title={t("confirm.clearPassword.title")}
+          body={t("admin.clearPasswordConfirm")}
+          confirmLabel={t("confirm.clearPassword.action")}
+          onCancel={() => setConfirmingClear(false)}
+          onConfirm={() => {
+            setConfirmingClear(false);
+            clearPassword.mutate(userId);
+          }}
+        />
       )}
     </div>
   );
@@ -201,25 +206,39 @@ function EmergencyRow({ userId, hasPassword }: { userId: string; hasPassword: bo
 
 /** Owner-only, one-directional (ADR 0008): promotes a restricted account to
  *  full. There is no demote button because there is no demote route. */
-function PromoteRow({ userId }: { userId: string }) {
+function PromoteRow({ userId, name }: { userId: string; name: string }) {
   const promote = usePromoteUser();
+  const [confirming, setConfirming] = useState(false);
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
-      <Button variant="ghost" size="sm" isLoading={promote.isPending} onClick={() => promote.mutate(userId)}>
+      <Button variant="ghost" size="sm" isLoading={promote.isPending} onClick={() => setConfirming(true)}>
         {t("admin.promote")}
       </Button>
-      <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("admin.promoteHint")}
       </p>
       {promote.isSuccess && (
-        <p role="status" className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        <p role="status" className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("admin.promoteDone")}
         </p>
       )}
       {promote.isError && (
-        <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {t("error.generic")}
         </p>
+      )}
+      {confirming && (
+        <ConfirmDialog
+          title={t("confirm.promote.title", { name })}
+          body={t("admin.promoteHint")}
+          confirmLabel={t("confirm.promote.action")}
+          danger={false}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => {
+            setConfirming(false);
+            promote.mutate(userId);
+          }}
+        />
       )}
     </div>
   );
@@ -288,17 +307,17 @@ function PeopleSection() {
 
   return (
     <>
-      <p className="mx-0.5 mb-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mx-0.5 mb-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("admin.peopleBody")}
       </p>
       {users.data.map((u) => (
         <div key={u.id} className="mb-2 rounded-[7px] border px-3.5 py-3" style={card}>
           <div className="flex items-center gap-2.5">
             <Avatar name={u.displayName} />
-            <span className="flex-1 truncate text-[14.5px] font-medium">{u.displayName}</span>
+            <span className="flex-1 truncate text-[15px] font-medium">{u.displayName}</span>
             {u.isOwner && (
               <span
-                className="rounded-[4px] px-1.5 py-0.5 text-[10.5px] tracking-[0.08em] uppercase"
+                className="rounded-[4px] px-1.5 py-0.5 text-[13px] font-medium"
                 style={{ background: "var(--moss-wash)", color: "var(--moss-2)" }}
               >
                 {t("admin.owner")}
@@ -306,7 +325,7 @@ function PeopleSection() {
             )}
             {u.accountType === "restricted" && (
               <span
-                className="rounded-[4px] px-1.5 py-0.5 text-[10.5px] tracking-[0.08em] uppercase"
+                className="rounded-[4px] px-1.5 py-0.5 text-[13px] font-medium"
                 style={{ background: "var(--paper-sunk)", color: "var(--ink-3)" }}
               >
                 {t("admin.restricted")}
@@ -314,7 +333,7 @@ function PeopleSection() {
             )}
           </div>
           <div
-            className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11.5px]"
+            className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]"
             style={{ color: "var(--ink-3)" }}
           >
             <span className="truncate">{u.email ?? t("admin.noEmail")}</span>
@@ -323,15 +342,15 @@ function PeopleSection() {
           </div>
           <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
             {u.credentials.length === 0 ? (
-              <p className="py-1 text-[12.5px]" style={{ color: "var(--ink-3)" }}>
+              <p className="py-1 text-[13px]" style={{ color: "var(--ink-3)" }}>
                 {t("profile.noDevices")}
               </p>
             ) : (
               u.credentials.map((c) => (
-                <div key={c.id} className="flex items-center justify-between gap-2 py-1.5 text-[13px]">
+                <div key={c.id} className="flex items-center justify-between gap-2 py-1.5 text-[15px]">
                   <span>{t("profile.passkey")}</span>
                   {revokedId === c.id ? (
-                    <span role="status" className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+                    <span role="status" className="text-[13px]" style={{ color: "var(--ink-3)" }}>
                       {t("admin.revoked")}
                     </span>
                   ) : (
@@ -351,14 +370,14 @@ function PeopleSection() {
               ))
             )}
             {u.credentials.length === 1 && (
-              <p className="pb-1 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+              <p className="pb-1 text-[13px]" style={{ color: "var(--ink-3)" }}>
                 {t("admin.lastCredential")}
               </p>
             )}
           </div>
           <RecoveryRow userId={u.id} />
-          <EmergencyRow userId={u.id} hasPassword={u.hasPassword} />
-          {u.accountType === "restricted" && <PromoteRow userId={u.id} />}
+          <EmergencyRow userId={u.id} name={u.displayName} hasPassword={u.hasPassword} />
+          {u.accountType === "restricted" && <PromoteRow userId={u.id} name={u.displayName} />}
           {!u.isOwner && (
             <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
               <Button
@@ -369,7 +388,7 @@ function PeopleSection() {
               >
                 {t("admin.deleteUser")}
               </Button>
-              <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+              <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
                 {t("admin.deleteUserHint")}
               </p>
             </div>
@@ -378,62 +397,34 @@ function PeopleSection() {
       ))}
 
       {removeUser.isError && (
-        <p role="alert" className="mx-0.5 mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mx-0.5 mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {deleteMessage(removeUser.error)}
         </p>
       )}
       {deleted && (
-        <p role="status" className="mx-0.5 mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        <p role="status" className="mx-0.5 mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("admin.deleteUserDone")}
         </p>
       )}
 
       {deleting && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgb(0 0 0 / 38%)" }}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            className="w-full max-w-sm rounded-[10px] border p-4"
-            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-          >
-            <p className="mb-3 text-[14px]">{t("admin.deleteUserConfirm", { name: deleting.name })}</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setDeleting(null)}>
-                {t("action.cancel")}
-              </Button>
-              <Button variant="danger" onClick={doDelete}>
-                {t("action.confirm")}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title={t("confirm.deleteAccount.title", { name: deleting.name })}
+          body={t("admin.deleteUserHint")}
+          confirmLabel={t("confirm.deleteAccount.action")}
+          onCancel={() => setDeleting(null)}
+          onConfirm={doDelete}
+        />
       )}
 
       {confirming && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgb(0 0 0 / 38%)" }}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            className="w-full max-w-sm rounded-[10px] border p-4"
-            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-          >
-            <p className="mb-3 text-[14px]">{t("admin.revoke")}?</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setConfirming(null)}>
-                {t("action.cancel")}
-              </Button>
-              <Button variant="danger" onClick={doRevoke}>
-                {t("action.confirm")}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title={t("confirm.revokeUserPasskey.title")}
+          body={t("confirm.revokeUserPasskey.body")}
+          confirmLabel={t("confirm.revokeUserPasskey.action")}
+          onCancel={() => setConfirming(null)}
+          onConfirm={doRevoke}
+        />
       )}
     </>
   );
@@ -478,12 +469,12 @@ function CategoriesSection() {
           className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-2.5"
           style={card}
         >
-          <span className="flex min-w-0 items-center gap-2 text-[14px]">
+          <span className="flex min-w-0 items-center gap-2 text-[15px]">
             <span aria-hidden="true">{c.icon}</span>
             <span className="truncate">{c.name}</span>
           </span>
           {c.isDefault ? (
-            <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+            <span className="text-[13px]" style={{ color: "var(--ink-3)" }}>
               {t("admin.categoryDefault")}
             </span>
           ) : (
@@ -507,27 +498,12 @@ function CategoriesSection() {
       </form>
 
       {confirming && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgb(0 0 0 / 38%)" }}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            className="w-full max-w-sm rounded-[10px] border p-4"
-            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-          >
-            <p className="mb-3 text-[14px]">{t("admin.categoryDelete")}?</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setConfirming(null)}>
-                {t("action.cancel")}
-              </Button>
-              <Button variant="danger" onClick={doDelete}>
-                {t("action.confirm")}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title={t("confirm.deleteCategory.title")}
+          confirmLabel={t("confirm.deleteCategory.action")}
+          onCancel={() => setConfirming(null)}
+          onConfirm={doDelete}
+        />
       )}
     </>
   );
@@ -540,27 +516,26 @@ function CategoriesSection() {
 function InstanceInviteCard() {
   const qc = useQueryClient();
   const [link, setLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const copy = useCopied();
 
   const create = useMutation({
     mutationFn: () => api<{ token: string; expiresAt: number }>("/api/admin/invites", { method: "POST" }),
     onSuccess: ({ token }) => {
       setLink(`${window.location.origin}/welcome?invite=${encodeURIComponent(token)}`);
-      setCopied(false);
       qc.invalidateQueries({ queryKey: qk.adminInvites });
     },
   });
 
   return (
     <div className="mb-2 rounded-[7px] border px-3.5 py-3.5" style={card}>
-      <div className="mb-2 text-[14px] font-medium">{t("admin.inviteInstance")}</div>
+      <div className="mb-2 text-[15px] font-medium">{t("admin.inviteInstance")}</div>
       {link === null ? (
         <>
           <Button variant="ghost" size="sm" isLoading={create.isPending} onClick={() => create.mutate()}>
             {t("admin.inviteInstanceCreate")}
           </Button>
           {create.isError && (
-            <p role="alert" className="mt-1.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+            <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
               {t("admin.inviteFailed")}
             </p>
           )}
@@ -568,24 +543,17 @@ function InstanceInviteCard() {
       ) : (
         <>
           <p
-            className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[11.5px] break-all"
+            className="mb-1.5 rounded-[6px] border px-2.5 py-2 text-[13px] break-all"
             style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
           >
             {link}
           </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => {
-              navigator.clipboard?.writeText(link);
-              setCopied(true);
-            }}
-          >
-            {t(copied ? "admin.inviteCopied" : "admin.inviteCopy")}
+          <Button variant="ghost" size="sm" onClick={() => copy.copy(link)}>
+            {t(copy.copied === link ? "admin.inviteCopied" : "admin.inviteCopy")}
           </Button>
         </>
       )}
-      <p className="mt-1.5 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("admin.inviteInstanceHint")}
       </p>
     </div>
@@ -635,8 +603,8 @@ function InvitesSection() {
             <div className="min-w-0">
               {/* Null ledgerName means an instance invite - it joins no ledger,
                   so its scope has to be spelled out rather than left blank. */}
-              <div className="truncate text-[14px] font-medium">{inv.ledgerName ?? t("admin.inviteScopeInstance")}</div>
-              <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+              <div className="truncate text-[15px] font-medium">{inv.ledgerName ?? t("admin.inviteScopeInstance")}</div>
+              <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
                 {t("admin.expiresIn", { hours })}
               </div>
             </div>
@@ -648,27 +616,12 @@ function InvitesSection() {
       })}
 
       {confirming && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-4"
-          style={{ background: "rgb(0 0 0 / 38%)" }}
-        >
-          <div
-            role="alertdialog"
-            aria-modal="true"
-            className="w-full max-w-sm rounded-[10px] border p-4"
-            style={{ background: "var(--paper)", borderColor: "var(--line)" }}
-          >
-            <p className="mb-3 text-[14px]">{t("admin.inviteRevoke")}?</p>
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setConfirming(null)}>
-                {t("action.cancel")}
-              </Button>
-              <Button variant="danger" onClick={doRevoke}>
-                {t("action.confirm")}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <ConfirmDialog
+          title={t("confirm.revokeInvite.title")}
+          confirmLabel={t("confirm.revokeInvite.action")}
+          onCancel={() => setConfirming(null)}
+          onConfirm={doRevoke}
+        />
       )}
     </>
   );
@@ -676,16 +629,33 @@ function InvitesSection() {
 
 export default function AdminPanel() {
   const me = useMe();
+  const back = "/you";
 
-  if (me.isPending) return <ScreenSkeleton />;
-  if (me.error || !me.data) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
-  if (!me.data.isOwner) return <EmptyState title={t("admin.onlyOwner")} body="" />;
+  if (me.isPending)
+    return (
+      <>
+        <PageHeader title={t("admin.title")} back={back} />
+        <ScreenSkeleton />
+      </>
+    );
+  if (me.error || !me.data)
+    return (
+      <>
+        <PageHeader title={t("admin.title")} back={back} />
+        <EmptyState title={t("error.generic")} body={t("error.network")} />
+      </>
+    );
+  if (!me.data.isOwner)
+    return (
+      <>
+        <PageHeader title={t("admin.title")} back={back} />
+        <EmptyState title={t("admin.onlyOwner")} />
+      </>
+    );
 
   return (
     <>
-      <header className="mb-3">
-        <h1 className="serif text-[21px] tracking-[-0.01em]">{t("admin.title")}</h1>
-      </header>
+      <PageHeader title={t("admin.title")} back={back} />
 
       <Section title={t("admin.instance")} />
       <InstanceSection />

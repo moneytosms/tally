@@ -67,7 +67,7 @@ export function ThemePicker() {
           </optgroup>
         </Select>
       </div>
-      <p className="mt-2 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+      <p className="mt-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("profile.themeHint")}
       </p>
     </div>

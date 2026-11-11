@@ -1,11 +1,10 @@
 // The ledger's activity feed. Everything here is derived server-side - see
 // src/server/routes/activity.ts for why there is no activity table.
 import { useState } from "react";
-import { Link, useParams } from "react-router";
-import { EmptyState, Field, ScreenSkeleton, Select } from "~/client/components/ui";
-import { focusRing } from "~/client/components/ui/focus";
+import { useParams } from "react-router";
+import { Button, EmptyState, Field, ScreenSkeleton, Select } from "~/client/components/ui";
 import { ActivityRow, dayFormat } from "~/client/components/ActivityRow";
-import { useActivity, useLedger, type ActivityEvent } from "~/client/lib/queries";
+import { useActivity, type ActivityEvent } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
 
 export type ActivityFilters = { member?: string; kind?: ActivityEvent["kind"] };
@@ -47,12 +46,11 @@ function distinctKinds(events: ActivityEvent[]): ActivityEvent["kind"][] {
 
 export default function ActivityTab() {
   const { ledgerId = "" } = useParams();
-  const ledger = useLedger(ledgerId);
   const events = useActivity(ledgerId);
   const [filters, setFilters] = useState<ActivityFilters>({});
 
-  if (events.isPending || ledger.isPending) return <ScreenSkeleton />;
-  if (events.error || ledger.error) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
+  if (events.isPending) return <ScreenSkeleton />;
+  if (events.error) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
 
   const all = events.data ?? [];
   const rows = filterEvents(all, filters);
@@ -70,25 +68,8 @@ export default function ActivityTab() {
 
   return (
     <>
-      <header className="mb-3 flex items-end gap-2.5 border-b pb-3" style={{ borderColor: "var(--line)" }}>
-        <Link
-          to={`/ledgers/${ledgerId}`}
-          aria-label={t("action.back")}
-          className={`grid min-h-11 min-w-11 place-items-center text-[17px] ${focusRing}`}
-          style={{ color: "var(--ink-3)" }}
-        >
-          ←
-        </Link>
-        <div className="min-w-0 flex-1">
-          <h1 className="serif truncate text-[21px] tracking-[-0.01em]">{t("activity.title")}</h1>
-          <div className="truncate text-[12px]" style={{ color: "var(--ink-3)" }}>
-            {ledger.data.name}
-          </div>
-        </div>
-      </header>
-
       {/* Nothing to filter until there is a feed worth filtering. */}
-      {all.length > 0 && (
+      {(all.length > 0 || filtering) && (
         <div className="mb-3 grid grid-cols-2 gap-2">
           <Field label={t("activity.filterMember")}>
             <Select value={filters.member ?? ""} onChange={(e) => patch({ member: e.target.value || undefined })}>
@@ -115,40 +96,33 @@ export default function ActivityTab() {
           </Field>
           {filtering && (
             <div className="col-span-2 flex items-center justify-between gap-2" role="status" aria-live="polite">
-              <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+              <span className="text-[13px]" style={{ color: "var(--ink-3)" }}>
                 {t("activity.results", { count: rows.length, total: all.length })}
               </span>
-              <button
-                type="button"
-                onClick={() => setFilters({})}
-                className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
-                style={{ color: "var(--moss)" }}
-              >
+              <Button size="sm" variant="ghost" onClick={() => setFilters({})}>
                 {t("activity.clear")}
-              </button>
+              </Button>
             </div>
           )}
         </div>
       )}
 
       {rows.length === 0 ? (
-        filtering ? (
-          <EmptyState title={t("activity.title")} body={t("activity.noneFiltered")} />
-        ) : (
-          <EmptyState title={t("activity.title")} body={t("activity.none")} />
-        )
+        // The sentence is the title: the tab already says "Activity".
+        <EmptyState title={filtering ? t("activity.noneFiltered") : t("activity.none")} />
       ) : (
         groups.map((g) => (
           <section key={g.day} className="mb-4">
-            <div className="mx-0.5 mb-1 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
+            <h2 className="mx-0.5 mb-1 text-[13px] font-semibold" style={{ color: "var(--ink-2)" }}>
               {g.day}
-            </div>
+            </h2>
             <ul
               className="rounded-[7px] border px-3.5 py-1"
               style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
             >
               {g.events.map((e) => (
-                <ActivityRow key={e.id} event={e} />
+                // The day is already the heading above this group.
+                <ActivityRow key={e.id} event={e} showDay={false} />
               ))}
             </ul>
           </section>

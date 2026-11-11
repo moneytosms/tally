@@ -1,11 +1,14 @@
 export { Amount } from "./Amount";
 export { Avatar } from "./Avatar";
 export { Button } from "./Button";
+export { ConfirmDialog } from "./ConfirmDialog";
 export { EmptyState } from "./EmptyState";
 export { Field } from "./Field";
 export { Input, Rupees } from "./Input";
+export { PageHeader } from "./PageHeader";
 export { Select } from "./Select";
 export { Sheet } from "./Sheet";
 export { ScreenSkeleton, Skeleton } from "./Skeleton";
+export { Tabs } from "./Tabs";
 export { pushToast, ToastViewport } from "./Toast";
 export { focusRing } from "./focus";

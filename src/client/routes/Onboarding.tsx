@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Field, Input } from "~/client/components/ui";
+import { Button, Field, Input, pushToast } from "~/client/components/ui";
 import { api } from "~/client/lib/api";
 import { enterDemo } from "~/client/lib/demo";
 import { qk, useMe } from "~/client/lib/queries";
@@ -61,7 +61,7 @@ function OpenInBrowser({ title }: { title: string }) {
         {t("onboarding.noWebauthnBody")}
       </p>
       <p
-        className="mb-4 rounded-[6px] border px-3 py-2 text-[12px] break-all"
+        className="mb-4 rounded-[6px] border px-3 py-2 text-[13px] break-all"
         style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
       >
         {window.location.href}
@@ -86,7 +86,7 @@ function extractInviteToken(raw: string): string {
 
 /** The "or" rule between a primary path and its alternative. */
 const Or = () => (
-  <div className="my-4 flex items-center gap-3 text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+  <div className="my-4 flex items-center gap-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
     <span className="h-px flex-1" style={{ background: "var(--line)" }} />
     {t("onboarding.or")}
     <span className="h-px flex-1" style={{ background: "var(--line)" }} />
@@ -156,7 +156,12 @@ export function Onboarding() {
         method: "POST",
         body: JSON.stringify({ displayName, inviteToken: invite, response: attestation }),
       });
-      if (invite) await api(`/api/invites/${invite}/accept`, { method: "POST" });
+      // Account and passkey already exist, so a failed accept must not be reported
+      // as a failed registration. Signed in either way.
+      if (invite)
+        await api(`/api/invites/${invite}/accept`, { method: "POST" }).catch(() =>
+          pushToast(t("onboarding.inviteNotAccepted"), "error"),
+        );
       // Step BEFORE the invalidate: refetching `me` re-runs the redirect guard above.
       setView("vpa");
       await qc.invalidateQueries({ queryKey: qk.me });
@@ -182,8 +187,12 @@ export function Onboarding() {
       const assertion = await startAuthentication({ optionsJSON });
       await api("/api/auth/login/verify", { method: "POST", body: JSON.stringify({ response: assertion }) });
       // Someone who already has an account can still be invited to a new ledger.
-      // Without this the invite is silently dropped the moment they sign in.
-      if (inviteToken) await api(`/api/invites/${inviteToken}/accept`, { method: "POST" });
+      // Without this the invite is silently dropped the moment they sign in. Signed
+      // in already, so a failed accept is reported as that, not as a failed sign-in.
+      if (inviteToken)
+        await api(`/api/invites/${inviteToken}/accept`, { method: "POST" }).catch(() =>
+          pushToast(t("onboarding.inviteNotAccepted"), "error"),
+        );
       await qc.invalidateQueries({ queryKey: qk.me });
       navigate("/", { replace: true });
     } catch (e) {
@@ -208,7 +217,11 @@ export function Onboarding() {
       setPassword("");
       // An existing account following an invite still needs the invite applied -
       // signup consumed nothing on this path.
-      if (inviteToken) await api(`/api/invites/${inviteToken}/accept`, { method: "POST" });
+      // Signed in already: a failed accept is not a failed sign-in.
+      if (inviteToken)
+        await api(`/api/invites/${inviteToken}/accept`, { method: "POST" }).catch(() =>
+          pushToast(t("onboarding.inviteNotAccepted"), "error"),
+        );
       await qc.invalidateQueries({ queryKey: qk.me });
       navigate("/", { replace: true });
     } catch (err) {
@@ -274,6 +287,9 @@ export function Onboarding() {
 
   const go = (next: View) => {
     setFailure(null);
+    // Back on sign-in or sign-up means the owner claim is abandoned, so the
+    // bootstrap-secret field must not follow a later invite path.
+    if (next === "signin" || next === "signup") setOwner(false);
     setView(next);
   };
 
@@ -302,7 +318,7 @@ export function Onboarding() {
             {/* The owner is the support desk on a self-hosted instance. Without
                 the error name a report is "it said something went wrong". */}
             {failure.detail && (
-              <p className="mt-1 text-[11px] opacity-70">{t("onboarding.errorDetail", { code: failure.detail })}</p>
+              <p className="mt-1 text-[13px] opacity-70">{t("onboarding.errorDetail", { code: failure.detail })}</p>
             )}
           </div>
         )}
@@ -310,7 +326,7 @@ export function Onboarding() {
         {embedded && passkeyView && authenticator !== "unavailable" && (
           <p
             role="status"
-            className="mb-4 rounded-[6px] border px-3 py-2 text-[12px] leading-relaxed"
+            className="mb-4 rounded-[6px] border px-3 py-2 text-[13px] leading-relaxed"
             style={{ borderColor: "var(--line)", background: "var(--paper-sunk)", color: "var(--ink-3)" }}
           >
             {t("onboarding.inAppWarning")}
@@ -349,7 +365,7 @@ export function Onboarding() {
               {t("onboarding.signInPasskey")}
             </Button>
 
-            <p className="mt-5 text-[11.5px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
+            <p className="mt-5 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
               {t("onboarding.contactAdmin")}
             </p>
 
@@ -367,7 +383,7 @@ export function Onboarding() {
             >
               {t("demo.try")}
             </Button>
-            <p className="mt-1 text-center text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+            <p className="mt-1 text-center text-[13px]" style={{ color: "var(--ink-3)" }}>
               {t("demo.tryBody")}
             </p>
             {!inviteToken && !owner && (

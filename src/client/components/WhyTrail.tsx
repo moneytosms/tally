@@ -24,6 +24,9 @@ import { t } from "~/client/i18n";
 
 const day = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short" });
 
+/** The disclosure summary, shared with SettleUp's direct-debts disclosure: looks like a ghost sm Button. */
+export const disclosureSummaryClass = `inline-flex min-h-11 cursor-pointer list-none items-center rounded-[7px] border px-3 text-[14px] font-medium ${focusRing}`;
+
 /** Signed paise the trail accounts for, from the transfer's own direction:
  *  positive is "part of why `from` owes `to`". */
 export function trailNet(rows: TrailRow[]): number {
@@ -57,14 +60,14 @@ export function WhyTrail({
   return (
     <details className="mt-1">
       <summary
-        className={`inline-flex min-h-11 cursor-pointer list-none items-center text-[12px] underline ${focusRing}`}
-        style={{ color: "var(--ink-3)" }}
-        aria-label={t("settle.whyFor", { from: name(fromMemberId), to: name(toMemberId) })}
+        className={disclosureSummaryClass}
+        style={{ borderColor: "var(--line-2)", color: "var(--ink)" }}
+        aria-label={t("settle.showTrailFor", { from: name(fromMemberId), to: name(toMemberId) })}
       >
-        {t("settle.why")}
+        {t("settle.showTrail")}
       </summary>
       {trail.length === 0 ? (
-        <p className="py-2 text-[12px]" style={{ color: "var(--ink-3)" }}>
+        <p className="py-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("settle.trailSimplified")}
         </p>
       ) : (
@@ -85,11 +88,14 @@ export function WhyTrail({
                     <span className="block truncate text-[13px]">
                       {r.kind === "settlement" ? t("settle.trailSettlement") : r.description}
                     </span>
-                    <span className="block text-[11px]" style={{ color: "var(--ink-3)" }}>
-                      {day.format(r.at)} ·{" "}
-                      {r.kind === "settlement"
-                        ? t("settle.trailSettledBy", { name: payer })
-                        : t("expense.paidByName", { name: payer })}
+                    <span className="block text-[13px]" style={{ color: "var(--ink-3)" }}>
+                      {t("settle.trailMeta", {
+                        date: day.format(r.at),
+                        by:
+                          r.kind === "settlement"
+                            ? t("settle.trailSettledBy", { name: payer })
+                            : t("expense.paidByName", { name: payer }),
+                      })}
                     </span>
                   </span>
                   {/* Sign is from the payer-of-the-transfer's side: negative = they
@@ -105,7 +111,7 @@ export function WhyTrail({
             })}
           </ul>
           {!fullyExplained(trail, amount) && (
-            <p className="py-2 text-[12px]" style={{ color: "var(--ink-3)" }}>
+            <p className="py-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
               {t("settle.trailSimplified")}
             </p>
           )}

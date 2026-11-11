@@ -17,7 +17,8 @@
     "you": "You"
   },
   "nav": {
-    "current": "current tab"
+    "current": "current tab",
+    "main": "Main"
   },
   "action": {
     "save": "Save",
@@ -27,19 +28,63 @@
     "back": "Back",
     "delete": "Delete",
     "cancel": "Cancel",
-    "confirm": "Confirm",
-    "retry": "Retry",
     "edit": "Edit",
-    "reload": "Reload"
+    "reload": "Reload",
+    "select": "Select…"
+  },
+  "confirm": {
+    "deleteExpense": { "title": "Delete this expense?", "action": "Delete expense" },
+    "deleteComment": { "title": "Delete this comment?", "action": "Delete comment" },
+    "restoreRevision": {
+      "title": "Restore this version?",
+      "body": "It rewrites the amount and the split, and every balance follows. This is itself recorded here, so you can come back.",
+      "action": "Restore this version"
+    },
+    "archiveLedger": {
+      "title": "Archive this ledger?",
+      "body": "It becomes read-only, and any member can reopen it later.",
+      "action": "Archive ledger"
+    },
+    "deleteLedger": {
+      "title": "Delete {name}?",
+      "body": "It disappears for everyone in it.",
+      "action": "Delete ledger"
+    },
+    "leaveLedger": { "title": "Leave this ledger?", "action": "Leave ledger" },
+    "removeMember": { "title": "Remove {name}?", "action": "Remove {name}" },
+    "mergeGuest": { "title": "Merge {guest} into {name}?", "action": "Merge" },
+    "revokePasskey": {
+      "title": "Revoke this passkey?",
+      "body": "This device will no longer be able to sign in with it.",
+      "action": "Revoke passkey"
+    },
+    "revokeUserPasskey": {
+      "title": "Revoke this passkey?",
+      "body": "They will need a fresh invite to re-enrol.",
+      "action": "Revoke passkey"
+    },
+    "signOut": { "title": "Sign out of tally on this device?", "action": "Sign out" },
+    "clearPassword": { "title": "Clear this password?", "action": "Clear password" },
+    "deleteAccount": { "title": "Delete {name}?", "action": "Delete account" },
+    "deleteCategory": { "title": "Delete this category?", "action": "Delete category" },
+    "revokeInvite": { "title": "Revoke this invite?", "action": "Revoke invite" },
+    "signOutEverywhere": {
+      "title": "Sign {name} out everywhere?",
+      "body": "Every device they are signed in on will be signed out.",
+      "action": "Sign out everywhere"
+    },
+    "promote": { "title": "Promote {name} to a full account?", "action": "Promote" }
   },
   "amount": {
-    "positive": "owed to you,",
-    "negative": "you owe,",
-    "zero": "settled,",
-    "their": {
-      "positive": "{name} is owed,",
-      "negative": "{name} owes,",
-      "zero": "{name} is settled,"
+    "visible": {
+      "positive": "You are owed",
+      "negative": "You owe",
+      "zero": "Settled",
+      "their": {
+        "positive": "{name} is owed",
+        "negative": "{name} owes",
+        "zero": "{name} is settled"
+      }
     }
   },
   "money": {
@@ -61,8 +106,6 @@
       "one": "{count} day left",
       "other": "{count} days left"
     },
-    "expenses": "Expenses",
-    "members": "Members",
     "create": "Create",
     "name": "Name",
     "namePlaceholder": {
@@ -95,8 +138,7 @@
       "duplicate": "Duplicate",
       "archive": "Archive",
       "reopen": "Reopen",
-      "delete": "Delete",
-      "insights": "Insights"
+      "delete": "Delete"
     },
     "endDateOptional": "End date (optional)",
     "endDateHint": "Set a date for something that ends, like a trip. Leave it empty for a ledger that just keeps running.",
@@ -110,10 +152,8 @@
     "invitesRevival": "Turning this off immediately kills every link already handed out. Turning it back on revives the ones that haven't expired yet, so a leaked link is not made safe this way - ask the owner to revoke it in the admin panel.",
     "invitesToggleFailed": "Could not change the invite setting.",
     "invitesCreateHint": "Not permanent - change it any time from the ledger's ⋯ menu.",
-    "archiveConfirm": "Archive this ledger? It becomes read-only, and any member can reopen it later.",
     "archiveBlocked": "Settle up first - archiving needs every net position at zero.",
     "archiveFailed": "Could not archive this ledger.",
-    "deleteConfirm": "Delete {name}? It disappears for everyone in it.",
     "deleteBlocked": "Only whoever created this ledger can delete it.",
     "deleteFailed": "Could not delete this ledger.",
     "duplicateName": "New ledger name",
@@ -122,6 +162,14 @@
     "duplicateFailed": "Could not duplicate this ledger.",
     "colorOptional": "Colour (optional)",
     "colorNone": "None",
+    "color": {
+      "moss": "Moss",
+      "clay": "Clay",
+      "ochre": "Ochre",
+      "plum": "Plum",
+      "sky": "Sky",
+      "rose": "Rose"
+    },
     "emojiOptional": "Emoji (optional)",
     "emojiPlaceholder": "e.g. ✈️",
     "pin": "Pin to top",
@@ -145,14 +193,14 @@
     "addGuestFailed": "Could not add the guest.",
     "leave": "Leave this ledger",
     "leaveHint": "You can only leave once your net position is zero. Settle up, or have someone forgive what's outstanding.",
-    "leaveConfirm": "Leave this ledger? Your past expenses stay exactly where they are.",
+    "leaveConfirm": "Your past expenses stay exactly where they are.",
     "leaveBlocked": "Your net position isn't zero yet, so you can't leave.",
     "leaveFailed": "Could not leave this ledger.",
     "remove": "Remove",
-    "removeConfirm": "Remove {name} from this ledger? Their past expenses stay exactly where they are.",
+    "removeConfirm": "Their past expenses stay exactly where they are.",
     "removeBlocked": "{name}'s net position isn't zero yet, so they can't be removed.",
     "removeFailed": "Could not remove them.",
-    "merge": "merge into...",
+    "merge": "Merge into...",
     "mergeTitle": "Merge {name} into...",
     "mergeTarget": "Merge into",
     "mergeAction": "Merge",
@@ -162,6 +210,7 @@
   },
   "expense": {
     "add": "Add expense",
+    "newTitle": "New expense",
     "description": "Description",
     "amount": "Amount",
     "paidBy": "Paid by",
@@ -170,14 +219,12 @@
     "refund": "Refund",
     "total": "total",
     "yourShare": "your share",
-    "split": "Split",
-    "splitWays": {
-      "one": "split 1 way",
-      "other": "split {count} ways"
-    },
+    "rowMeta": "{who} · {date}",
+    "added": "Expense added",
+    "saved": "Changes saved",
+    "split": "How to split",
     "ledger": "Ledger",
     "category": "Category",
-    "save": "Save",
     "remainderNote": "Odd paise go to the payer.",
     "remainingToAllocate": "{amount} left to allocate",
     "overAllocated": "{amount} over-allocated",
@@ -194,11 +241,7 @@
     "naturalLanguage": "Quick add",
     "date": "Date",
     "notes": "Notes",
-    "addParticipant": "Add participant",
-    "addParticipantHint": "Leaving someone out is how you exclude them. There is no zero share.",
     "participants": "Split between",
-    "remove": "Remove {name}",
-    "payerMark": "paid",
     "shareLabel": "share",
     "sharePending": "share pending",
     "refundNote": "This is a refund. It moves balances back toward zero.",
@@ -220,13 +263,9 @@
       "split": "That split doesn't work out."
     },
     "categoryNone": "Uncategorised",
-    "categoryPick": "Pick a category",
     "history": "Edit history",
     "historyNone": "No edits yet.",
     "editedBy": "Edited by {name}",
-    "undo": "Undo this edit",
-    "undone": "Edit undone.",
-    "undoFailed": "Could not undo that edit.",
     "historyHint": "Each entry is how this expense looked before that edit. Restoring one puts it back.",
     "historyTotal": "total then",
     "diffNone": "Same as it is now",
@@ -236,7 +275,6 @@
       "splits": "Different split"
     },
     "restore": "Restore",
-    "restoreConfirm": "Restore \"{description}\"? It rewrites the amount and the split, and every balance follows. This is itself recorded here, so you can come back.",
     "restored": "Version restored.",
     "restoreFailed": "Could not restore that version.",
     "deleted": "Expense deleted.",
@@ -245,14 +283,11 @@
     "commentSend": "Post",
     "commentEmpty": "No comments yet.",
     "commentDelete": "Delete comment",
-    "recurringBadge": "Recurring",
     "edit": "Edit expense",
     "editSave": "Save changes",
     "editFailed": "Could not save those changes.",
-    "deleteConfirm": "Delete this expense? It stops counting towards every balance.",
+    "deleteConfirm": "It stops counting towards every balance.",
     "deleteFailed": "Could not delete that expense.",
-    "each": "{amount} each",
-    "eachUneven": "about {amount} each",
     "everyone": "Everyone",
     "include": "Include {name}",
     "exclude": "Leave {name} out",
@@ -267,25 +302,25 @@
   "balances": {
     "overall": "overall",
     "settleAcross": "Settle across ledgers",
+    "settleUp": "Settle up",
+    "subtitle": "What you and each person owe overall, across every ledger",
+    "seeHow": "See how it settles",
     "emptyBody": "Once you share an expense with someone, their overall position shows up here.",
     "guestsSkipped": "Guests have no UPI VPA, so they're settled by hand and left out of this.",
     "perLedger": "Per ledger",
-    "transferPlan": "Suggested transfers",
     "contributing": "Contributing ledgers",
     "bulkTotal": "Settle everything with {name}",
-    "recordAll": "Record all",
-    "recordedAll": "Recorded in all {total} ledgers.",
+    "recordAll": "Record settlements",
+    "recordAllHint": "This records one settlement in each ledger listed above.",
+    "recorded": "Recorded {amount} in settlements",
     "recordedSome": "Recorded in {done} of {total} ledgers.",
     "recordedNone": "Nothing was recorded - this balance can't be settled from here. Open the ledger it comes from.",
     "nothingToSettle": "Nothing to settle."
   },
   "settle": {
-    "title": "Settle up",
-    "payUpi": "Pay {amount} with UPI",
-    "recordManually": "Record manually",
-    "recordOnBehalf": "Record on their behalf",
-    "why": "why?",
-    "fewestTransfers": "fewest transfers",
+    "payUpi": "Pay with UPI",
+    "recordFor": "Record for {name}",
+    "startSettle": "Settle up",
     "pays": "{from} pays {to}",
     "suggested": "suggested",
     "remaining": "remaining",
@@ -305,13 +340,43 @@
     "noVpa": "{name} hasn't added a UPI VPA, so record it manually.",
     "errorAmount": "Enter an amount, like 500.00.",
     "errorTooMuch": "That's more than is owed.",
-    "nothingBody": "Nothing to settle here yet.",
-    "notYoursHint": "This one is {name}'s to pay. Record it here only if they already have.",
-    "whyFor": "Why does {from} pay {to}?",
-    "trailEmpty": "No expenses behind this one yet.",
+    "archivedNote": "This ledger is archived, so settlements can no longer be recorded.",
+    "recorded": "Settlement recorded",
+    "allSettled": "All settled up.",
+    "totalSpent": "Total spent",
+    "expenseCount": {
+      "one": "{count} expense",
+      "other": "{count} expenses"
+    },
+    "netHeading": "How each net position is worked out",
+    "netExplain": "Net position = paid − share + settlements sent − settlements received.",
+    "netPosition": "Net position",
+    "you": "{name} (you)",
+    "paid": "+ Paid",
+    "shareOfExpenses": "− Share of expenses",
+    "settlementsSent": "+ Settlements sent",
+    "settlementsReceived": "− Settlements received",
+    "noActivity": "{name}: No expenses yet",
+    "checkLabel": "Check: all net positions add up to",
+    "checkSum": "Sum of net positions",
+    "checkFailed": "These net positions do not add up to zero. Please report this.",
+    "whoHeading": "Who pays whom",
+    "whoExplain": "A short list of payments that clears every net position: never more than one fewer than the number of people. Each person's total is unchanged.",
+    "pairsSummary": "Show direct debts before simplifying",
+    "pairsExplain": "These are the debts between each pair of people. The payments above replace them with fewer transfers that leave everyone with the same net position.",
+    "owes": "{from} owes {to}",
+    "settlementsHeading": "Settlements recorded",
+    "paidTo": "{from} paid {to}",
+    "wroteOff": "{to} wrote off what {from} owed",
+    "recordMeta": "{date} · {method}",
+    "recordMetaNote": "{date} · {method} · {note}",
+    "noSettlements": "No settlements recorded yet.",
     "trailShare": "{name}'s share",
     "trailSettlement": "Settlement already recorded",
     "trailSettledBy": "{name} settled",
+    "trailMeta": "{date} · {by}",
+    "showTrail": "Show the expenses behind this",
+    "showTrailFor": "Show the expenses behind this: {from} pays {to}",
     "trailSimplified": "These don't add up to the whole of this payment: it also settles balances that run through other people."
   },
   "profile": {
@@ -331,12 +396,10 @@
     "addPasskeyHint": "To sign in on another device, choose \"use a phone or tablet\" when your browser asks. That passkey syncs, a fingerprint one does not.",
     "revoke": "Revoke",
     "revoked": "Revoked.",
-    "revokeConfirm": "Revoke this passkey? This device will no longer be able to sign in with it.",
     "lastCredential": "Your only passkey. Add another before revoking this one, or you will be locked out.",
     "revokeFailed": "Could not revoke that passkey.",
     "signOut": "Sign out",
     "signOutHint": "Ends this session on this device only. Your other sessions and passkeys are untouched.",
-    "signOutConfirm": "Sign out of tally on this device?",
     "archived": "Archived ledgers",
     "noArchived": "Nothing archived yet.",
     "export": "Export",
@@ -369,9 +432,6 @@
     "subtitle": "Split expenses with the people you actually see.",
     "invitedSubtitle": "You've been invited to a ledger. Pick a name and you're in.",
     "bootstrapSecret": "Bootstrap secret",
-    "signIn": "Sign in with a passkey",
-    "signInHint": "Already set up on this device? Sign in. Otherwise enter your name below.",
-    "signInHintInvited": "Already have a tally account? Sign in and the invite is accepted for you. Otherwise enter your name below.",
     "nameRequired": "Enter a name so people know who you are.",
     "secretRequired": "Enter the bootstrap secret from your deployment.",
     "closedInstance": "This instance is invite-only. Ask whoever runs it to send you an invite link.",
@@ -408,6 +468,7 @@
     "haveAccount": "Already have an account? Sign in",
     "needAccount": "New here? Create an account",
     "signInFailed": "That email and password don't match an account here.",
+    "inviteNotAccepted": "You're signed in, but that invite could not be used. Ask for a new one.",
     "contactAdmin": "No account yet? tally is invite-only. Ask whoever runs this instance for an invite link.",
     "emailTaken": "That email already has an account here. Sign in instead.",
     "passwordTooShort": "Use at least 10 characters.",
@@ -425,10 +486,7 @@
     "passwordAlternative": "Use an email and password instead"
   },
   "add": {
-    "title": "Add",
     "expense": "Add expense",
-    "expenseBody": "Log something someone paid for, and split it.",
-    "expenseNeedsLedger": "Create a trip, group or one-on-one first, because an expense has to live somewhere.",
     "trip": "New trip",
     "tripBody": "Has an end date. Optional budget and daily burn rate.",
     "group": "New group",
@@ -436,21 +494,27 @@
     "pair": "New one-on-one",
     "pairBody": "Costs shared with a single person."
   },
+  "ledgerNav": {
+    "label": "Ledger sections",
+    "expenses": "Expenses",
+    "settle": "Settle",
+    "insights": "Insights",
+    "activity": "Activity",
+    "recurring": "Recurring expenses",
+    "subtitle": "{members} · {period}"
+  },
   "empty": {
     "ledgers": "No ledgers yet.",
     "ledgersBody": "A ledger is any set of people sharing costs: a trip, a flatshare, or just you and one friend. Create one and add the first expense.",
     "expenses": "No expenses yet.",
-    "expensesBody": "Tap + to add the first one. Pick who paid and who it splits between; tally works out the rest.",
+    "expensesBody": "Add the first expense: pick who paid and who it splits between, and tally works out the rest.",
     "balances": "All settled up.",
     "insights": "Nothing to show yet.",
-    "insightsBody": "Once there are a few months of expenses, this is where categories, trends, and who you spend the most with will live.",
-    "activity": "No activity yet.",
-    "comments": "No comments yet."
+    "insightsBody": "Once there are a few months of expenses, this is where categories, trends, and who you spend the most with will live."
   },
   "error": {
     "generic": "Something went wrong.",
     "network": "Couldn't reach the server.",
-    "unauthorized": "Sign in to continue.",
     "crashed": "Something broke.",
     "crashedBody": "This screen hit an error it couldn't recover from. Reloading usually fixes it.",
     "mutationFailed": "That didn't save. Try again."
@@ -477,8 +541,6 @@
     "anyMember": "Anyone"
   },
   "insights": {
-    "title": "Insights",
-    "lifetime": "Lifetime",
     "youSpent": "You spent",
     "youPaid": "You paid",
     "expenseCount": {
@@ -492,7 +554,6 @@
     "byCategory": "Where it went",
     "byMonth": "Month by month",
     "mostSpentWith": "Most spent with",
-    "ledgerTitle": "Ledger insights",
     "ledgerSpent": "Total spent",
     "byMember": "By member",
     "paid": "Paid",
@@ -502,7 +563,6 @@
       "other": "{count} shared expenses"
     },
     "noCategory": "Uncategorised",
-    "range": "Range",
     "rangeAll": "All time",
     "range12m": "Last 12 months",
     "range30d": "Last 30 days",
@@ -511,6 +571,10 @@
     "customTo": "To",
     "invalidRange": "End date must be on or after the start date.",
     "chartLoading": "Loading chart"
+  },
+  "insightsTab": {
+    "totalsLine": "{expenses} · {ledgers}",
+    "pickBoth": "Pick both a start and an end date."
   },
   "recurring": {
     "title": "Recurring",
@@ -545,15 +609,11 @@
     "iosHint": "On iPhone and iPad, add tally to your Home Screen first, because web push only works from an installed app.",
     "unsupported": "This browser cannot do web push.",
     "denied": "Notifications are blocked in your browser settings.",
-    "failed": "Could not enable notifications.",
     "unavailable": "Push is not configured on this instance.",
+    "enableFailed": "Could not turn on notifications. Try again.",
     "nudge": "Send a reminder",
     "nudgeSent": "Reminder sent.",
-    "nudgeTooSoon": "You already nudged them recently.",
-    "settledTitle": "{name} settled with you",
-    "settledBody": "{amount} in {ledger}",
-    "nudgeTitle": "{name} sent a reminder",
-    "nudgeBody": "You owe {amount} in {ledger}"
+    "nudgeTooSoon": "You already nudged them recently."
   },
   "admin": {
     "title": "Admin",
@@ -562,7 +622,6 @@
     "people": "People",
     "peopleBody": "Everyone with an account on this instance.",
     "owner": "Owner",
-    "credentials": "{count} passkeys",
     "recovery": "Issue recovery link",
     "recoveryHint": "Single use, expires in one hour. It re-enrols this same account on a new device, so their history stays attached. Treat it as account access and hand it over directly.",
     "lastCredential": "Their only passkey. Issue a recovery link and let them enrol a new device before revoking this one.",
@@ -575,7 +634,6 @@
     "categoryIcon": "Icon",
     "categoryDelete": "Delete",
     "categoryDefault": "Default",
-    "categoryInUse": "In use by {count} expenses",
     "invites": "Open invites",
     "invitesNone": "No unused invites.",
     "inviteRevoke": "Revoke",
@@ -592,7 +650,6 @@
     "inviteFailed": "Could not create that invite.",
     "deleteUser": "Delete account",
     "deleteUserHint": "Removes them from every ledger and signs them out everywhere. Past expenses stay, so balances already recorded do not change.",
-    "deleteUserConfirm": "Delete {name}? This cannot be undone.",
     "deleteUserBlocked": "They have a non-zero balance in at least one ledger. Settle up before deleting.",
     "deleteUserSelf": "You cannot delete your own account.",
     "deleteUserOwner": "The instance owner cannot be deleted.",
@@ -604,7 +661,7 @@
     "signOutUser": "Sign out everywhere",
     "signOutUserDone": "Signed out on every device.",
     "clearPassword": "Clear password",
-    "clearPasswordConfirm": "Clear this password? They will need a passkey or a recovery link to get back in.",
+    "clearPasswordConfirm": "They will need a passkey or a recovery link to get back in.",
     "clearPasswordDone": "Password cleared.",
     "emergencyHint": "For a lost device or a leaked password. Neither deletes anything: passkeys and expense history are untouched.",
     "restricted": "Restricted",
@@ -613,13 +670,12 @@
     "promoteDone": "Promoted to a full account."
   },
   "activity": {
-    "title": "Activity",
     "none": "Nothing has happened here yet.",
     "added": "{name} added {description}",
     "edited": "{name} edited {description}",
     "deleted": "{name} deleted {description}",
     "settled": "{from} settled with {to}",
-    "forgave": "{from} forgave what {to} owed",
+    "forgave": "{to} forgave what {from} owed",
     "commented": "{name} commented on {description}",
     "joined": "{name} joined",
     "left": "{name} left",
@@ -644,8 +700,6 @@
     }
   },
   "export": {
-    "title": "Export",
-    "csv": "Download CSV",
     "ledgerCsv": "Export this ledger",
     "allCsv": "Export everything",
     "body": "Plain CSV, opens in any spreadsheet. This is the escape hatch, and it does not depend on this instance staying up."
@@ -676,21 +730,19 @@
     "installTitle": "Install tally.",
     "installBody": "Add it to your home screen so it opens like an app and can send you reminders.",
     "installAction": "Install",
-    "installIos": "Tap Share, then ‘Add to Home Screen’.",
     "dismiss": "Not now"
   },
   "nl": {
-    "exampleTwo": "450 dinner with {a} and {b}",
-    "exampleOne": "450 dinner with {a}",
-    "exampleBare": "450 dinner",
-    "parsed": "Understood: {summary}",
-    "unmatched": "Could not match: {names}",
-    "noAmount": "Add an amount and I will fill the form in."
+    "exampleBare": "450 dinner"
   },
   "home": {
     "greeting": "Hi, {name}",
     "owed": "owed to you",
     "owe": "you owe",
+    "overallCaption": "Across all your active ledgers",
+    "newLedger": "New ledger",
+    "settleUp": "Settle up",
+    "ledgerMeta": "{members} · {run}",
     "recent": "Recent activity",
     "archived": {
       "one": "{count} archived ledger",

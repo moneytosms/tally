@@ -6,7 +6,7 @@
 // its instructions live on the You tab beside notifications, per the spec.
 import { useEffect, useState } from "react";
 import { t } from "~/client/i18n";
-import { focusRing } from "./ui/focus";
+import { Button } from "./ui/Button";
 
 type InstallEvent = Event & { prompt: () => Promise<void> };
 
@@ -59,26 +59,26 @@ export function InstallPrompt() {
     <div
       role="status"
       aria-live="polite"
-      className="flex items-center gap-3 px-4 py-2 text-[12px]"
+      className="flex items-center gap-3 px-4 py-2 text-[14px]"
       style={{ background: "var(--moss-wash)", color: "var(--moss)" }}
     >
       <span className="flex-1">
         <strong className="font-medium">{t("pwa.installTitle")}</strong> {t("pwa.installBody")}
       </span>
-      <button
-        type="button"
+      <Button
+        size="sm"
         onClick={() => {
           void deferred?.prompt();
           // Either way the event is spent - Chrome will not replay it.
           deferred = null;
           notify();
         }}
-        className={`min-h-11 px-2 font-medium underline ${focusRing}`}
       >
         {t("pwa.installAction")}
-      </button>
-      <button
-        type="button"
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={() => {
           try {
             localStorage.setItem(DISMISSED, "1");
@@ -87,10 +87,9 @@ export function InstallPrompt() {
           }
           notify();
         }}
-        className={`min-h-11 px-2 ${focusRing}`}
       >
         {t("pwa.dismiss")}
-      </button>
+      </Button>
     </div>
   );
 }

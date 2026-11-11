@@ -4,6 +4,7 @@
    so it survives colour blindness and greyscale. Colour is never the only cue. */
 
 :root {
+  color-scheme: light;
   /* paper */
   --paper: #f7f4ec;
   --paper-2: #fffdf7; /* raised: cards */
@@ -25,6 +26,8 @@
   --ochre: #b08344; /* third earth, charts */
 
   --radius: 7px;
+  /* Height of the bottom tab bar, which the floating UI clears. Gone at md+. */
+  --bar-h: 66px;
 
   /* one inline SVG, no image assets */
   --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.42'/%3E%3C/svg%3E");
@@ -36,6 +39,7 @@
    select it without relying on the absence of an attribute, which is what
    "system" means. */
 [data-theme="paper"] {
+  color-scheme: light;
   --paper: #f7f4ec;
   --paper-2: #fffdf7;
   --paper-sunk: #efeade;
@@ -63,6 +67,7 @@
    the OS preference. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme]) {
+    color-scheme: dark;
     --paper: #191a15;
     --paper-2: #20221b;
     --paper-sunk: #131410;
@@ -88,6 +93,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --paper: #191a15;
   --paper-2: #20221b;
   --paper-sunk: #131410;
@@ -113,6 +119,7 @@
 /* Blush paper, plum ink. Rose takes the moss role, a muted teal the clay role -
    and the two are held ~1.4x apart in luminance, not just hue. */
 [data-theme="sakura"] {
+  color-scheme: light;
   --paper: #fbf2f4;
   --paper-2: #fffafb;
   --paper-sunk: #f3e6ea;
@@ -137,6 +144,7 @@
 
 /* Cool blue paper. Deep marine takes the moss role, warm rust the clay role. */
 [data-theme="ocean"] {
+  color-scheme: light;
   --paper: #f0f4f8;
   --paper-2: #fbfdff;
   --paper-sunk: #e4eaf1;
@@ -162,6 +170,7 @@
 /* Dark, violet-toned. Same structure as "dark": indigo carries moss, a dimmer
    rose carries clay, so the pair reads in greyscale too. */
 [data-theme="midnight"] {
+  color-scheme: dark;
   --paper: #16131f;
   --paper-2: #1d1929;
   --paper-sunk: #100e17;
@@ -189,6 +198,7 @@
    a muted teal carries clay. Amber sits well above the teal in luminance, so
    the pair still separates in greyscale rather than by hue alone. */
 [data-theme="ember"] {
+  color-scheme: dark;
   --paper: #17120f;
   --paper-2: #1f1815;
   --paper-sunk: #110d0b;
@@ -209,6 +219,21 @@
 
   --grain-opacity: 0.1;
   --grain-blend: screen;
+}
+
+/* Scrollbars follow the theme. scrollbar-width is not inherited, so it goes on
+   every element; scrollbar-color is set on each too for the same reason. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-2) transparent;
+}
+
+/* Horizontal chip rows: scroll by touch, trackpad and keyboard, no bar drawn. */
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
 /* The app is a fixed frame, never a scrolling page. Without an explicit height
@@ -232,13 +257,33 @@ body {
   overscroll-behavior: none;
 }
 
+/* No grey flash on tap. Focus rings are drawn by focusRing, not by the browser. */
+a,
+button,
+input,
+select,
+textarea,
+label,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* viewport-fit=cover is set, so the gesture bar overlaps the viewport unless
    something reserves room for it. These are 0px on hardware without insets. */
+.pad-safe-top {
+  padding-top: env(safe-area-inset-top);
+}
 .pad-safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);
 }
 .offset-safe-bottom {
-  bottom: calc(66px + env(safe-area-inset-bottom));
+  bottom: calc(var(--bar-h) + env(safe-area-inset-bottom));
+}
+/* md and up: the bottom bar becomes a side rail, so nothing reserves the bottom. */
+@media (min-width: 768px) {
+  :root {
+    --bar-h: 0px;
+  }
 }
 
 /* Screen titles and hero amounts. Zero webfont weight. */
@@ -302,6 +347,42 @@ body {
   }
   to {
     transform: translateY(100%);
+  }
+}
+/* Sheet panel at md+ is a centred dialog: fade and a slight scale, not a slide. */
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes dialog-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+/* 180ms matches CLOSE_MS in ui/Sheet.tsx. */
+.sheet-in {
+  animation: sheet-panel-in 180ms ease-out forwards;
+}
+.sheet-out {
+  animation: sheet-panel-out 180ms ease-out forwards;
+}
+@media (min-width: 768px) {
+  .sheet-in {
+    animation-name: dialog-in;
+  }
+  .sheet-out {
+    animation-name: dialog-out;
   }
 }
 @keyframes toast-in {

@@ -20,6 +20,12 @@ export function PasswordSection() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // Whatever the last save said is stale once a field changes.
+  const changed = () => {
+    setSaved(false);
+    setError(null);
+  };
+
   if (!me.data) return null;
   const { hasPassword } = me.data;
   // Set once. The address is the sign-in identifier and a unique key, so once it
@@ -73,7 +79,10 @@ export function PasswordSection() {
           <Input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              changed();
+              setEmail(e.target.value);
+            }}
             inputMode="email"
             autoComplete="email"
             placeholder={t("profile.emailNone")}
@@ -90,33 +99,44 @@ export function PasswordSection() {
           <Input
             type="password"
             value={current}
-            onChange={(e) => setCurrent(e.target.value)}
+            onChange={(e) => {
+              changed();
+              setCurrent(e.target.value);
+            }}
             autoComplete="current-password"
           />
         </Field>
       )}
 
       <Field label={t("profile.passwordNew")}>
-        <Input type="password" value={next} onChange={(e) => setNext(e.target.value)} autoComplete="new-password" />
+        <Input
+          type="password"
+          value={next}
+          onChange={(e) => {
+            changed();
+            setNext(e.target.value);
+          }}
+          autoComplete="new-password"
+        />
       </Field>
 
-      <p className="mb-3 text-[11.5px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
+      <p className="mb-3 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
         {/* The "set once" warning only earns its place while it is still true. */}
         {existingEmail === null && `${t("profile.emailHint")} `}
         {t("profile.passwordHint")}
       </p>
 
-      <Button type="submit" size="sm" disabled={busy}>
+      <Button type="submit" variant="ghost" size="sm" disabled={busy}>
         {t("action.save")}
       </Button>
 
       {error && (
-        <p role="alert" className="mt-2.5 text-[11.5px]" style={{ color: "var(--clay)" }}>
+        <p role="alert" className="mt-2.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {t(error)}
         </p>
       )}
       {saved && !error && (
-        <p role="status" className="mt-2.5 text-[11.5px]" style={{ color: "var(--moss-2)" }}>
+        <p role="status" className="mt-2.5 text-[13px]" style={{ color: "var(--moss-2)" }}>
           {t("profile.passwordSaved")}
         </p>
       )}

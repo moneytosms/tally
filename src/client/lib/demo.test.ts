@@ -34,6 +34,13 @@ describe("demo api", () => {
     expect(sum(await demoApi<LedgerBalances>(`/api/ledgers/${l!.id}/balances`))).toBe(0);
   });
 
+  it("breaks each position into paid, share and settlements, and keeps the identity", async () => {
+    const [l] = await demoApi<LedgerSummary[]>("/api/ledgers");
+    const b = await demoApi<LedgerBalances>(`/api/ledgers/${l!.id}/balances`);
+    for (const p of b.positions) expect(p.paid - p.share + p.settledOut - p.settledIn).toBe(p.net);
+    expect(b.positions.every((p) => p.name.length > 0)).toBe(true);
+  });
+
   it("refuses what demo does not support", async () => {
     await expect(demoApi("/api/admin/users")).rejects.toMatchObject({ code: "demo" });
   });

@@ -45,7 +45,15 @@ const dotColour: Record<ActivityEvent["kind"], string> = {
   left: "var(--ink-3)",
 };
 
-export function ActivityRow({ event, showTime = true }: { event: ActivityEvent; showTime?: boolean }) {
+export function ActivityRow({
+  event,
+  showDay = true,
+  showTime = true,
+}: {
+  event: ActivityEvent;
+  showDay?: boolean;
+  showTime?: boolean;
+}) {
   const who = event.actorName ?? event.fromName;
   return (
     <li className="row-in flex items-start gap-2.5 py-2.5">
@@ -61,10 +69,12 @@ export function ActivityRow({ event, showTime = true }: { event: ActivityEvent; 
         )}
       </span>
       <div className="min-w-0 flex-1">
-        <div className="text-[13.5px]">{sentence(event)}</div>
-        <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+        <div className="text-[15px]">{sentence(event)}</div>
+        <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
           <time dateTime={new Date(event.at).toISOString()}>
-            {showTime ? `${dayFormat.format(event.at)} · ${timeFormat.format(event.at)}` : dayFormat.format(event.at)}
+            {[showDay && dayFormat.format(event.at), showTime && timeFormat.format(event.at)]
+              .filter(Boolean)
+              .join(" · ")}
           </time>
           {/* On the home feed one sentence from two trips is otherwise identical. */}
           {event.ledgerName && <> · {event.ledgerName}</>}

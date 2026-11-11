@@ -170,3 +170,29 @@ export function grossPairs(expenses: Expenses, settlements: Settlements) {
       : [{ fromMemberId: b, toMemberId: a, amount: -amount }];
   });
 }
+
+/**
+ * The working behind each net position, for the Settle screen. Same inputs as
+ * `netPositions` plus `total`. For every member `paid - share + settledOut -
+ * settledIn === net`, which holds because each expense's splits sum to its total.
+ */
+export function memberBreakdown(
+  expenses: Array<{ payerMemberId: string; total: Paise; splits: Array<{ memberId: string; amount: Paise }> }>,
+  settlements: Array<{ fromMemberId: string; toMemberId: string; amount: Paise }>,
+) {
+  const acc = new Map<string, { paid: Paise; share: Paise; settledOut: Paise; settledIn: Paise }>();
+  const row = (memberId: string) => {
+    let r = acc.get(memberId);
+    if (!r) acc.set(memberId, (r = { paid: 0, share: 0, settledOut: 0, settledIn: 0 }));
+    return r;
+  };
+  for (const e of expenses) {
+    row(e.payerMemberId).paid += e.total;
+    for (const s of e.splits) row(s.memberId).share += s.amount;
+  }
+  for (const s of settlements) {
+    row(s.fromMemberId).settledOut += s.amount;
+    row(s.toMemberId).settledIn += s.amount;
+  }
+  return [...acc].map(([memberId, r]) => ({ memberId, ...r }));
+}

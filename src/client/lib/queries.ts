@@ -4,7 +4,14 @@
 // staleTime is 0 everywhere: every number here is money a user acts on, and a
 // stale one is worse than a spinner. Nothing is persisted, and no service worker
 // may ever cache an API response (SPEC §10).
-import { MutationCache, useMutation, useQuery, useQueryClient, QueryClient } from "@tanstack/react-query";
+import {
+  MutationCache,
+  keepPreviousData,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  QueryClient,
+} from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { api, ApiError } from "./api";
 import { isDemo } from "./demo";
@@ -100,8 +107,27 @@ export type TrailRow = {
 };
 
 export type LedgerBalances = {
-  positions: Array<{ memberId: string; net: Paise }>;
+  positions: Array<{
+    memberId: string;
+    net: Paise;
+    paid: Paise;
+    share: Paise;
+    settledOut: Paise;
+    settledIn: Paise;
+    name: string;
+  }>;
   transfers: Array<{ fromMemberId: string; toMemberId: string; amount: Paise; trail: TrailRow[] }>;
+  pairs: Array<{ fromMemberId: string; toMemberId: string; amount: Paise }>;
+  settlements: Array<{
+    id: string;
+    fromMemberId: string;
+    toMemberId: string;
+    amount: Paise;
+    method: "upi" | "manual" | "forgiven";
+    note: string | null;
+    declaredAt: number;
+  }>;
+  totals: { spent: Paise; expenseCount: number };
 };
 
 export type CrossLedgerBalance = {
@@ -304,6 +330,8 @@ export const useExpenseSearch = (ledgerId: string, filters: ExpenseFilters) =>
   useQuery({
     queryKey: expenseSearchKey(ledgerId, filters),
     queryFn: () => api<Expense[]>(`/api/ledgers/${ledgerId}/expenses${filterQuery(filters)}`),
+    // Keep the previous results while a new filter key loads, so typing does not flash a skeleton.
+    placeholderData: keepPreviousData,
   });
 
 /** Categories change about once a year - the one place a longer staleTime is
@@ -630,6 +658,19 @@ export function useDeleteExpense(ledgerId: string) {
   return useMutation({
     mutationFn: (expenseId: string) =>
       api<{ id: string }>(`/api/ledgers/${ledgerId}/expenses/${expenseId}`, { method: "DELETE" }),
+    // Only the row leaves optimistically. Balances and totals stay server-derived.
+    // Every list under the prefix, including the search-keyed ones the screen reads.
+    onMutate: async (expenseId) => {
+      await qc.cancelQueries({ queryKey: qk.expenses(ledgerId) });
+      const previous = qc.getQueriesData<Expense[]>({ queryKey: qk.expenses(ledgerId) });
+      qc.setQueriesData<Expense[]>({ queryKey: qk.expenses(ledgerId) }, (list) =>
+        list?.filter((e) => e.id !== expenseId),
+      );
+      return { previous };
+    },
+    onError: (_e, _id, ctx) => {
+      for (const [key, data] of ctx?.previous ?? []) qc.setQueryData(key, data);
+    },
     onSettled: (_d, _e, expenseId) => {
       invalidateLedger(qc, ledgerId);
       qc.invalidateQueries({ queryKey: qk.revisions(expenseId) });

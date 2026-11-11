@@ -35,7 +35,7 @@ and is frozen forever ([ADR 0002](adr/0002-rp-id-is-permanent.md)).
 | Pure domain | `src/shared/`            | Money, splits, recurrence, NL parsing - no I/O    |
 | Derivation  | `src/server/balances.ts` | Net positions and transfer plans, never stored    |
 | Routes      | `src/server/routes/`     | Validation, authorisation, wire shapes            |
-| Client      | `src/client/`            | Rendering only; never recomputes money            |
+| Client      | `src/client/`            | Shows server balances; sums are display-only      |
 
 ### The data-access layer is the security boundary for deletion
 
@@ -81,6 +81,16 @@ Re-sorting participants would silently change who absorbs the remainder.
 **Balances are derived**, never stored or cached. Every net position is computed
 from expenses and settlements on read. This is why the client never patches a
 balance optimistically - it invalidates and refetches.
+
+`GET /api/ledgers/:id/balances` adds a read-only breakdown to each position:
+`paid`, `share`, `settledOut`, `settledIn`, and the member's `name`, where
+`paid - share + settledOut - settledIn === net`. It also returns the settlements
+and totals the Settle screen shows. These fields are additive. Net positions and
+the transfer plan are computed as before, and the breakdown is never an input to
+them.
+
+The transfer plan is a greedy match (SPEC §6): at most n-1 transfers, not
+guaranteed to be the fewest possible.
 
 ## Authentication
 
@@ -150,6 +160,9 @@ the state.
 - **No API response is ever cached in the service worker.** A stale balance is
   worse than no balance. The service worker precaches the shell and bundles and
   has no runtime-caching rule at all - an allowlist that cannot drift.
+  The generated worker also imports `public/push-sw.js`, which handles `push`
+  and `notificationclick` and adds no fetch handling. Push delivery on a real
+  device is untested.
 - **Offline shows an explicit state and no numbers.** A wrong number about money
   is worse than no number.
 - **Writes offline fail immediately and visibly.** No queue, no outbox, no retry.

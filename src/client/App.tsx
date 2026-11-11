@@ -1,20 +1,21 @@
-// Four bottom tabs: Ledgers, Balances, Insights, You. Persistent FAB for add-expense.
-// See docs/SPEC.md §10.
-import { lazy, Suspense, useState } from "react";
+// Four tabs: Ledgers, Balances, Insights, You (bottom bar on phones, left rail on wide
+// screens). One add-expense control: the floating + on phones, the rail button on wide
+// screens. Both open the same sheet. See docs/SPEC.md §10.
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router";
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useMatch, useNavigate } from "react-router";
 import { TabBar } from "./components/TabBar";
 import { Fab } from "./components/Fab";
 import { Sheet } from "./components/ui/Sheet";
+import { Button } from "./components/ui/Button";
 import { ToastViewport } from "./components/ui/Toast";
-import { focusRing } from "./components/ui/focus";
 import { ErrorBoundary } from "./components/ErrorBoundary";
-import { LedgerForm, type LedgerKind } from "./components/LedgerForm";
 import { useLedgers, useMe, useOnline } from "./lib/queries";
 import { ApiError } from "./lib/api";
 import { exitDemo, isDemo } from "./lib/demo";
 import { t } from "./i18n";
 import { LedgersTab } from "./routes/LedgersTab";
+import { LedgerLayout } from "./routes/LedgerLayout";
 import { LedgerDetail } from "./routes/LedgerDetail";
 import { YouTab } from "./routes/YouTab";
 import { Onboarding } from "./routes/Onboarding";
@@ -41,7 +42,7 @@ function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="px-4 py-2 text-[12px]"
+      className="px-4 py-2 text-[13px]"
       style={{ background: "var(--clay-wash)", color: "var(--clay)" }}
     >
       <strong className="font-medium">{t("offline.title")}</strong> {t("offline.body")}
@@ -56,13 +57,14 @@ function DemoBanner() {
   return (
     <div
       role="status"
-      className="flex items-center justify-between gap-2 px-4 py-2 text-[12px]"
+      className="flex items-center justify-between gap-2 px-4 py-2 text-[13px]"
       style={{ background: "var(--paper-sunk)", color: "var(--ink-3)" }}
     >
       <span>{t("demo.banner")}</span>
-      <button
-        type="button"
-        className={`font-medium underline ${focusRing}`}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="shrink-0 whitespace-nowrap"
         onClick={() => {
           exitDemo();
           qc.clear();
@@ -70,60 +72,41 @@ function DemoBanner() {
         }}
       >
         {t("demo.exit")}
-      </button>
+      </Button>
     </div>
   );
 }
 
-/** What the FAB offers. "expense" is the common case and stays first; the rest
- *  create a ledger, which used to have no entry point in the UI at all. */
-type AddChoice = "expense" | LedgerKind;
+/** Screens where the + button is never shown: the profile area has nothing to add
+ *  to, and the expense editor is a full screen of its own. */
+const NO_FAB = /^\/you(\/|$)|^\/ledgers\/[^/]+\/expenses\//;
 
-function AddMenu({ onPick }: { onPick: (choice: AddChoice) => void }) {
-  const ledgers = useLedgers();
-  const me = useMe();
-  const hasLedger = (ledgers.data ?? []).some((l) => l.archivedAt === null);
-  // ADR 0008: a restricted account (joined via a ledger invite) can't create a
-  // ledger - only expense entry is offered.
-  const choices: AddChoice[] =
-    me.data?.accountType === "restricted" ? ["expense"] : ["expense", "trip", "group", "pair"];
-
-  return (
-    <div className="flex flex-col gap-2">
-      {choices.map((choice) => (
-        <button
-          key={choice}
-          type="button"
-          // An expense needs somewhere to live. With no ledger yet this is not a
-          // dead end, it just explains itself and points at the options below.
-          disabled={choice === "expense" && !hasLedger}
-          onClick={() => onPick(choice)}
-          className={`rounded-[7px] border px-3.5 py-3 text-left disabled:opacity-45 ${focusRing}`}
-          style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-        >
-          <span className="block text-[14.5px]">{t(`add.${choice}`)}</span>
-          <span className="mt-0.5 block text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-            {t(choice === "expense" && !hasLedger ? "add.expenseNeedsLedger" : `add.${choice}Body`)}
-          </span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/** Sub-pages that are about one specific thing (settling, history, a schedule).
- *  A floating "add expense" on top of them is an offer to leave, not an action.
- *
- *  A ledger's own screen is here too: three of the four things behind the "+"
- *  create a ledger, which is meaningless once you are inside one, and the fourth
- *  already has a named button next to the expenses it adds to. */
-const FAB_HIDDEN = /\/(settle|activity|recurring)$|\/ledgers\/[^/]+\/insights$|^\/you|^\/ledgers\/[^/]+$/;
+/** Every tab of one ledger shares a key, so switching tabs does not replay the
+ *  page fade. The expense editor is a screen of its own. */
+const LEDGER_PATH = /^\/ledgers\/[^/]+(?=\/|$)/;
+const EXPENSE_PATH = /^\/ledgers\/[^/]+\/expenses\//;
+const screenKey = (p: string) => (EXPENSE_PATH.test(p) ? p : (LEDGER_PATH.exec(p)?.[0] ?? p));
 
 function Shell() {
-  const [addOpen, setAddOpen] = useState(false);
-  const [sheet, setSheet] = useState<AddChoice | null>(null);
+  // The ledger is captured when the sheet opens, so a later Back cannot retarget it.
+  const [addOpen, setAddOpen] = useState<{ ledgerId: string | undefined } | null>(null);
   const me = useMe();
+  const ledgers = useLedgers();
   const { pathname } = useLocation();
+  const [addPath, setAddPath] = useState(pathname);
+  const routeLedgerId = useMatch("/ledgers/:ledgerId/*")?.params.ledgerId;
+  const mainRef = useRef<HTMLElement>(null);
+
+  // Navigating away closes the add sheet. Reset during render, not in an effect.
+  if (addPath !== pathname) {
+    setAddPath(pathname);
+    setAddOpen(null);
+  }
+
+  // A new screen starts at its top, not wherever the last one was scrolled to.
+  useEffect(() => {
+    mainRef.current?.scrollTo({ top: 0 });
+  }, [pathname]);
 
   if (me.isPending) return null;
   if (me.error instanceof ApiError && me.error.status === 401) return <Navigate to="/welcome" replace />;
@@ -138,43 +121,51 @@ function Shell() {
     return <Navigate to="/welcome" replace />;
   }
 
+  // An expense needs a live ledger to land in: none active means no +, and an
+  // archived ledger takes no new expenses.
+  const list = ledgers.data ?? [];
+  const hasActive = list.some((l) => l.archivedAt === null);
+  const archivedHere = Boolean(list.find((l) => l.id === routeLedgerId)?.archivedAt);
+  const showFab = hasActive && !archivedHere && !NO_FAB.test(pathname);
+  // Same rule as the floating +: the rail shows it only where the + would show.
+  const addButton = showFab ? (
+    <Button block onClick={() => setAddOpen({ ledgerId: routeLedgerId })}>
+      {t("expense.add")}
+    </Button>
+  ) : null;
+
   return (
     <div className="paper-ground relative flex h-full flex-col overflow-hidden">
-      <div className="relative z-10 flex min-h-0 flex-1 flex-col">
-        {isDemo() && <DemoBanner />}
-        <OfflineBanner />
-        <UpdatePrompt />
-        <InstallPrompt />
-        <main className="min-h-0 flex-1 overflow-auto px-3.5 pt-3 pb-5">
-          {/* Keyed on the route so a tab/page switch replays the fade rather
-              than snapping in - issue #45. */}
-          <div key={pathname} className="page-in">
-            <ErrorBoundary>
-              <Suspense fallback={null}>
-                <Outlet />
-              </Suspense>
-            </ErrorBoundary>
-          </div>
-        </main>
-        {!FAB_HIDDEN.test(pathname) && <Fab onClick={() => setAddOpen(true)} />}
-        <TabBar />
+      <div className="pad-safe-top relative z-10 flex min-h-0 flex-1 flex-col md:flex-row">
+        <TabBar addButton={addButton} />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pr-[env(safe-area-inset-right)]">
+          {isDemo() && <DemoBanner />}
+          <OfflineBanner />
+          <UpdatePrompt />
+          <InstallPrompt />
+          <main ref={mainRef} className="min-h-0 flex-1 overflow-auto overscroll-contain px-3.5 pt-3 pb-22 md:pb-5">
+            <div className="mx-auto w-full max-w-[560px] md:max-w-[720px]">
+              {/* Keyed on the screen so a page switch replays the fade rather
+                  than snapping in - issue #45. The ErrorBoundary is keyed on the
+                  full path so a crash on one tab does not stick to the next. */}
+              <div key={screenKey(pathname)} className="page-in">
+                <ErrorBoundary key={pathname}>
+                  <Suspense fallback={null}>
+                    <Outlet />
+                  </Suspense>
+                </ErrorBoundary>
+              </div>
+            </div>
+          </main>
+        </div>
+        {showFab && <Fab onClick={() => setAddOpen({ ledgerId: routeLedgerId })} />}
         <ToastViewport />
       </div>
-      <Sheet open={addOpen} onOpenChange={setAddOpen} title={t("add.title")}>
-        <AddMenu
-          onPick={(choice) => {
-            setAddOpen(false);
-            setSheet(choice);
-          }}
-        />
-      </Sheet>
-      <Sheet open={sheet !== null} onOpenChange={(o) => !o && setSheet(null)} title={sheet ? t(`add.${sheet}`) : ""}>
-        {sheet === "expense" ? (
+      <Sheet open={addOpen !== null} onOpenChange={(o) => !o && setAddOpen(null)} title={t("expense.newTitle")}>
+        {addOpen && (
           <Suspense fallback={null}>
-            <ExpenseForm onDone={() => setSheet(null)} />
+            <ExpenseForm ledgerId={addOpen.ledgerId} onDone={() => setAddOpen(null)} />
           </Suspense>
-        ) : (
-          sheet && <LedgerForm kind={sheet} onDone={() => setSheet(null)} />
         )}
       </Sheet>
     </div>
@@ -188,14 +179,16 @@ export function App() {
         <Route path="/welcome" element={<Onboarding />} />
         <Route element={<Shell />}>
           <Route index element={<LedgersTab />} />
-          <Route path="ledgers/:ledgerId" element={<LedgerDetail />} />
+          <Route path="ledgers/:ledgerId" element={<LedgerLayout />}>
+            <Route index element={<LedgerDetail />} />
+            <Route path="settle" element={<SettleUp />} />
+            <Route path="insights" element={<LedgerInsights />} />
+            <Route path="activity" element={<ActivityTab />} />
+            <Route path="recurring" element={<RecurringTab />} />
+          </Route>
           {/* Editing is a full screen, not the add sheet: it needs an expense
               loaded from the server before anything can be shown. */}
           <Route path="ledgers/:ledgerId/expenses/:expenseId" element={<ExpenseEditor />} />
-          <Route path="ledgers/:ledgerId/settle" element={<SettleUp />} />
-          <Route path="ledgers/:ledgerId/recurring" element={<RecurringTab />} />
-          <Route path="ledgers/:ledgerId/insights" element={<LedgerInsights />} />
-          <Route path="ledgers/:ledgerId/activity" element={<ActivityTab />} />
           <Route path="balances" element={<BalancesTab />} />
           <Route path="insights" element={<InsightsTab />} />
           <Route path="you" element={<YouTab />} />

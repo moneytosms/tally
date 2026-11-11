@@ -7,7 +7,7 @@ export function Select({ className = "", ...props }: SelectHTMLAttributes<HTMLSe
   return (
     <select
       {...props}
-      className={`min-h-11 w-full rounded-[6px] border px-3 text-[14px] ${focusRing} ${className}`}
+      className={`min-h-11 w-full rounded-[6px] border px-3 text-[16px] ${focusRing} ${className}`}
       style={{ background: "var(--paper-sunk)", borderColor: "var(--line)", color: "var(--ink)", ...props.style }}
     />
   );

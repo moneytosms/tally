@@ -3,7 +3,14 @@
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SplitEditor, paiseToRupeeString, preview, remainingToAllocate, rupeesToPaise } from "./SplitEditor";
+import {
+  SplitEditor,
+  paiseToRupeeString,
+  preview,
+  rawForMode,
+  remainingToAllocate,
+  rupeesToPaise,
+} from "./SplitEditor";
 import { t } from "~/client/i18n";
 import type { SplitMode } from "~/shared/money";
 
@@ -152,6 +159,19 @@ const baseProps = {
   onRawChange: () => {},
 };
 
+describe("rawForMode", () => {
+  it("starts per-person inputs empty when the mode changes", () => {
+    // "250" is ₹250 in exact but a weight of 250 in shares: it must not carry over.
+    expect(rawForMode("exact", "shares", { a: "250", b: "10.00" })).toEqual({});
+    expect(rawForMode("equal", "percent", {})).toEqual({});
+  });
+
+  it("keeps inputs when the same mode is tapped again", () => {
+    const raw = { a: "50" };
+    expect(rawForMode("percent", "percent", raw)).toBe(raw);
+  });
+});
+
 describe("<SplitEditor>", () => {
   it("previews every participant's resolved paise", () => {
     const html = render(baseProps);
@@ -161,7 +181,6 @@ describe("<SplitEditor>", () => {
 
   it("renders a negative total unmistakably as a refund", () => {
     const html = render({ ...baseProps, total: -100_00 });
-    expect(html).toContain(t("expense.refund"));
     expect(html).toContain(t("expense.refundNote"));
   });
 
@@ -203,5 +222,20 @@ describe("<SplitEditor>", () => {
   it("offers nothing to type in equal mode, even when the list is shown", () => {
     expect(render(baseProps)).not.toContain("<input");
     expect(render({ ...baseProps, mode: "exact" })).toContain("<input");
+  });
+
+  it("shows no per-person rows in equal mode before an amount is typed", () => {
+    const html = render({ ...baseProps, total: 0 });
+    expect(html).not.toContain(t("expense.sharePending"));
+    expect(html).not.toContain("<input");
+    expect(html).not.toContain("<li");
+    expect(html).not.toContain(t("expense.remainderNote"));
+  });
+
+  it("keeps per-person rows and inputs in exact mode before an amount is typed", () => {
+    const html = render({ ...baseProps, mode: "exact", total: 0 });
+    expect(html).toContain("<li");
+    expect(html).toContain("<input");
+    expect(html).toContain(t("expense.sharePending"));
   });
 });

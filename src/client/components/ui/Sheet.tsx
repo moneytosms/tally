@@ -23,6 +23,13 @@ export function Sheet({
 }) {
   const titleId = useId();
   const panel = useRef<HTMLDivElement>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  // Callers pass inline arrows. Read the latest one through a ref so a parent
+  // re-render does not re-run the open effects and pull focus out of an input.
+  const onOpenChangeRef = useRef(onOpenChange);
+  useEffect(() => {
+    onOpenChangeRef.current = onOpenChange;
+  });
   // Stays true through the close animation - `open` itself flips the instant
   // the caller asks, which would otherwise unmount before the transition runs.
   const [mounted, setMounted] = useState(open);
@@ -35,22 +42,28 @@ export function Sheet({
 
   useEffect(() => {
     if (!open) return;
-    const opener = document.activeElement as HTMLElement | null;
-    panel.current?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onOpenChange(false);
+    opener.current = document.activeElement as HTMLElement | null;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onOpenChangeRef.current(false);
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
-      opener?.focus();
+      opener.current?.focus();
     };
-  }, [open, onOpenChange]);
+  }, [open]);
+
+  // Runs once the panel is in the DOM. A child's autofocus has already run by
+  // then, so this only moves focus when nothing inside the panel has it yet.
+  useEffect(() => {
+    if (!open || !mounted || !panel.current || panel.current.contains(document.activeElement)) return;
+    panel.current.focus();
+  }, [open, mounted]);
 
   if (!mounted) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end">
+    <div className="fixed inset-0 z-50 flex flex-col justify-end md:items-center md:justify-center">
       <div
         className="absolute inset-0"
         style={{
@@ -67,12 +80,11 @@ export function Sheet({
         tabIndex={-1}
         // dvh, not vh: on mobile Chrome vh is the LARGEST viewport, so a 90vh
         // sheet can run under the URL bar and hide its own submit button.
-        className="paper-ground relative max-h-[90dvh] overflow-auto rounded-t-[14px] border-t"
-        style={{
-          background: "var(--paper)",
-          borderColor: "var(--line)",
-          animation: `${open ? "sheet-panel-in" : "sheet-panel-out"} ${CLOSE_MS}ms ease-out forwards`,
-        }}
+        // md+: a centred dialog, not a bottom sheet (animation keyed in tokens.css).
+        className={`paper-ground relative max-h-[90dvh] overflow-auto rounded-t-[14px] border-t md:max-h-[85dvh] md:w-full md:max-w-[520px] md:rounded-[14px] md:border ${
+          open ? "sheet-in" : "sheet-out"
+        }`}
+        style={{ background: "var(--paper)", borderColor: "var(--line)" }}
       >
         <div
           className="sticky top-0 flex items-center gap-3 border-b px-4 py-3"

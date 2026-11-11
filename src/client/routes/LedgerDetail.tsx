@@ -1,17 +1,12 @@
-import { lazy, Suspense, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router";
-import { Amount, Avatar, Button, EmptyState, Field, Input, ScreenSkeleton, Select } from "~/client/components/ui";
-import { Sheet } from "~/client/components/ui/Sheet";
+import { useState } from "react";
+import { useParams } from "react-router";
+import { Amount, Button, EmptyState, Field, Input, Select, Skeleton } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import { ExpenseSheet } from "~/client/components/ExpenseSheet";
-import { LedgerMenu } from "~/client/components/LedgerMenu";
-import { BurnRate, runFor } from "~/client/routes/LedgersTab";
 import {
-  useBalances,
   useCategories,
   useExpenseSearch,
   useExpenses,
-  useLedger,
   useMe,
   useMembers,
   type Expense,
@@ -20,10 +15,9 @@ import {
 } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
 
-// Lazy for the same reason App.tsx keeps it lazy - it pulls in the split editor.
-const ExpenseForm = lazy(() => import("~/client/routes/ExpenseForm"));
-
 const memberName = (m: Member | undefined) => m?.nickname ?? t("member.unknown");
+
+const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 export type ExpenseSort = "newest" | "oldest" | "amountHigh" | "amountLow";
 
@@ -58,6 +52,7 @@ function ExpenseRow({
   // A Refund is an Expense with a negative total. It must not read as an expense.
   const isRefund = expense.total < 0;
   const myShare = myMemberId ? expense.splits.find((s) => s.memberId === myMemberId) : undefined;
+  const who = t(isRefund ? "expense.refundedBy" : "expense.paidByName", { name: memberName(payer) });
   return (
     <button
       type="button"
@@ -70,25 +65,20 @@ function ExpenseRow({
       }}
     >
       <div className="flex items-center justify-between gap-2.5">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <Avatar name={memberName(payer)} />
-          <div className="min-w-0">
-            <div className="truncate text-[14.5px] font-medium">
-              {expense.description}
-              {isRefund && (
-                <span
-                  className="ml-2 rounded-[5px] border px-1.5 py-0.5 align-middle text-[10.5px] tracking-[0.13em] uppercase"
-                  style={{ borderColor: "var(--moss)", background: "var(--moss-wash)", color: "var(--moss-2)" }}
-                >
-                  {t("expense.refund")}
-                </span>
-              )}
-            </div>
-            <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-              {t(isRefund ? "expense.refundedBy" : "expense.paidByName", { name: memberName(payer) })}
-              {" · "}
-              {t("expense.splitWays", { count: expense.splits.length })}
-            </div>
+        <div className="min-w-0">
+          <div className="truncate text-[15px] font-medium">
+            {expense.description}
+            {isRefund && (
+              <span
+                className="ml-2 rounded-[5px] border px-1.5 py-0.5 align-middle text-[13px] tracking-[0.13em] uppercase"
+                style={{ borderColor: "var(--moss)", background: "var(--moss-wash)", color: "var(--moss-2)" }}
+              >
+                {t("expense.refund")}
+              </span>
+            )}
+          </div>
+          <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
+            {t("expense.rowMeta", { who, date: dateFmt.format(expense.paidAt) })}
           </div>
         </div>
         <div className="flex flex-none flex-col items-end gap-1">
@@ -105,17 +95,14 @@ function ExpenseRow({
 
 export function LedgerDetail() {
   const { ledgerId = "" } = useParams();
-  const navigate = useNavigate();
-  const ledger = useLedger(ledgerId);
   const members = useMembers(ledgerId);
-  const balances = useBalances(ledgerId);
   const categories = useCategories();
   const me = useMe();
 
   const [filters, setFilters] = useState<ExpenseFilters>({});
   const [sort, setSort] = useState<ExpenseSort>("newest");
-  const [selected, setSelected] = useState<Expense | null>(null);
-  const [adding, setAdding] = useState(false);
+  // Store the id, not the expense: the detail is read from the list each render, so a restore or edit shows.
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [searchExpanded, setSearchExpanded] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
@@ -124,9 +111,8 @@ export function LedgerDetail() {
   const all = useExpenses(ledgerId);
   const expenses = useExpenseSearch(ledgerId, filters);
   const filtering = Object.values(filters).some((v) => v !== undefined && v !== "");
-
-  if (ledger.isPending) return <ScreenSkeleton />;
-  if (ledger.error) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
+  // If the expense leaves the list (e.g. deleted), the sheet closes.
+  const selected = (all.data ?? []).find((e) => e.id === selectedId);
 
   const byId = new Map((members.data ?? []).map((m) => [m.id, m]));
   const myMemberId = (members.data ?? []).find((m) => m.userId === me.data?.id)?.id;
@@ -143,123 +129,13 @@ export function LedgerDetail() {
 
   return (
     <>
-      <header className="mb-3 flex items-end gap-2.5 border-b pb-3" style={{ borderColor: "var(--line)" }}>
-        <Link
-          to="/"
-          aria-label={t("action.back")}
-          className={`grid min-h-11 min-w-11 place-items-center text-[17px] ${focusRing}`}
-          style={{ color: "var(--ink-3)" }}
-        >
-          ←
-        </Link>
-        <div className="min-w-0 flex-1">
-          <h1 className="serif truncate text-[21px] tracking-[-0.01em]">{ledger.data.name}</h1>
-          <div className="text-[12px]" style={{ color: "var(--ink-3)" }}>
-            {t("expense.member", { count: ledger.data.memberCount })}
-            {" · "}
-            {runFor(ledger.data.endDate)}
-          </div>
-        </div>
-        <LedgerMenu ledger={ledger.data} />
-      </header>
-
-      <div
-        className="mb-4 rounded-[7px] border px-3.5 py-4"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
-        <div className="flex items-center justify-between gap-3">
-          <Amount paise={ledger.data.net} label={t("ledger.yourPosition")} hero />
-          <span className="flex shrink-0 gap-2">
-            {/* The FAB already defaults to this ledger, but the action is worth
-                naming where the expenses actually are. */}
-            <Button size="sm" onClick={() => setAdding(true)}>
-              {t("expense.add")}
-            </Button>
-            <Button
-              size="sm"
-              variant={ledger.data.net === 0 ? "ghost" : "primary"}
-              onClick={() => navigate(`/ledgers/${ledgerId}/settle`)}
-            >
-              {t("settle.title")}
-            </Button>
-          </span>
-        </div>
-        {/* A budget entered at creation used to be stored and never shown again. */}
-        <BurnRate ledger={ledger.data} />
-      </div>
-
-      <div className="mx-0.5 mt-5 mb-2 text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
-        {t("ledger.members")}
-      </div>
-      <div
-        className="rounded-[7px] border px-3.5 py-2"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
-        {(members.data ?? []).map((m) => {
-          const position = (balances.data?.positions ?? []).find((p) => p.memberId === m.id);
-          return (
-            <div key={m.id} className="flex items-center gap-2.5 py-1.5">
-              <Avatar name={m.nickname} />
-              <span className="flex-1 truncate text-[14px]">{m.nickname}</span>
-              {m.guestName !== null && (
-                <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
-                  {t("member.guest")}
-                </span>
-              )}
-              {position && (
-                <Amount
-                  paise={position.net}
-                  label={t("ledger.netPosition")}
-                  subject={m.id === myMemberId ? undefined : m.nickname}
-                />
-              )}
-            </div>
-          );
-        })}
-      </div>
-
-      <Sheet open={adding} onOpenChange={setAdding} title={t("expense.add")}>
-        <Suspense fallback={null}>
-          <ExpenseForm onDone={() => setAdding(false)} />
-        </Suspense>
-      </Sheet>
-
-      <div className="mx-0.5 mt-1 mb-2 flex items-center justify-between gap-2">
-        <span className="text-[10.5px] tracking-[0.13em] uppercase" style={{ color: "var(--ink-3)" }}>
-          {t("ledger.expenses")}
-        </span>
-        <span className="flex items-center gap-3">
-          <Link
-            to={`/ledgers/${ledgerId}/insights`}
-            className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
-            style={{ color: "var(--moss)" }}
-          >
-            {t("ledger.menu.insights")}
-          </Link>
-          <Link
-            to={`/ledgers/${ledgerId}/activity`}
-            className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
-            style={{ color: "var(--moss)" }}
-          >
-            {t("activity.title")}
-          </Link>
-          <Link
-            to={`/ledgers/${ledgerId}/recurring`}
-            className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
-            style={{ color: "var(--moss)" }}
-          >
-            {t("recurring.title")}
-          </Link>
-        </span>
-      </div>
-
       {(all.data?.length ?? 0) > 1 && (
-        <div className="mx-0.5 mb-2 flex items-center justify-end">
+        <div className="mb-2 flex min-h-11 justify-end">
           <Select
             aria-label={t("sort.label")}
             value={sort}
             onChange={(e) => setSort(e.target.value as ExpenseSort)}
-            className="w-auto min-h-9 py-0 text-[12.5px]"
+            className="w-auto min-h-11 py-0 text-[13px]"
           >
             <option value="newest">{t("sort.newest")}</option>
             <option value="oldest">{t("sort.oldest")}</option>
@@ -269,9 +145,9 @@ export function LedgerDetail() {
         </div>
       )}
 
-      {/* Nothing to filter until there is a list worth filtering. Five controls
-          above an empty state is furniture, not help. */}
-      {(all.data?.length ?? 0) > 0 && (
+      {/* Nothing to filter until there is a list worth filtering, unless a filter is
+          already on: then the controls are the only way to clear it. */}
+      {((all.data?.length ?? 0) > 0 || filtering) && (
         <div className="mb-3 grid gap-2">
           {/* Collapsible search field - shows as icon when empty/unfocused, expands on tap */}
           {searchExpanded ? (
@@ -307,7 +183,7 @@ export function LedgerDetail() {
               type="button"
               onClick={() => setFiltersExpanded(!filtersExpanded)}
               aria-expanded={filtersExpanded}
-              className={`inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-[6px] border px-2.5 text-[12px] ${focusRing}`}
+              className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[6px] border px-2.5 text-[13px] ${focusRing}`}
               style={{
                 borderColor: hasFilterSet ? "var(--moss)" : "var(--line)",
                 color: hasFilterSet ? "var(--moss-2)" : "var(--ink-2)",
@@ -324,7 +200,7 @@ export function LedgerDetail() {
               )}
               <span
                 aria-hidden="true"
-                className="text-[10px]"
+                className="text-[13px]"
                 style={{ transform: filtersExpanded ? "rotate(180deg)" : undefined }}
               >
                 ▾
@@ -378,25 +254,28 @@ export function LedgerDetail() {
 
           {filtering && (
             <div className="flex items-center justify-between gap-2" role="status" aria-live="polite">
-              <span className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+              <span className="text-[13px]" style={{ color: "var(--ink-3)" }}>
                 {t("search.results", { count: rows.length, total: all.data?.length ?? rows.length })}
               </span>
-              <button
-                type="button"
-                onClick={() => setFilters({})}
-                className={`min-h-11 px-1 text-[12px] underline ${focusRing}`}
-                style={{ color: "var(--moss)" }}
-              >
+              <Button size="sm" variant="ghost" onClick={() => setFilters({})}>
                 {t("search.clear")}
-              </button>
+              </Button>
             </div>
           )}
         </div>
       )}
 
-      {rows.length === 0 ? (
+      {expenses.isPending ? (
+        <div className="flex flex-col gap-2" aria-hidden="true">
+          <Skeleton className="h-[68px] w-full" />
+          <Skeleton className="h-[68px] w-full" />
+          <Skeleton className="h-[68px] w-full" />
+        </div>
+      ) : expenses.error ? (
+        <EmptyState title={t("error.generic")} body={t("error.network")} />
+      ) : rows.length === 0 ? (
         filtering ? (
-          <EmptyState title={t("search.none")} body={t("search.clear")} />
+          <EmptyState title={t("search.none")} />
         ) : (
           <EmptyState title={t("empty.expenses")} body={t("empty.expensesBody")} />
         )
@@ -407,7 +286,7 @@ export function LedgerDetail() {
             expense={e}
             payer={byId.get(e.payerMemberId)}
             myMemberId={myMemberId}
-            onSelect={setSelected}
+            onSelect={(x) => setSelectedId(x.id)}
           />
         ))
       )}
@@ -417,8 +296,8 @@ export function LedgerDetail() {
           ledgerId={ledgerId}
           expense={selected}
           members={members.data ?? []}
-          open={selected !== null}
-          onOpenChange={(o) => !o && setSelected(null)}
+          open
+          onOpenChange={(o) => !o && setSelectedId(null)}
         />
       )}
     </>

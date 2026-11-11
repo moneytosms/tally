@@ -1,19 +1,20 @@
 // Recurring series: an expense template plus a cadence. List + create/edit sheet.
 // The split UI is SplitEditor's job - this file only collects cadence + dates.
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
 import {
   Amount,
   Avatar,
   Button,
+  ConfirmDialog,
   EmptyState,
   Field,
   Input,
+  Rupees,
   ScreenSkeleton,
   Select,
   Sheet,
 } from "~/client/components/ui";
-import { focusRing } from "~/client/components/ui/focus";
 import {
   SplitEditor,
   paiseToRupeeString,
@@ -50,10 +51,15 @@ const dateInputToEpoch = (s: string) => Date.parse(`${s}T00:00:00Z`);
 function CadenceRow({ series }: { series: Series }) {
   const isPaused = series.pausedAt !== null;
   return (
-    <div className="text-[11.5px]" style={{ color: "var(--ink-3)" }}>
+    <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
       {t("recurring.every")} {series.intervalCount} {unitLabel(series.intervalUnit, series.intervalCount)}
-      {" · "}
-      {isPaused ? t("recurring.paused") : t("recurring.nextOn", { date: dateFmt.format(series.nextOccurrenceAt) })}
+      {/* A paused series already carries the Paused badge on its row. */}
+      {!isPaused && (
+        <>
+          {" · "}
+          {t("recurring.nextOn", { date: dateFmt.format(series.nextOccurrenceAt) })}
+        </>
+      )}
     </div>
   );
 }
@@ -83,11 +89,11 @@ function SeriesRow({
         <div className="flex min-w-0 items-center gap-2.5">
           <Avatar name={payerName} />
           <div className="min-w-0">
-            <div className="truncate text-[14.5px] font-medium">
+            <div className="truncate text-[15px] font-medium">
               {series.description}
               {isPaused && (
                 <span
-                  className="ml-2 rounded-[5px] border px-1.5 py-0.5 align-middle text-[10.5px] tracking-[0.13em] uppercase"
+                  className="ml-2 rounded-[5px] border px-1.5 py-0.5 align-middle text-[13px] tracking-[0.13em] uppercase"
                   style={{ borderColor: "var(--line-2)", background: "var(--paper-sunk)", color: "var(--ink-3)" }}
                 >
                   {t("recurring.paused")}
@@ -147,11 +153,23 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
   const [endAt, setEndAt] = useState(editing?.endAt ? epochToDateInput(editing.endAt) : "");
   const [failure, setFailure] = useState("");
 
-  // New series only: default to the full active roster once members load.
+  // New series only: default to the full active roster once members load, once.
+  // A later roster change only drops people who left; it must not re-add deselected
+  // people or wipe what was typed.
+  const seeded = useRef(false);
   useEffect(() => {
-    if (editing) return;
-    setParticipantIds(roster.map((m) => m.id));
-    setPayerId((id) => id || roster[0]?.id || "");
+    if (editing || roster.length === 0) return;
+    const ids = new Set(roster.map((m) => m.id));
+    const firstPayer = roster[0]?.id ?? "";
+    if (!seeded.current) {
+      seeded.current = true;
+      setParticipantIds(roster.map((m) => m.id));
+      setPayerId(firstPayer);
+      return;
+    }
+    setParticipantIds((prev) => prev.filter((id) => ids.has(id)));
+    setRaw((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => ids.has(id))));
+    setPayerId((prev) => (ids.has(prev) ? prev : firstPayer));
   }, [editing, roster.map((m) => m.id).join(",")]);
 
   const participants: SplitParticipant[] = participantIds.flatMap((id) => {
@@ -201,9 +219,11 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
   }
 
   return (
-    <form onSubmit={submit} noValidate>
+    // Any field edit makes the last save error stale. A form-level onChange catches
+    // every input and select; the picker and split controls are wired below.
+    <form onSubmit={submit} onChange={() => setFailure("")} noValidate>
       {editing && (
-        <p className="mb-3 text-[11.5px]" style={{ color: "var(--ink-2)" }}>
+        <p className="mb-3 text-[13px]" style={{ color: "var(--ink-2)" }}>
           {t("recurring.editFutureOnly")}
         </p>
       )}
@@ -216,12 +236,7 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
         label={t("expense.amount")}
         error={amountRaw.trim() && total === null ? t("expense.error.amount") : undefined}
       >
-        <Input
-          inputMode="decimal"
-          value={amountRaw}
-          onChange={(e) => setAmountRaw(e.target.value)}
-          placeholder="0.00"
-        />
+        <Rupees value={amountRaw} onChange={setAmountRaw} />
       </Field>
 
       <Field label={t("expense.paidBy")}>
@@ -256,6 +271,7 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
           members={roster.map((m) => ({ id: m.id, name: m.nickname }))}
           selectedIds={participantIds}
           onChange={(ids) => {
+            setFailure("");
             setParticipantIds(ids);
             setRaw((prev) => Object.fromEntries(Object.entries(prev).filter(([id]) => ids.includes(id))));
           }}
@@ -268,8 +284,14 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
         payerIndex={payerIndex}
         participants={participants}
         raw={raw}
-        onModeChange={setMode}
-        onRawChange={setRaw}
+        onModeChange={(m) => {
+          setFailure("");
+          setMode(m);
+        }}
+        onRawChange={(r) => {
+          setFailure("");
+          setRaw(r);
+        }}
       />
 
       <div className="mb-3 flex items-end gap-2.5">
@@ -297,7 +319,7 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
         <Input type="date" value={startAt} onChange={(e) => setStartAt(e.target.value)} />
       </Field>
 
-      <label className="mb-3 flex min-h-11 items-center gap-2 text-[13px]">
+      <label className="mb-3 flex min-h-11 items-center gap-2 text-[15px]">
         <input type="checkbox" checked={!hasEnd} onChange={(e) => setHasEnd(!e.target.checked)} className="h-4 w-4" />
         {t("recurring.endsNever")}
       </label>
@@ -308,11 +330,11 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
         </Field>
       )}
 
-      <p role="alert" aria-live="assertive" className="mb-2 text-[12px]" style={{ color: "var(--clay)" }}>
+      <p role="alert" aria-live="assertive" className="mb-2 text-[13px]" style={{ color: "var(--clay)" }}>
         {failure}
       </p>
 
-      <Button type="submit" disabled={blocked} className="w-full">
+      <Button type="submit" disabled={blocked} block>
         {t("action.save")}
       </Button>
     </form>
@@ -327,9 +349,13 @@ export default function RecurringTab() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<Series | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   if (series.isPending || members.isPending) return <ScreenSkeleton />;
   if (series.error || members.error) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
+
+  // Looked up from the live list: a series deleted elsewhere closes the dialog.
+  const deleting = series.data.find((s) => s.id === deletingId) ?? null;
 
   const byId = new Map(members.data.map((m) => [m.id, m]));
   const payerName = (s: Series) => byId.get(s.payerMemberId)?.nickname ?? t("member.unknown");
@@ -342,22 +368,14 @@ export default function RecurringTab() {
     setEditing(s);
     setSheetOpen(true);
   }
-  async function handleDelete(id: string) {
-    if (!window.confirm(t("recurring.deleteConfirm"))) return;
-    await action.mutateAsync({ id, action: "delete" });
-  }
-
   return (
     <>
-      <header
-        className="mb-3 flex items-end justify-between gap-2.5 border-b pb-3"
-        style={{ borderColor: "var(--line)" }}
-      >
-        <h1 className="serif text-[21px] tracking-[-0.01em]">{t("recurring.title")}</h1>
+      <div className="mb-3 flex items-center justify-between gap-2.5">
+        <h2 className="serif text-[19px]">{t("recurring.title")}</h2>
         <Button size="sm" onClick={openCreate}>
           {t("recurring.add")}
         </Button>
-      </header>
+      </div>
 
       {series.data.length === 0 ? (
         <EmptyState title={t("recurring.none")} body={t("recurring.noneBody")} />
@@ -370,7 +388,7 @@ export default function RecurringTab() {
             busy={action.isPending}
             onEdit={() => openEdit(s)}
             onToggle={() => action.mutate({ id: s.id, action: "pause" })}
-            onDelete={() => handleDelete(s.id)}
+            onDelete={() => setDeletingId(s.id)}
           />
         ))
       )}
@@ -378,6 +396,18 @@ export default function RecurringTab() {
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? t("action.edit") : t("recurring.add")}>
         <SeriesForm ledgerId={ledgerId} editing={editing} onDone={() => setSheetOpen(false)} />
       </Sheet>
+
+      {deleting && (
+        <ConfirmDialog
+          title={t("recurring.deleteConfirm")}
+          confirmLabel={t("recurring.delete")}
+          busy={action.isPending}
+          onCancel={() => setDeletingId(null)}
+          onConfirm={() =>
+            action.mutate({ id: deleting.id, action: "delete" }, { onSuccess: () => setDeletingId(null) })
+          }
+        />
+      )}
     </>
   );
 }
