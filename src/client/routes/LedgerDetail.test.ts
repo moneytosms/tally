@@ -1,7 +1,7 @@
 // Sort is client-side over already-fetched expenses. paidAt and total both
 // need dedicated orderings - swapping the comparator sign is an easy mistake.
 import { describe, expect, it } from "vitest";
-import { sortExpenses } from "./LedgerDetail";
+import { encodeExpenseParams, parseExpenseParams, sortExpenses } from "./LedgerDetail";
 import type { Expense } from "~/client/lib/queries";
 
 const mk = (id: string, paidAt: number, total: number): Expense => ({
@@ -52,114 +52,45 @@ describe("sortExpenses", () => {
   });
 });
 
-describe("Search and Filter UI states", () => {
-  // Test for issue #39: collapsible search field
-  describe("Search field collapse behavior", () => {
-    it("search starts collapsed to icon when empty", () => {
-      // Empty filters.q means search is collapsed
-      const filters = { q: undefined };
-      expect(filters.q).toBeUndefined();
-    });
+describe("expense query in the URL", () => {
+  // Local-midnight timestamps, so the day round trip does not depend on the machine's zone.
+  const oct22 = new Date("2026-10-22T00:00:00").getTime();
+  const oct30End = new Date("2026-10-30T23:59:59.999").getTime();
 
-    it("search expands when tapped and auto-focuses input", () => {
-      // When searchExpanded is true, input renders with autoFocus
-      let expanded = false;
-      const tap = () => {
-        expanded = true;
-      };
-      tap();
-      expect(expanded).toBe(true);
-    });
+  it("round trips every filter and a non-default sort", () => {
+    const query = {
+      q: "coffee",
+      categoryId: "cat_food",
+      memberId: "m_ada",
+      from: oct22,
+      to: oct30End,
+      sort: "amountHigh" as const,
+    };
+    const params = encodeExpenseParams(query);
+    expect(params.get("from")).toBe("2026-10-22");
+    expect(params.get("to")).toBe("2026-10-30");
+    expect(parseExpenseParams(params)).toEqual(query);
+  });
 
-    it("search collapses on blur when search term is empty", () => {
-      let expanded = true;
-      const filters = { q: undefined };
-      const onBlur = () => {
-        // Collapse when blurred and empty
-        if (!filters.q) {
-          expanded = false;
-        }
-      };
-      onBlur();
-      expect(expanded).toBe(false);
-    });
+  it("omits defaults so the default view has a clean URL", () => {
+    expect(encodeExpenseParams({ sort: "newest" }).toString()).toBe("");
+  });
 
-    it("search stays expanded while search term is non-empty", () => {
-      let expanded = true; // Search was expanded
-      const filters = { q: "coffee" };
-      const onBlur = () => {
-        // Collapse when blurred and empty
-        if (!filters.q) {
-          expanded = false;
-        }
-      };
-      onBlur(); // Blur happens
-      // But search term is non-empty, so stays expanded
-      expect(expanded).toBe(true);
-      expect(filters.q).toBe("coffee");
+  it("ignores unknown params and unknown sort values", () => {
+    const parsed = parseExpenseParams(new URLSearchParams("sort=toString&page=3&q="));
+    expect(parsed).toEqual({
+      sort: "newest",
+      q: undefined,
+      categoryId: undefined,
+      memberId: undefined,
+      from: undefined,
+      to: undefined,
     });
   });
 
-  // Test for issue #40: collapsible filters
-  describe("Filter section collapse behavior", () => {
-    it("filter fields are hidden when collapsed", () => {
-      const filtersExpanded = false;
-      expect(filtersExpanded).toBe(false);
-    });
-
-    it("filter fields are visible when expanded", () => {
-      const filtersExpanded = true;
-      expect(filtersExpanded).toBe(true);
-    });
-
-    it("tapping Filters toggle expands/collapses them", () => {
-      let filtersExpanded = false;
-      const toggleFilters = () => {
-        filtersExpanded = !filtersExpanded;
-      };
-
-      toggleFilters();
-      expect(filtersExpanded).toBe(true);
-
-      toggleFilters();
-      expect(filtersExpanded).toBe(false);
-    });
-
-    it("shows active filter indicator (dot) when any filter is set", () => {
-      const hasFilterSet = (filters: Record<string, unknown>) =>
-        filters.categoryId !== undefined ||
-        filters.memberId !== undefined ||
-        filters.from !== undefined ||
-        filters.to !== undefined;
-
-      expect(hasFilterSet({})).toBe(false);
-      expect(hasFilterSet({ categoryId: "cat-1" })).toBe(true);
-      expect(hasFilterSet({ memberId: "mem-1" })).toBe(true);
-      expect(hasFilterSet({ from: 1000 })).toBe(true);
-      expect(hasFilterSet({ to: 2000 })).toBe(true);
-    });
-
-    it("Clear button resets all four filter fields regardless of expanded state", () => {
-      const filters = { categoryId: "cat-1", memberId: "mem-1", from: 1000, to: 2000, q: "search" };
-
-      // Clear action
-      const clearedFilters = {};
-
-      expect(Object.keys(clearedFilters).length).toBe(0);
-      expect(filters.categoryId).toBe("cat-1"); // Original still has data, but clear creates empty object
-    });
-
-    it("does not include search term (q) in active filter indicator", () => {
-      const hasFilterSet = (filters: Record<string, unknown>) =>
-        filters.categoryId !== undefined ||
-        filters.memberId !== undefined ||
-        filters.from !== undefined ||
-        filters.to !== undefined;
-
-      // Search term alone should not count as an active filter
-      expect(hasFilterSet({ q: "coffee" })).toBe(false);
-      // But a category should
-      expect(hasFilterSet({ q: "coffee", categoryId: "cat-1" })).toBe(true);
-    });
+  it("ignores invalid dates, including impossible ones", () => {
+    const parsed = parseExpenseParams(new URLSearchParams("from=22-10-2026&to=2026-02-31"));
+    expect(parsed.from).toBeUndefined();
+    expect(parsed.to).toBeUndefined();
   });
 });

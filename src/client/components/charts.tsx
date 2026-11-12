@@ -111,11 +111,3 @@ export function ChartFallback({ height }: { height: number }) {
     </div>
   );
 }
-
-export function SectionHeading({ children }: { children: string }) {
-  return (
-    <div className="mx-0.5 mb-2 text-[13px] font-semibold" style={{ color: "var(--ink-2)" }}>
-      {children}
-    </div>
-  );
-}

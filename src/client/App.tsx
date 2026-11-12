@@ -1,11 +1,13 @@
 // Four tabs: Ledgers, Balances, Insights, You (bottom bar on phones, left rail on wide
 // screens). One add-expense control: the floating + on phones, the rail button on wide
 // screens. Both open the same sheet. See docs/SPEC.md §10.
-import { lazy, Suspense, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useMatch, useNavigate } from "react-router";
 import { TabBar } from "./components/TabBar";
 import { Fab } from "./components/Fab";
+import { fabVisible } from "./components/fabVisible";
+import { focusRing, Mark, ScreenSkeleton } from "./components/ui";
 import { Sheet } from "./components/ui/Sheet";
 import { Button } from "./components/ui/Button";
 import { ToastViewport } from "./components/ui/Toast";
@@ -43,7 +45,7 @@ function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="no-print px-4 py-2 text-[13px]"
+      className="no-print flex min-h-11 items-center px-4 py-2 text-[13px]"
       style={{ background: "var(--clay-wash)", color: "var(--clay)" }}
     >
       <strong className="font-medium">{t("offline.title")}</strong> {t("offline.body")}
@@ -58,17 +60,14 @@ function DemoBanner() {
   return (
     <div
       role="status"
-      className="no-print flex items-center justify-between gap-3 px-4 text-[13px] leading-snug"
+      className="no-print flex min-h-11 items-center justify-between gap-3 px-4 text-[13px] leading-snug"
       style={{ background: "var(--paper-sunk)", color: "var(--ink-2)" }}
     >
-      <span className="min-w-0 py-1.5">{t("demo.banner")}</span>
-      {/* A text action, not a bordered button: the banner is a note, not a toolbar.
-          Still a 44px target. */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="shrink-0 whitespace-nowrap underline decoration-[var(--line-2)] underline-offset-4"
-        style={{ borderColor: "transparent" }}
+      <span className="min-w-0">{t("demo.banner")}</span>
+      {/* An underlined text link, not a button: the banner is a note. Still a 44px target. */}
+      <button
+        type="button"
+        className={`min-h-11 shrink-0 whitespace-nowrap rounded-[5px] px-1 underline decoration-[var(--line-2)] underline-offset-4 ${focusRing}`}
         onClick={() => {
           exitDemo();
           qc.clear();
@@ -76,13 +75,13 @@ function DemoBanner() {
         }}
       >
         {t("demo.exit")}
-      </Button>
+      </button>
     </div>
   );
 }
 
-/** Screens where the + button is never shown: the profile area has nothing to add
- *  to, and the expense editor is a full screen of its own. */
+/** Screens where the rail's "Add expense" is never shown: the profile area has nothing to add
+ *  to, and the expense editor is a full screen of its own. (The FAB has its own rule, fabVisible.) */
 const NO_FAB = /^\/you(\/|$)|^\/ledgers\/[^/]+\/expenses\//;
 
 /** Every tab of one ledger shares a key, so switching tabs does not replay the
@@ -112,7 +111,15 @@ function Shell() {
     mainRef.current?.scrollTo({ top: 0 });
   }, [pathname]);
 
-  if (me.isPending) return null;
+  if (me.isPending)
+    return (
+      <div className="paper-ground flex h-full flex-col items-center justify-center gap-6 px-4">
+        <Mark size={32} />
+        <div className="w-full max-w-[560px]">
+          <ScreenSkeleton />
+        </div>
+      </div>
+    );
   if (me.error instanceof ApiError && me.error.status === 401) return <Navigate to="/welcome" replace />;
   // No passkey AND no password means enrolment stopped half-way: register/options
   // creates the account and the session, and the passkey ceremony then failed.
@@ -125,21 +132,24 @@ function Shell() {
     return <Navigate to="/welcome" replace />;
   }
 
-  // An expense needs a live ledger to land in: none active means no +, and an
-  // archived ledger takes no new expenses.
   const list = ledgers.data ?? [];
   const hasActive = list.some((l) => l.archivedAt === null);
   const archivedHere = Boolean(list.find((l) => l.id === routeLedgerId)?.archivedAt);
-  const showFab = hasActive && !archivedHere && !NO_FAB.test(pathname);
-  // Same rule as the floating +: the rail shows it only where the + would show.
-  const addButton = showFab ? (
+  const showFab = fabVisible(pathname, { hasActive, archivedHere });
+  // The rail button is always there on md+ wherever adding an expense is allowed at all.
+  const canAdd = hasActive && !archivedHere && !NO_FAB.test(pathname);
+  const addButton = canAdd ? (
     <Button block onClick={() => setAddOpen({ ledgerId: routeLedgerId })}>
       {t("expense.add")}
     </Button>
   ) : null;
 
   return (
-    <div className="paper-ground relative flex h-full flex-col overflow-hidden">
+    <div
+      className="paper-ground relative flex h-full flex-col overflow-hidden"
+      // Toasts sit above the FAB when it is shown (read by ToastViewport's bottom offset).
+      style={{ "--fab-clearance": showFab ? "57px" : "0px" } as CSSProperties}
+    >
       <div className="pad-safe-top relative z-10 flex min-h-0 flex-1 flex-col md:flex-row">
         <TabBar addButton={addButton} />
         <div className="flex min-h-0 min-w-0 flex-1 flex-col md:pr-[env(safe-area-inset-right)]">
@@ -147,14 +157,17 @@ function Shell() {
           <OfflineBanner />
           <UpdatePrompt />
           <InstallPrompt />
-          <main ref={mainRef} className="min-h-0 flex-1 overflow-auto overscroll-contain px-3.5 pt-3 pb-22 md:pb-5">
+          <main
+            ref={mainRef}
+            className={`min-h-0 flex-1 overflow-auto overscroll-contain px-4 pt-3 md:pb-5 ${showFab ? "pb-[calc(65px+env(safe-area-inset-bottom))]" : "pb-22"}`}
+          >
             <div className="mx-auto w-full max-w-[560px] md:max-w-[720px]">
               {/* Keyed on the screen so a page switch replays the fade rather
                   than snapping in - issue #45. The ErrorBoundary is keyed on the
                   full path so a crash on one tab does not stick to the next. */}
               <div key={screenKey(pathname)} className="page-in">
                 <ErrorBoundary key={pathname}>
-                  <Suspense fallback={null}>
+                  <Suspense fallback={<ScreenSkeleton />}>
                     <Outlet />
                   </Suspense>
                 </ErrorBoundary>
@@ -167,7 +180,7 @@ function Shell() {
       </div>
       <Sheet open={addOpen !== null} onOpenChange={(o) => !o && setAddOpen(null)} title={t("expense.newTitle")}>
         {addOpen && (
-          <Suspense fallback={null}>
+          <Suspense fallback={<ScreenSkeleton />}>
             <ExpenseForm ledgerId={addOpen.ledgerId} onDone={() => setAddOpen(null)} />
           </Suspense>
         )}

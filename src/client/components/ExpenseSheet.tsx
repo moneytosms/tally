@@ -4,15 +4,20 @@ import { useState } from "react";
 import { Link } from "react-router";
 import {
   Amount,
+  Badge,
   Button,
+  buttonClass,
+  Card,
   ConfirmDialog,
   EmptyState,
   Field,
   Input,
+  SectionHeading,
   Sheet,
   Skeleton,
   focusRing,
 } from "~/client/components/ui";
+import { formatDate, formatDateTime } from "~/client/lib/format";
 import {
   useAddComment,
   useCategories,
@@ -27,14 +32,6 @@ import {
   type Revision,
 } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
-
-const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
-const timeFmt = new Intl.DateTimeFormat("en-IN", {
-  day: "numeric",
-  month: "short",
-  hour: "numeric",
-  minute: "2-digit",
-});
 
 const nameOf = (members: Member[], id: string) => members.find((m) => m.id === id)?.nickname ?? t("member.unknown");
 
@@ -61,8 +58,6 @@ export function revisionDiff(
   if (splitKey(snapshot.splits) !== splitKey(current.splits)) changes.push("splits");
   return changes;
 }
-
-const sectionLabel = { color: "var(--ink-2)" } as const;
 
 function DetailRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -138,66 +133,56 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
       <div className="mb-4 flex items-center justify-between gap-3">
         <Amount paise={expense.total} label={t("expense.total")} tone="neutral" hero />
         <div className="flex flex-none items-center gap-2">
-          {isRefund && (
-            <span
-              className="rounded-[5px] border px-1.5 py-0.5 text-[13px] font-medium"
-              style={{ borderColor: "var(--moss)", background: "var(--moss-wash)", color: "var(--moss-2)" }}
-            >
-              {t("expense.refund")}
-            </span>
-          )}
+          {isRefund && <Badge>{t("expense.refund")}</Badge>}
           {/* Edit sits by the figure it changes, not under the comments. The row
               opens this sheet, so the editor is a link from here. */}
           <Link
             to={`/ledgers/${ledgerId}/expenses/${expense.id}`}
-            className={`inline-flex min-h-11 items-center rounded-[7px] border px-4 text-[14px] font-semibold transition-[background-color,transform] duration-150 hover:bg-[var(--paper-sunk)] active:scale-[0.98] ${focusRing}`}
-            style={{ borderColor: "var(--line-2)", color: "var(--ink)" }}
+            className={`${buttonClass({ variant: "ghost" })} hover:bg-[var(--paper-sunk)] active:scale-[0.98]`}
           >
             {t("expense.edit")}
           </Link>
         </div>
       </div>
 
-      <div
-        className="mb-4 rounded-[7px] border px-3.5"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
+      <Card className="mb-4 flex flex-col">
         <DetailRow label={t("expense.paidBy")}>{nameOf(members, expense.payerMemberId)}</DetailRow>
-        <DetailRow label={t("expense.date")}>{dateFmt.format(expense.paidAt)}</DetailRow>
+        <DetailRow label={t("expense.date")}>{formatDate(expense.paidAt)}</DetailRow>
         <DetailRow label={t("expense.category")}>{category?.name ?? t("expense.categoryNone")}</DetailRow>
         {expense.notes && <DetailRow label={t("expense.notes")}>{expense.notes}</DetailRow>}
-      </div>
+      </Card>
 
-      <div className="mx-0.5 mb-2 text-[13px] font-semibold" style={sectionLabel}>
-        {t("expense.participants")}
-      </div>
-      <div
-        className="mb-5 rounded-[7px] border px-3.5"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
+      <SectionHeading as="h3">{t("expense.participants")}</SectionHeading>
+      <Card className="mb-5 flex flex-col">
         {expense.splits.map((s) => (
           <div
             key={s.memberId}
             className="flex items-center justify-between gap-3 border-b py-2 last:border-b-0"
             style={{ borderColor: "var(--line)" }}
           >
-            <span className="text-[15px]">{nameOf(members, s.memberId)}</span>
+            <span className="text-[15px] font-medium">{nameOf(members, s.memberId)}</span>
             <Amount paise={s.amount} label={t("expense.shareLabel")} tone="neutral" />
           </div>
         ))}
-      </div>
+      </Card>
 
       {/* ---------- comments ---------- */}
-      <div className="mx-0.5 mb-2 text-[13px] font-semibold" style={sectionLabel}>
-        {t("expense.comments")}
-      </div>
+      <SectionHeading as="h3">{t("expense.comments")}</SectionHeading>
       {comments.isPending ? (
         <div className="mb-3">
           <Skeleton className="mb-2 h-10 w-full" />
           <Skeleton className="h-10 w-4/5" />
         </div>
       ) : comments.error ? (
-        <EmptyState title={t("error.generic")} body={t("error.network")} />
+        <EmptyState
+          title={t("error.generic")}
+          body={t("error.network")}
+          action={
+            <Button variant="ghost" onClick={() => comments.refetch()}>
+              {t("action.retry")}
+            </Button>
+          }
+        />
       ) : sortedComments.length === 0 ? (
         <p className="mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("expense.commentEmpty")}
@@ -212,7 +197,7 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
             >
               <div className="min-w-0 flex-1">
                 <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
-                  {c.authorName} · {timeFmt.format(c.createdAt)}
+                  {c.authorName} · {formatDateTime(c.createdAt)}
                 </div>
                 <div className="text-[15px] break-words">{c.body}</div>
               </div>
@@ -231,21 +216,24 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
           ))}
         </ul>
       )}
-      <div className="flex items-center gap-2">
-        <Field label={t("expense.commentPlaceholder")}>
-          <Input
-            value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && postComment()}
-          />
-        </Field>
+      {/* Input and Post on one baseline: Post sits at the field's bottom edge, past the label. */}
+      <div className="flex items-end gap-2">
+        <div className="min-w-0 flex-1">
+          <Field label={t("expense.commentPlaceholder")}>
+            <Input
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && postComment()}
+            />
+          </Field>
+        </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={postComment}
           disabled={!commentText.trim()}
           isLoading={addComment.isPending}
-          className="mt-1"
+          className="mb-3"
         >
           {t("expense.commentSend")}
         </Button>
@@ -289,10 +277,10 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
                 return (
                   <li key={r.id} className="border-b py-2 last:border-b-0" style={{ borderColor: "var(--line)" }}>
                     <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
-                      {t("expense.editedBy", { name: r.revisedByName })} · {timeFmt.format(r.revisedAt)}
+                      {t("expense.editedBy", { name: r.revisedByName })} · {formatDateTime(r.revisedAt)}
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-3">
-                      <span className="min-w-0 flex-1 truncate text-[15px]">{r.snapshot.description}</span>
+                      <span className="min-w-0 flex-1 truncate text-[15px] font-medium">{r.snapshot.description}</span>
                       <Amount paise={r.snapshot.total} label={t("expense.historyTotal")} tone="neutral" />
                     </div>
                     <div className="mt-1 flex items-center justify-between gap-3">
@@ -356,13 +344,15 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
         />
       )}
 
-      {/* ---------- delete ---------- */}
-      <Button variant="danger" onClick={() => setConfirmingDelete(true)} isLoading={deleteExpense.isPending}>
-        {t("confirm.deleteExpense.action")}
-      </Button>
-      <p role="status" aria-live="polite" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
-        {deleteExpense.isError ? t("error.generic") : ""}
-      </p>
+      {/* ---------- delete: last, under a divider, confirmed ---------- */}
+      <div className="border-t pt-4" style={{ borderColor: "var(--line)" }}>
+        <Button variant="danger" onClick={() => setConfirmingDelete(true)} isLoading={deleteExpense.isPending}>
+          {t("confirm.deleteExpense.action")}
+        </Button>
+        <p role="status" aria-live="polite" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
+          {deleteExpense.isError ? t("error.generic") : ""}
+        </p>
+      </div>
 
       {confirmingDelete && (
         <ConfirmDialog

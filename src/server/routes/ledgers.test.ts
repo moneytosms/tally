@@ -3,6 +3,7 @@
 // guest Dee, and the session is Ada's.
 import { beforeEach, describe, expect, it } from "vitest";
 import expenses from "~/server/routes/expenses";
+import settlements from "~/server/routes/settlements";
 import ledgers from "~/server/routes/ledgers";
 import { type Harness, mount, NOW, req, setup } from "~/server/routes/_test-harness";
 import { SESSION_COOKIE, createSession } from "~/server/auth/session";
@@ -356,5 +357,83 @@ describe("POST /ledgers/:ledgerId/archive", () => {
     expect(res.status).toBe(409);
     expect(await res.json()).toMatchObject({ code: "not_settled" });
     expect((await h.db.findLedger("L1"))!.archivedAt).toBeNull();
+  });
+});
+
+// Latest activity and the list order that follows from it. Times are pinned with
+// SQL so the assertions do not race the clock. D1 timestamps are epoch ms.
+describe("lastActivityAt and list order", () => {
+  const ledgerSummary = async (id: string) =>
+    (await (await app.request(req(h, `/api/ledgers/${id}`))).json()) as { lastActivityAt: number };
+  const list = async () =>
+    (await (await app.request(req(h, "/api/ledgers"))).json()) as Array<{ id: string; pinned: boolean }>;
+  const addExpense = async (ledgerId: string, payerMemberId: string, participants: string[]) => {
+    const res = await mount(h, expenses, ledgers).request(
+      req(h, `/api/ledgers/${ledgerId}/expenses`, {
+        method: "POST",
+        json: {
+          description: "Chai",
+          paidAtEpochMs: NOW - 90 * 86_400_000, // backdated: must NOT count as activity
+          categoryId: null,
+          notes: null,
+          mode: "equal",
+          total: 20_000, // ₹200.00
+          payerMemberId,
+          participants: participants.map((memberId) => ({ memberId })),
+        },
+      }),
+    );
+    return ((await res.json()) as { id: string }).id;
+  };
+
+  it("equals the newest expense's entry time, not its paidAt", async () => {
+    const id = await addExpense("L1", "m_ada", ["m_ada", "m_bob"]);
+    h.sql.prepare("UPDATE expenses SET created_at = ? WHERE id = ?").run(NOW + 5_000, id);
+    expect((await ledgerSummary("L1")).lastActivityAt).toBe(NOW + 5_000);
+  });
+
+  it("is moved forward by a later settlement", async () => {
+    const id = await addExpense("L1", "m_ada", ["m_ada", "m_bob"]);
+    h.sql.prepare("UPDATE expenses SET created_at = ? WHERE id = ?").run(NOW + 5_000, id);
+    const sres = await mount(h, settlements, ledgers).request(
+      req(h, "/api/ledgers/L1/settlements", {
+        method: "POST",
+        json: { fromMemberId: "m_bob", toMemberId: "m_ada", amount: 10_000, method: "upi", note: null },
+      }),
+    );
+    const sid = ((await sres.json()) as { id: string }).id;
+    h.sql.prepare("UPDATE settlements SET declared_at = ? WHERE id = ?").run(NOW + 9_000, sid);
+    expect((await ledgerSummary("L1")).lastActivityAt).toBe(NOW + 9_000);
+  });
+
+  it("uses the ledger's creation time when there is no activity", async () => {
+    expect((await ledgerSummary("L2")).lastActivityAt).toBe(NOW);
+  });
+
+  it("ignores a soft-deleted newer expense", async () => {
+    const id = await addExpense("L2", "n_ada", ["n_ada", "n_cy"]);
+    h.sql.prepare("UPDATE expenses SET created_at = ?, deleted_at = ? WHERE id = ?").run(NOW + 7_000, NOW + 8_000, id);
+    expect((await ledgerSummary("L2")).lastActivityAt).toBe(NOW);
+  });
+
+  it("lists starred first, then most recently active, with archived last", async () => {
+    // L1 has recent activity, L2 none. A third, older ledger L3 is starred.
+    h.sql
+      .prepare("INSERT INTO ledgers (id, name, created_by, created_at) VALUES (?,?,?,?)")
+      .run("L3", "Old", "u_ada", NOW - 1);
+    h.sql
+      .prepare("INSERT INTO ledger_members (id, ledger_id, user_id, nickname, joined_at) VALUES (?,?,?,?,?)")
+      .run("k_ada", "L3", "u_ada", "Ada", NOW);
+    const id = await addExpense("L1", "m_ada", ["m_ada", "m_bob"]);
+    h.sql.prepare("UPDATE expenses SET created_at = ? WHERE id = ?").run(NOW + 5_000, id);
+
+    expect((await list()).map((l) => l.id)).toEqual(["L1", "L2", "L3"]);
+
+    await app.request(req(h, "/api/ledgers/L3/pin", { method: "POST", json: { pinned: true } }));
+    expect((await list()).map((l) => l.id)).toEqual(["L3", "L1", "L2"]);
+
+    // Archived sorts last even though it is starred and the most recent.
+    h.sql.prepare("UPDATE ledgers SET archived_at = ? WHERE id = ?").run(NOW, "L3");
+    expect((await list()).map((l) => l.id)).toEqual(["L1", "L2", "L3"]);
   });
 });

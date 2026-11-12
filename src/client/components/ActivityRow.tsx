@@ -6,10 +6,11 @@
 // carries its own sign and label, because that is the only way a money value is
 // allowed to reach the screen.
 import { Amount, Avatar } from "~/client/components/ui";
+import { focusRing } from "~/client/components/ui/focus";
 import type { ActivityEvent } from "~/client/lib/queries";
+import { formatDate } from "~/client/lib/format";
 import { t } from "~/client/i18n";
 
-export const dayFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
 export const timeFormat = new Intl.DateTimeFormat("en-IN", { hour: "numeric", minute: "2-digit" });
 
 /** The sentence for one event. All phrasing lives client-side; the server sends
@@ -49,14 +50,17 @@ export function ActivityRow({
   event,
   showDay = true,
   showTime = true,
+  onOpen,
 }: {
   event: ActivityEvent;
   showDay?: boolean;
   showTime?: boolean;
+  /** Set only when the event's expense still exists: the whole row then opens it. */
+  onOpen?: () => void;
 }) {
   const who = event.actorName ?? event.fromName;
-  return (
-    <li className="row-in flex items-start gap-2.5 py-2.5">
+  const body = (
+    <>
       <span className="mt-1.5 flex-none">
         {who ? (
           <Avatar name={who} />
@@ -72,9 +76,7 @@ export function ActivityRow({
         <div className="text-[15px]">{sentence(event)}</div>
         <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
           <time dateTime={new Date(event.at).toISOString()}>
-            {[showDay && dayFormat.format(event.at), showTime && timeFormat.format(event.at)]
-              .filter(Boolean)
-              .join(" · ")}
+            {[showDay && formatDate(event.at), showTime && timeFormat.format(event.at)].filter(Boolean).join(" · ")}
           </time>
           {/* On the home feed one sentence from two trips is otherwise identical. */}
           {event.ledgerName && <> · {event.ledgerName}</>}
@@ -94,6 +96,21 @@ export function ActivityRow({
             tone="neutral"
           />
         </div>
+      )}
+    </>
+  );
+  return (
+    <li className="row-in py-2.5">
+      {onOpen ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          className={`flex w-full items-start gap-2.5 rounded-[5px] text-left ${focusRing}`}
+        >
+          {body}
+        </button>
+      ) : (
+        <div className="flex items-start gap-2.5">{body}</div>
       )}
     </li>
   );

@@ -5,15 +5,20 @@ import { useParams } from "react-router";
 import {
   Amount,
   Avatar,
+  Badge,
   Button,
+  Card,
   ConfirmDialog,
   EmptyState,
   Field,
   Input,
+  PageHeader,
   Rupees,
   ScreenSkeleton,
+  SectionHeading,
   Select,
   Sheet,
+  focusRing,
 } from "~/client/components/ui";
 import {
   SplitEditor,
@@ -33,6 +38,7 @@ import {
   type Series,
 } from "~/client/lib/queries";
 import { ApiError } from "~/client/lib/api";
+import { formatDate } from "~/client/lib/format";
 import { t } from "~/client/i18n";
 import type { SplitMode } from "~/shared/money";
 
@@ -40,8 +46,6 @@ type IntervalUnit = "day" | "week" | "month";
 const units: IntervalUnit[] = ["day", "week", "month"];
 const unitLabel = (unit: IntervalUnit, count: number) =>
   t(`recurring.unit${unit[0]!.toUpperCase()}${unit.slice(1)}${count === 1 ? "" : "Plural"}`);
-
-const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 // Epoch ms <-> "YYYY-MM-DD" in UTC, so a series doesn't shift a day for a
 // viewer in a different timezone (SPEC: dates are calendar days, not instants).
@@ -57,7 +61,7 @@ function CadenceRow({ series }: { series: Series }) {
       {!isPaused && (
         <>
           {" · "}
-          {t("recurring.nextOn", { date: dateFmt.format(series.nextOccurrenceAt) })}
+          {t("recurring.nextOn", { date: formatDate(series.nextOccurrenceAt) })}
         </>
       )}
     </div>
@@ -81,24 +85,14 @@ function SeriesRow({
 }) {
   const isPaused = series.pausedAt !== null;
   return (
-    <div
-      className="row-in mb-2 rounded-[7px] border px-3.5 py-3"
-      style={{ background: "var(--paper-2)", borderColor: "var(--line)", opacity: isPaused ? 0.7 : 1 }}
-    >
+    <Card className="row-in">
       <div className="flex items-center justify-between gap-2.5">
         <div className="flex min-w-0 items-center gap-2.5">
           <Avatar name={payerName} />
           <div className="min-w-0">
-            <div className="truncate text-[15px] font-medium">
-              {series.description}
-              {isPaused && (
-                <span
-                  className="ml-2 rounded-[5px] border px-1.5 py-0.5 align-middle text-[13px] tracking-[0.13em] uppercase"
-                  style={{ borderColor: "var(--line-2)", background: "var(--paper-sunk)", color: "var(--ink-3)" }}
-                >
-                  {t("recurring.paused")}
-                </span>
-              )}
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="truncate text-[15px] font-medium">{series.description}</span>
+              {isPaused && <Badge>{t("recurring.paused")}</Badge>}
             </div>
             <CadenceRow series={series} />
           </div>
@@ -112,11 +106,14 @@ function SeriesRow({
         <Button size="sm" variant="ghost" disabled={busy} onClick={onToggle}>
           {t(isPaused ? "recurring.resume" : "recurring.pause")}
         </Button>
+      </div>
+      {/* Destructive: on its own line under a hairline, so it is never the next tap by accident. */}
+      <div className="mt-2.5 flex justify-end border-t pt-2.5" style={{ borderColor: "var(--line)" }}>
         <Button size="sm" variant="danger" disabled={busy} onClick={onDelete}>
           {t("recurring.delete")}
         </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -320,7 +317,12 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
       </Field>
 
       <label className="mb-3 flex min-h-11 items-center gap-2 text-[15px]">
-        <input type="checkbox" checked={!hasEnd} onChange={(e) => setHasEnd(!e.target.checked)} className="h-4 w-4" />
+        <input
+          type="checkbox"
+          checked={!hasEnd}
+          onChange={(e) => setHasEnd(!e.target.checked)}
+          className={`h-4 w-4 ${focusRing}`}
+        />
         {t("recurring.endsNever")}
       </label>
 
@@ -334,7 +336,7 @@ function SeriesForm({ ledgerId, editing, onDone }: { ledgerId: string; editing: 
         {failure}
       </p>
 
-      <Button type="submit" disabled={blocked} block>
+      <Button type="submit" disabled={blocked} isLoading={save.isPending} block>
         {t("action.save")}
       </Button>
     </form>
@@ -351,8 +353,55 @@ export default function RecurringTab() {
   const [editing, setEditing] = useState<Series | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  if (series.isPending || members.isPending) return <ScreenSkeleton />;
-  if (series.error || members.error) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
+  function openCreate() {
+    setEditing(null);
+    setSheetOpen(true);
+  }
+
+  // Reached from the ledger menu, so no ledger tab is highlighted: the header says where this is.
+  const header = (
+    <>
+      <PageHeader title={t("recurring.title")} subtitle={t("recurring.intro")} back={`/ledgers/${ledgerId}`} />
+      <SectionHeading
+        action={
+          <Button size="sm" onClick={openCreate}>
+            {t("recurring.add")}
+          </Button>
+        }
+      >
+        {t("recurring.seriesTitle")}
+      </SectionHeading>
+    </>
+  );
+
+  if (series.isPending || members.isPending)
+    return (
+      <>
+        {header}
+        <ScreenSkeleton />
+      </>
+    );
+  if (series.error || members.error)
+    return (
+      <>
+        {header}
+        <EmptyState
+          title={t("error.generic")}
+          body={t("error.network")}
+          action={
+            <Button
+              variant="ghost"
+              onClick={() => {
+                series.refetch();
+                members.refetch();
+              }}
+            >
+              {t("action.retry")}
+            </Button>
+          }
+        />
+      </>
+    );
 
   // Looked up from the live list: a series deleted elsewhere closes the dialog.
   const deleting = series.data.find((s) => s.id === deletingId) ?? null;
@@ -360,37 +409,31 @@ export default function RecurringTab() {
   const byId = new Map(members.data.map((m) => [m.id, m]));
   const payerName = (s: Series) => byId.get(s.payerMemberId)?.nickname ?? t("member.unknown");
 
-  function openCreate() {
-    setEditing(null);
-    setSheetOpen(true);
-  }
   function openEdit(s: Series) {
     setEditing(s);
     setSheetOpen(true);
   }
+
   return (
     <>
-      <div className="mb-3 flex items-center justify-between gap-2.5">
-        <h2 className="serif text-[19px]">{t("recurring.title")}</h2>
-        <Button size="sm" onClick={openCreate}>
-          {t("recurring.add")}
-        </Button>
-      </div>
+      {header}
 
       {series.data.length === 0 ? (
         <EmptyState title={t("recurring.none")} body={t("recurring.noneBody")} />
       ) : (
-        series.data.map((s) => (
-          <SeriesRow
-            key={s.id}
-            series={s}
-            payerName={payerName(s)}
-            busy={action.isPending}
-            onEdit={() => openEdit(s)}
-            onToggle={() => action.mutate({ id: s.id, action: "pause" })}
-            onDelete={() => setDeletingId(s.id)}
-          />
-        ))
+        <div className="flex flex-col gap-2">
+          {series.data.map((s) => (
+            <SeriesRow
+              key={s.id}
+              series={s}
+              payerName={payerName(s)}
+              busy={action.isPending}
+              onEdit={() => openEdit(s)}
+              onToggle={() => action.mutate({ id: s.id, action: "pause" })}
+              onDelete={() => setDeletingId(s.id)}
+            />
+          ))}
+        </div>
       )}
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen} title={editing ? t("action.edit") : t("recurring.add")}>

@@ -5,7 +5,7 @@
 // makes the same decision and would reject the mismatch anyway.
 import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Field, Input } from "~/client/components/ui";
+import { Button, Card, Field, Input } from "~/client/components/ui";
 import { qk, useMe } from "~/client/lib/queries";
 import { emailProblem, newPasswordProblem, passwordErrorKey, setPassword } from "~/client/lib/authApi";
 import { t } from "~/client/i18n";
@@ -64,82 +64,79 @@ export function PasswordSection() {
   };
 
   return (
-    <form
-      onSubmit={onSubmit}
-      noValidate
-      className="rounded-[7px] border px-3.5 py-3.5"
-      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-    >
-      <p className="mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
-        {hasPassword ? t("profile.passwordChange") : t("profile.passwordSet")}
-      </p>
+    <Card>
+      <form onSubmit={onSubmit} noValidate>
+        <p className="mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
+          {hasPassword ? t("profile.passwordChange") : t("profile.passwordSet")}
+        </p>
 
-      {existingEmail === null ? (
-        <Field label={t("profile.email")}>
-          <Input
-            type="email"
-            value={email}
-            onChange={(e) => {
-              changed();
-              setEmail(e.target.value);
-            }}
-            inputMode="email"
-            autoComplete="email"
-            placeholder={t("profile.emailNone")}
-          />
-        </Field>
-      ) : (
-        <Field label={t("profile.email")}>
-          <Input value={existingEmail} readOnly disabled />
-        </Field>
-      )}
+        {existingEmail === null ? (
+          <Field label={t("profile.email")}>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => {
+                changed();
+                setEmail(e.target.value);
+              }}
+              inputMode="email"
+              autoComplete="email"
+              placeholder={t("profile.emailNone")}
+            />
+          </Field>
+        ) : (
+          <Field label={t("profile.email")}>
+            <Input value={existingEmail} readOnly disabled />
+          </Field>
+        )}
 
-      {hasPassword && (
-        <Field label={t("profile.passwordCurrent")}>
+        {hasPassword && (
+          <Field label={t("profile.passwordCurrent")}>
+            <Input
+              type="password"
+              value={current}
+              onChange={(e) => {
+                changed();
+                setCurrent(e.target.value);
+              }}
+              autoComplete="current-password"
+            />
+          </Field>
+        )}
+
+        <Field label={t("profile.passwordNew")}>
           <Input
             type="password"
-            value={current}
+            value={next}
             onChange={(e) => {
               changed();
-              setCurrent(e.target.value);
+              setNext(e.target.value);
             }}
-            autoComplete="current-password"
+            autoComplete="new-password"
           />
         </Field>
-      )}
 
-      <Field label={t("profile.passwordNew")}>
-        <Input
-          type="password"
-          value={next}
-          onChange={(e) => {
-            changed();
-            setNext(e.target.value);
-          }}
-          autoComplete="new-password"
-        />
-      </Field>
-
-      <p className="mb-3 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
-        {/* The "set once" warning only earns its place while it is still true. */}
-        {existingEmail === null && `${t("profile.emailHint")} `}
-        {t("profile.passwordHint")}
-      </p>
-
-      <Button type="submit" variant="ghost" size="sm" disabled={busy}>
-        {t("action.save")}
-      </Button>
-
-      {error && (
-        <p role="alert" className="mt-2.5 text-[13px]" style={{ color: "var(--clay)" }}>
-          {t(error)}
+        <p className="mb-3 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
+          {/* The "set once" warning only earns its place while it is still true. */}
+          {existingEmail === null && `${t("profile.emailHint")} `}
+          {t("profile.passwordHint")}
         </p>
-      )}
-      {saved && !error && (
-        <p role="status" className="mt-2.5 text-[13px]" style={{ color: "var(--moss-2)" }}>
-          {t("profile.passwordSaved")}
-        </p>
-      )}
-    </form>
+
+        <Button type="submit" variant="ghost" size="sm" isLoading={busy}>
+          {t("action.save")}
+        </Button>
+
+        {error && (
+          <p role="alert" className="mt-2.5 text-[13px]" style={{ color: "var(--clay)" }}>
+            {t(error)}
+          </p>
+        )}
+        {saved && !error && (
+          <p role="status" className="mt-2.5 text-[13px]" style={{ color: "var(--moss-2)" }}>
+            {t("profile.passwordSaved")}
+          </p>
+        )}
+      </form>
+    </Card>
   );
 }

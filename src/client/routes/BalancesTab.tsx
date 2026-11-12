@@ -11,12 +11,18 @@ import {
   Amount,
   Avatar,
   Button,
+  Card,
   EmptyState,
   focusRing,
   Icon,
+  LedgerMark,
+  Notice,
   PageHeader,
   pushToast,
+  SectionHeading,
   Sheet,
+  Skeleton,
+  type LedgerColor,
 } from "~/client/components/ui";
 import { upiLink } from "~/client/routes/SettleUp";
 import {
@@ -26,6 +32,7 @@ import {
   useLedgers,
   useMe,
   useMembers,
+  useOnline,
   type BulkSettleResult,
   type CrossLedgerBalance,
   type LedgerSummary,
@@ -50,10 +57,22 @@ export function bulkNotRecorded(skipped: Array<{ reason?: string }>): number {
   return skipped.filter((s) => s.reason !== "duplicate").length;
 }
 
+/** Which body a query should render. Error and loading are never the settled empty state:
+ *  an empty list only counts once the data has actually arrived. Stale data beats an error. */
+export function queryView(q: {
+  data: unknown[] | undefined;
+  isError: boolean;
+}): "loading" | "error" | "empty" | "rows" {
+  if (q.data === undefined) return q.isError ? "error" : "loading";
+  return q.data.length === 0 ? "empty" : "rows";
+}
+
 /** One leg of a bulk settle: what I owe one person in one ledger. */
 type Contribution = {
   ledgerId: string;
   ledgerName: string;
+  ledgerColor: LedgerColor | null;
+  ledgerEmoji: string | null;
   fromMemberId: string;
   toMemberId: string;
   toUserId: string | null;
@@ -73,6 +92,8 @@ export default function BalancesTab() {
   const open = (ledgers.data ?? []).filter((l) => l.archivedAt === null);
   const all = Object.values(legs).flat();
   const rows = friends.data ?? [];
+  const view = queryView(friends);
+  const ledgerView = queryView(ledgers);
   // One primary button per screen: only the first row the viewer has to settle gets it.
   const firstOwing = rows.find((f) => -f.net < 0)?.userId;
 
@@ -80,52 +101,63 @@ export default function BalancesTab() {
     <>
       <PageHeader title={t("tabs.balances")} subtitle={t("balances.subtitle")} />
 
-      {rows.length === 0 ? (
-        <EmptyState title={t("empty.balances")} body={t("balances.emptyBody")} />
-      ) : (
-        rows.map((f) => {
-          // The API returns the obligation from THEIR side ("positive = they are
-          // owed, by me"). Every label and colour in this row is written from the
-          // viewer's side, so flip it once, here, rather than at each use.
-          const mine = -f.net;
-          return (
-            <div
-              key={f.userId}
-              className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-3"
-              style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-            >
-              <div className="flex min-w-0 items-center gap-2.5">
-                <Avatar name={f.displayName} />
-                <div className="min-w-0">
-                  <div className="truncate text-[15px]">{f.displayName}</div>
-                  <Amount paise={mine} label={t("balances.overall")} />
+      {view === "loading" && <RowsSkeleton />}
+      {view === "error" && <QueryError onRetry={() => friends.refetch()} />}
+      {view === "empty" && <EmptyState title={t("empty.balances")} body={t("balances.emptyBody")} />}
+      {view === "rows" && (
+        <div className="flex flex-col gap-2">
+          {rows.map((f) => {
+            // The API returns the obligation from THEIR side ("positive = they are
+            // owed, by me"). Every label and colour in this row is written from the
+            // viewer's side, so flip it once, here, rather than at each use.
+            const mine = -f.net;
+            return (
+              <Card key={f.userId} className="flex items-center justify-between gap-2.5">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Avatar name={f.displayName} />
+                  <div className="min-w-0">
+                    <div className="truncate text-[15px] font-medium">{f.displayName}</div>
+                    <Amount paise={mine} label={t("balances.overall")} />
+                  </div>
                 </div>
-              </div>
-              {mine < 0 && (
-                <Button size="sm" variant={f.userId === firstOwing ? "primary" : "ghost"} onClick={() => setBulkFor(f)}>
-                  {t("balances.settleUp")}
-                </Button>
-              )}
-            </div>
-          );
-        })
+                {mine < 0 && (
+                  <Button
+                    size="sm"
+                    variant={f.userId === firstOwing ? "primary" : "ghost"}
+                    onClick={() => setBulkFor(f)}
+                  >
+                    {t("balances.settleUp")}
+                  </Button>
+                )}
+              </Card>
+            );
+          })}
+        </div>
       )}
 
       {/* Guests have no VPA and no user, so they never reach this tab. Said out
           loud rather than silently omitted (SPEC §6) - but only once there is a
           list for them to be missing from. */}
-      {rows.length > 0 && (
+      {view === "rows" && (
         <p className="mt-2 mb-5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("balances.guestsSkipped")}
         </p>
       )}
 
-      <h2 className="mx-0.5 mb-2 text-[13px] font-semibold" style={{ color: "var(--ink-2)" }}>
-        {t("balances.perLedger")}
-      </h2>
-      {open.map((l) => (
-        <LedgerPlan key={l.id} ledger={l} onLegs={report} />
-      ))}
+      {(ledgerView === "loading" || ledgerView === "error" || open.length > 0) && (
+        <>
+          <SectionHeading>{t("balances.perLedger")}</SectionHeading>
+          {ledgerView === "loading" && <RowsSkeleton count={2} />}
+          {ledgerView === "error" && <QueryError onRetry={() => ledgers.refetch()} />}
+          {open.length > 0 && (
+            <div className="flex flex-col gap-2">
+              {open.map((l) => (
+                <LedgerPlan key={l.id} ledger={l} onLegs={report} />
+              ))}
+            </div>
+          )}
+        </>
+      )}
 
       <Sheet open={bulkFor !== null} onOpenChange={(o) => !o && setBulkFor(null)} title={t("balances.settleAcross")}>
         {bulkFor && (
@@ -137,6 +169,31 @@ export default function BalancesTab() {
         )}
       </Sheet>
     </>
+  );
+}
+
+function RowsSkeleton({ count = 3 }: { count?: number }) {
+  return (
+    <div className="flex flex-col gap-2">
+      {Array.from({ length: count }, (_, i) => (
+        <Skeleton key={i} className="h-[60px] w-full" />
+      ))}
+    </div>
+  );
+}
+
+function QueryError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <Notice
+      tone="danger"
+      action={
+        <Button size="sm" variant="ghost" onClick={onRetry}>
+          {t("action.retry")}
+        </Button>
+      }
+    >
+      {t("error.generic")}
+    </Notice>
   );
 }
 
@@ -154,6 +211,8 @@ function LedgerPlan({ ledger, onLegs }: { ledger: LedgerSummary; onLegs: (id: st
     .map((tr) => ({
       ledgerId: ledger.id,
       ledgerName: ledger.name,
+      ledgerColor: ledger.color,
+      ledgerEmoji: ledger.emoji,
       fromMemberId: tr.fromMemberId,
       toMemberId: tr.toMemberId,
       toUserId: roster.find((m) => m.id === tr.toMemberId)?.userId ?? null,
@@ -166,22 +225,26 @@ function LedgerPlan({ ledger, onLegs }: { ledger: LedgerSummary; onLegs: (id: st
     onLegs(ledger.id, JSON.parse(key) as Contribution[]);
   }, [key, ledger.id, onLegs]);
 
-  // The whole row is the way in: one target, not a row plus a button repeated per ledger.
+  // The whole card is the way in: one target, not a card plus a button repeated per ledger.
+  // The link stretches over the card's padding so the entire card is the tap target.
   return (
-    <Link
-      to={`/ledgers/${ledger.id}/settle`}
-      className={`row-press mb-2 flex items-center gap-2.5 rounded-[7px] border px-3.5 py-3 ${focusRing}`}
-      style={{ background: "var(--paper-2)", borderColor: "var(--line)", color: "var(--ink)" }}
-    >
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-[15px] font-medium">{ledger.name}</div>
-        <Amount paise={ledger.net} label={t("ledger.yourPosition")} />
-      </div>
-      <span className="flex flex-none items-center gap-1 text-[13px]" style={{ color: "var(--ink-2)" }}>
-        {t("balances.seeHow")}
-        <Icon name="forward" size={16} />
-      </span>
-    </Link>
+    <Card interactive>
+      <Link
+        to={`/ledgers/${ledger.id}/settle`}
+        className={`-m-3.5 -my-3 flex items-center gap-2.5 rounded-[7px] px-3.5 py-3 ${focusRing}`}
+        style={{ color: "var(--ink)" }}
+      >
+        <LedgerMark color={ledger.color} emoji={ledger.emoji} name={ledger.name} />
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-[15px] font-medium">{ledger.name}</div>
+          <Amount paise={ledger.net} label={t("ledger.yourPosition")} />
+        </div>
+        <span className="flex flex-none items-center gap-1 text-[13px]" style={{ color: "var(--ink-2)" }}>
+          {t("balances.seeHow")}
+          <Icon name="forward" size={16} />
+        </span>
+      </Link>
+    </Card>
   );
 }
 
@@ -195,6 +258,7 @@ function BulkSettle({
   onDone: () => void;
 }) {
   const qc = useQueryClient();
+  const online = useOnline();
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const total = legs.reduce((a, c) => a + c.amount, 0);
@@ -247,22 +311,23 @@ function BulkSettle({
         <Amount paise={total} label={t("balances.bulkTotal", { name: friend.displayName })} tone="neutral" hero />
         {bulkNoteShown(remainder) && (
           <p className="mt-2 text-[13px]" style={{ color: "var(--ink-2)" }}>
-            {t("balances.bulkNote", {
-              recorded: formatPaise(total),
-              name: friend.displayName,
-              remainder: formatPaise(remainder),
-            })}
+            {online
+              ? t("balances.bulkNote", {
+                  recorded: formatPaise(total),
+                  name: friend.displayName,
+                  remainder: formatPaise(remainder),
+                })
+              : t("balances.bulkNoteOffline", { name: friend.displayName })}
           </p>
         )}
       </div>
 
       <div className="mb-3">
-        <div className="mb-1.5 text-[13px] font-semibold" style={{ color: "var(--ink-2)" }}>
-          {t("balances.contributing")}
-        </div>
-        <ul>
+        <SectionHeading as="h3">{t("balances.contributing")}</SectionHeading>
+        <ul className="flex flex-col gap-1">
           {legs.map((c) => (
-            <li key={c.ledgerId} className="flex items-center justify-between gap-2.5 py-1">
+            <li key={c.ledgerId} className="flex items-center gap-2.5 py-1">
+              <LedgerMark color={c.ledgerColor} emoji={c.ledgerEmoji} name={c.ledgerName} size="sm" />
               <span className="min-w-0 flex-1 truncate text-[15px]">{c.ledgerName}</span>
               <Amount paise={c.amount} label={t("settle.suggested")} tone="neutral" />
             </li>
@@ -273,7 +338,7 @@ function BulkSettle({
       {friend.vpa ? (
         <a
           href={upiLink({ vpa: friend.vpa, name: friend.displayName, paise: total, note: t("app.name") })}
-          className="mb-3 inline-flex min-h-11 items-center rounded-[6px] border px-4 text-[14px]"
+          className={`mb-3 inline-flex min-h-11 items-center rounded-[6px] border px-4 text-[14px] ${focusRing}`}
           style={{ borderColor: "var(--line-2)", color: "var(--ink)" }}
         >
           {t("settle.payUpi")}
@@ -291,7 +356,7 @@ function BulkSettle({
       <p className="mb-2 text-[13px]" style={{ color: "var(--ink-2)" }}>
         {t("balances.recordAllHint")}
       </p>
-      <Button block disabled={busy} onClick={record}>
+      <Button block isLoading={busy} onClick={record}>
         {t("balances.recordAll")}
       </Button>
     </>

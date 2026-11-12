@@ -158,6 +158,10 @@ Warm paper neutrals, one structural green, and one earth red that means "owe".
 
 - **Ochre** (`ochre`): the third earth tone. Used for charts and the pinned-ledger star, never for meaning.
 
+### Ledger identity
+
+- Six stored colours (`moss, clay, ochre, plum, sky, rose`) each have a `--ledger-<value>` solid and `--ledger-<value>-wash` tint, per theme in `tokens.css`. They show as Teal, Indigo, Slate, Plum, Sky, Rose, so they never read as owed or owe. Use them only through `LedgerMark` and the colour picker.
+
 ### Neutral
 
 - **Paper** (`paper`): the page ground and the text colour on moss buttons.
@@ -208,17 +212,18 @@ Rhythm: cards are 8px apart (`mb-2`); the card inset is 12px vertical by 14px ho
 
 ## Elevation & Depth
 
-Flat by default. Depth comes from tone: raised cards are lighter than the paper, fields are darker (sunken), and both have a 1px `line` border. The only shadow in the system is on the FAB, because it floats over scrolling content. Toasts carry a minimal `shadow-sm` for the same reason. Sheets and dialogs are separated from the page by a 38% black scrim, not by a shadow.
+Flat by default. Depth comes from tone: raised cards are lighter than the paper, fields are darker (sunken), and both have a 1px `line` border. The elevated surfaces are the FAB and toasts, the only things that float over scrolling content; they are the only ones with a shadow. Sheets and dialogs are separated from the page by a 38% black scrim, not by a shadow.
 
 ### Shadow Vocabulary
 
 - **FAB lift** (`box-shadow: 0 4px 14px rgb(60 72 54 / 28%)`): the floating add button only.
+- **Toast** (`shadow-sm`): the one toast surface, the only other elevated element.
 
 ### Named Rules
 
 **The Browser Surface Rule.** Text selection is `moss-wash`, the caret is moss, and scrollbars are thin `line-2` thumbs. The parts the browser draws use the palette too.
 
-**The One Shadow Rule.** Only something floating over scrolling content gets a shadow. Cards, buttons and dialogs never do.
+**The One Shadow Rule.** Only the FAB and toasts, which float over scrolling content, get a shadow. Cards, buttons and dialogs never do.
 
 ## Shapes
 
@@ -251,7 +256,7 @@ Gently squared corners at a single base radius (7px) for buttons, cards, tabs an
 - **Background:** raised paper with a 1px `line` border; no shadow.
 - **Internal Padding:** 12px × 14px for rows; hero cards are larger.
 - **Tappable rows** (`row-press`): the border lifts to `line-2` on hover (pointer devices only) and the row scales to 0.985 on press. A row that leads somewhere is one link, with a `forward` chevron and a short `ink-2` hint, not a row plus a repeated button.
-- **Ledger accent:** a 10px swatch (3px radius) before the ledger's name, in the ledger's fixed colour.
+- **Ledger accent:** a 10px swatch (3px radius) before the ledger's name, in the ledger's `--ledger-*` colour. Identity tile: `LedgerMark`.
 
 ### Inputs / Fields
 
@@ -282,7 +287,26 @@ Gently squared corners at a single base radius (7px) for buttons, cards, tabs an
 
 ### Amount
 
-- The signature component: it holds the sign, the direction words and the colour together. As a hero, a serif 34px number sits under its direction words. Inline, the direction words sit beside a 16px tabular number. In neutral tone (totals and shares) it shows no direction words and uses ink.
+- The signature component: it holds the sign, the direction words and the colour together. As a hero, a serif 38px number sits under its direction words. Inline, the direction words sit beside a 16px tabular number. In neutral tone (totals and shares) it shows no direction words and uses ink.
+
+### Primitives
+
+Use these from `components/ui`; do not hand-roll the markup.
+
+- **`SectionHeading`**: the one section title (13px semibold, `ink-2`), with an optional right-aligned action.
+- **`Card`**: the one panel or list-row surface. `interactive` adds row press feedback.
+- **`Segmented`**: one-of-N choice that is not a route (2 to 4 options, `aria-pressed`). **`Tabs`** is the route version and looks identical.
+- **`IconButton`**: 44px icon-only control with a required `label`. `pressed` for toggles, `badge` for an active count.
+- **`Badge`**: the one pill (neutral, moss or clay). **`FilterChip`**: one applied filter, removable.
+- **`SearchField`**: always-visible search with a clear button.
+- **`Notice`**: the one inline message box (`info`, `warn`, `danger`).
+- **`LedgerMark`**: a ledger's identity tile. Decorative; the name is always shown beside it.
+
+**One primary per view.** At most one filled moss `Button`; everything else is `ghost`, and destructive actions are `danger` in their own row at the bottom.
+
+**Toolbar.** Search, filter and sort share one row directly above the list: a full-width `SearchField` and one `IconButton icon="filter"` that opens a "Filter and sort" `Sheet`. Applied filters show as `FilterChip`s under the toolbar with a result count.
+
+**Motion tokens.** `--dur-fast` (150ms) for presses and menus, `--dur` (180ms) for entrances, `--ease-out`. Use the `.chip-press` class for hand-rolled chips (hover tint, press to 0.98), and `.menu-in` for menus and popovers (opacity plus a 4px drop).
 
 ## Do's and Don'ts
 

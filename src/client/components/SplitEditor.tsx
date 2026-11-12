@@ -7,8 +7,7 @@
 // money input path. ExpenseForm and SettleUp import them (a separate lib file
 // isn't mine to add, and a cycle back through ExpenseForm would be worse).
 import { resolveSplits, type SplitMode } from "~/shared/money";
-import { Amount, Avatar, Field, Input } from "~/client/components/ui";
-import { focusRing } from "~/client/components/ui/focus";
+import { Amount, Avatar, Card, Field, Input, Segmented } from "~/client/components/ui";
 import { t } from "~/client/i18n";
 
 export type SplitParticipant = { memberId: string; name: string };
@@ -138,15 +137,12 @@ const modes: SplitMode[] = ["equal", "exact", "shares", "percent"];
  */
 function PerHead({ each, count }: { each: number; count: number }) {
   return (
-    <div
-      className="flex items-baseline justify-between gap-3 rounded-[7px] border px-3.5 py-3"
-      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-    >
+    <Card className="flex items-baseline justify-between gap-3">
       <Amount paise={each} label={t("expense.splitEvenly")} tone="neutral" />
       <span className="flex-none text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("expense.selectedCount", { count })}
       </span>
-    </div>
+    </Card>
   );
 }
 
@@ -187,35 +183,16 @@ export function SplitEditor({
           it belongs to. role=group, not a nested control, so the <label> has
           nothing to steal focus to. */}
       <Field label={t("expense.split")} error={error}>
-        {/* Same segmented strip as <Tabs>: one choice of four, so one joined control. */}
-        <div
-          role="group"
-          aria-label={t("expense.split")}
-          className="flex rounded-[7px] border p-0.5"
-          style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
-        >
-          {modes.map((m) => {
-            const on = m === mode;
-            return (
-              <button
-                key={m}
-                type="button"
-                aria-pressed={on}
-                onClick={() => {
-                  onRawChange(rawForMode(mode, m, raw));
-                  onModeChange(m);
-                }}
-                className={`min-h-11 min-w-0 flex-1 rounded-[5px] px-1 text-[14px] ${on ? "font-semibold" : ""} ${focusRing}`}
-                style={{
-                  background: on ? "var(--paper)" : "transparent",
-                  color: on ? "var(--ink)" : "var(--ink-2)",
-                }}
-              >
-                {t(`expense.splitMode.${m}`)}
-              </button>
-            );
-          })}
-        </div>
+        {/* One choice of four, so one joined control. */}
+        <Segmented
+          label={t("expense.split")}
+          options={modes.map((m) => ({ value: m, label: t(`expense.splitMode.${m}`) }))}
+          value={mode}
+          onChange={(m) => {
+            onRawChange(rawForMode(mode, m, raw));
+            onModeChange(m);
+          }}
+        />
       </Field>
 
       {/* An even split has nothing to type and nothing to compare, so one line

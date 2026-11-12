@@ -10,9 +10,11 @@ const ledger = {
   name: "Goa",
   endDate: endOfDay("2026-09-05"),
   budget: 250000, // ₹2,500.00
+  color: null as "moss" | null,
+  emoji: null as string | null,
 };
 
-const edit = { name: "Goa", endDate: "2026-09-05", budget: "2500.00" };
+const edit = { name: "Goa", endDate: "2026-09-05", budget: "2500.00", color: null, emoji: "" };
 
 describe("ledgerPatch", () => {
   it("sends nothing when nothing changed", () => {
@@ -51,6 +53,18 @@ describe("ledgerPatch", () => {
 
   it("refuses an empty name", () => {
     expect(ledgerPatch(ledger, { ...edit, name: "   " })).toEqual({ ok: false, error: "ledger.nameRequired" });
+  });
+
+  it("sends the colour and emoji only when they changed", () => {
+    expect(ledgerPatch(ledger, { ...edit, color: "sky", emoji: "✈️" })).toEqual({
+      ok: true,
+      patch: { color: "sky", emoji: "✈️" },
+    });
+    const tagged = { ...ledger, color: "moss" as const, emoji: "✈️" };
+    expect(ledgerPatch(tagged, { ...edit, color: null, emoji: "" })).toEqual({
+      ok: true,
+      patch: { color: null, emoji: null },
+    });
   });
 
   it("treats a date as the END of the local day, so the last day is included", () => {

@@ -19,6 +19,7 @@ import { pushToast } from "~/client/components/ui/Toast";
 import { t } from "~/client/i18n";
 import { markActed } from "~/client/components/InstallPrompt";
 import { uuidv7 } from "~/shared/id";
+import { compareLedgers } from "~/shared/ledgerOrder";
 import type { ParsedImportRow as ImportRow, ParseResult as ImportParseResult } from "~/shared/import/types";
 export type { ImportRow, ImportParseResult };
 import type { Paise, SplitMode } from "~/shared/money";
@@ -57,6 +58,8 @@ export type LedgerSummary = {
   endDate: number | null;
   budget: Paise | null;
   archivedAt: number | null;
+  /** Latest entry time of a live expense or settlement; the ledger's creation time if none. Epoch ms. */
+  lastActivityAt: number;
   /** Whether this ledger may mint invite links at all (ADR 0007). Off by default. */
   invitesEnabled: boolean;
   /** Cover accent (issue #27). Fixed palette; null renders text-only, as ever. */
@@ -435,7 +438,7 @@ export function useTogglePin(ledgerId: string) {
       await qc.cancelQueries({ queryKey: qk.ledgers });
       const prev = qc.getQueryData<LedgerSummary[]>(qk.ledgers);
       qc.setQueryData<LedgerSummary[]>(qk.ledgers, (rows) =>
-        rows?.map((r) => (r.id === ledgerId ? { ...r, pinned } : r)),
+        rows?.map((r) => (r.id === ledgerId ? { ...r, pinned } : r)).sort(compareLedgers),
       );
       return { prev };
     },

@@ -47,18 +47,34 @@ export default function ExpenseEditor() {
         <ScreenSkeleton />
       </>
     );
-  } else if (expenses.error) {
+  } else if (expenses.error && !expenses.data) {
     body = (
       <>
         {header}
-        <EmptyState title={t("error.generic")} body={t("error.network")} />
+        <EmptyState
+          title={t("error.generic")}
+          body={t("error.network")}
+          action={
+            <Button variant="ghost" onClick={() => expenses.refetch()}>
+              {t("action.retry")}
+            </Button>
+          }
+        />
       </>
     );
   } else if (!expense) {
     body = (
       <>
         {header}
-        <EmptyState title={t("error.generic")} body={t("expense.deleted")} />
+        <EmptyState
+          title={t("expense.goneTitle")}
+          body={t("expense.goneBody")}
+          action={
+            <Button variant="ghost" onClick={back}>
+              {t("action.back")}
+            </Button>
+          }
+        />
       </>
     );
   } else {
@@ -70,7 +86,7 @@ export default function ExpenseEditor() {
 
         <div className="mt-6 border-t pt-4" style={{ borderColor: "var(--line)" }}>
           <Button variant="danger" onClick={() => setConfirming(true)}>
-            {t("action.delete")}
+            {t("confirm.deleteExpense.action")}
           </Button>
           <p role="alert" aria-live="assertive" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
             {remove.isError ? t("expense.deleteFailed") : ""}
@@ -80,9 +96,10 @@ export default function ExpenseEditor() {
     );
   }
 
+  // The form's sticky footer does not pad the safe area (a Sheet already does), so the page does.
   return (
     <>
-      {body}
+      <div className="pad-safe-bottom">{body}</div>
 
       {confirming && (
         <ConfirmDialog

@@ -1,26 +1,16 @@
 import { Suspense } from "react";
 import { useParams } from "react-router";
-import { Amount, EmptyState, ScreenSkeleton } from "~/client/components/ui";
-import {
-  CategoryChart,
-  ChartFallback,
-  MemberPieChart,
-  MonthChart,
-  SectionHeading,
-  type PieDatum,
-} from "~/client/components/charts";
+import { Amount, Button, Card, EmptyState, ScreenSkeleton, SectionHeading } from "~/client/components/ui";
+import { CategoryChart, ChartFallback, MemberPieChart, MonthChart, type PieDatum } from "~/client/components/charts";
 import { useLedgerInsights, type LedgerInsights as LedgerInsightsData } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
 
 function MemberPieSection({ title, data }: { title: string; data: PieDatum[] }) {
   const nonZero = data.filter((d) => d.value > 0);
   return (
-    <section className="mb-5">
-      <SectionHeading>{title}</SectionHeading>
-      <div
-        className="rounded-[7px] border px-3.5 py-3"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
+    <section>
+      <SectionHeading as="h3">{title}</SectionHeading>
+      <Card>
         {nonZero.length > 1 && (
           <Suspense fallback={<ChartFallback height={200} />}>
             <MemberPieChart data={nonZero} />
@@ -34,7 +24,7 @@ function MemberPieSection({ title, data }: { title: string; data: PieDatum[] }) 
             </li>
           ))}
         </ul>
-      </div>
+      </Card>
     </section>
   );
 }
@@ -45,23 +35,18 @@ function Body({ data }: { data: LedgerInsightsData }) {
 
   return (
     <>
-      <div
-        className="mb-4 rounded-[7px] border px-3.5 py-4"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
+      <Card className="mb-4">
+        {/* The one hero amount on this screen. */}
         <Amount paise={data.totals.spent} label={t("insights.ledgerSpent")} tone="neutral" hero />
         <div className="mt-3 border-t pt-2.5 text-[13px]" style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
           {t("insights.expenseCount", { count: data.totals.expenseCount })}
         </div>
-      </div>
+      </Card>
 
       {data.byCategory.length > 0 && (
-        <section className="mb-5">
+        <section>
           <SectionHeading>{t("insights.byCategory")}</SectionHeading>
-          <div
-            className="rounded-[7px] border px-3.5 py-3"
-            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-          >
+          <Card>
             {data.byCategory.length > 1 && (
               <Suspense fallback={<ChartFallback height={Math.max(120, data.byCategory.length * 32)} />}>
                 <CategoryChart data={data.byCategory} />
@@ -78,21 +63,18 @@ function Body({ data }: { data: LedgerInsightsData }) {
                 </li>
               ))}
             </ul>
-          </div>
+          </Card>
         </section>
       )}
 
       {data.byMonth.length > 1 && (
-        <section className="mb-5">
+        <section>
           <SectionHeading>{t("insights.byMonth")}</SectionHeading>
-          <div
-            className="rounded-[7px] border px-3.5 py-3"
-            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-          >
+          <Card>
             <Suspense fallback={<ChartFallback height={180} />}>
               <MonthChart data={data.byMonth} />
             </Suspense>
-          </div>
+          </Card>
         </section>
       )}
 
@@ -116,7 +98,15 @@ export function LedgerInsights() {
       {insights.isPending ? (
         <ScreenSkeleton />
       ) : insights.error ? (
-        <EmptyState title={t("error.generic")} body={t("error.network")} />
+        <EmptyState
+          title={t("error.generic")}
+          body={t("error.network")}
+          action={
+            <Button size="sm" variant="ghost" onClick={() => insights.refetch()}>
+              {t("action.retry")}
+            </Button>
+          }
+        />
       ) : insights.data.totals.expenseCount === 0 ? (
         <EmptyState title={t("empty.insights")} body={t("empty.insightsBody")} />
       ) : (

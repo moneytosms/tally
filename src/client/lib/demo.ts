@@ -7,6 +7,7 @@ import { grossPairs, memberBreakdown, netPositions, trailFor, transferPlan } fro
 import { t } from "~/client/i18n";
 import { uuidv7 } from "~/shared/id";
 import { resolveSplits, type Paise } from "~/shared/money";
+import { compareLedgers, lastActivityAt } from "~/shared/ledgerOrder";
 import {
   addGuestSchema,
   createCategorySchema,
@@ -56,9 +57,10 @@ export function exitDemo() {
 
 /* ---------- store ---------- */
 
-type DLedger = Omit<LedgerSummary, "memberCount" | "net" | "spent">;
+type DLedger = Omit<LedgerSummary, "memberCount" | "net" | "spent" | "lastActivityAt"> & { createdAt: number };
 type DMember = Member & { ledgerId: string };
 type DExpense = Omit<Expense, "splits"> & {
+  createdAt: number;
   splits: Array<{ memberId: string; amount: Paise; inputValue: number | null }>;
 };
 type DSettlement = {
@@ -139,6 +141,7 @@ function seed(): State {
       color,
       emoji,
       pinned: false,
+      createdAt: now - 60 * DAY,
     });
     for (const p of people) {
       const u = S.people.get(p);
@@ -179,6 +182,7 @@ function seed(): State {
       description: desc,
       total: paise,
       paidAt: body.paidAtEpochMs,
+      createdAt: now - daysAgo * DAY,
       payerMemberId: body.payerMemberId,
       categoryId: cat,
       notes: null,
@@ -260,11 +264,18 @@ const posOf = (l: string) =>
 
 function summary(l: DLedger): LedgerSummary {
   const v = viewer(l.id);
+  const { createdAt, ...wire } = l;
+  const expenses = S.expenses.filter((e) => e.ledgerId === l.id);
   return {
-    ...l,
+    ...wire,
+    lastActivityAt: lastActivityAt(
+      createdAt,
+      expenses,
+      S.settlements.filter((s) => s.ledgerId === l.id),
+    ),
     memberCount: live(l.id).filter((m) => m.leftAt === null).length,
     net: posOf(l.id).find((p) => p.memberId === v?.id)?.net ?? 0,
-    spent: S.expenses.filter((e) => e.ledgerId === l.id && e.total > 0).reduce((a, e) => a + e.total, 0),
+    spent: expenses.filter((e) => e.total > 0).reduce((a, e) => a + e.total, 0),
   };
 }
 
@@ -373,7 +384,7 @@ function handle(path: string, init?: RequestInit): unknown {
   if (key === "GET /push/key") return { publicKey: null };
 
   /* ledgers */
-  if (key === "GET /ledgers") return S.ledgers.map(summary);
+  if (key === "GET /ledgers") return S.ledgers.map(summary).sort(compareLedgers);
   if (key === "POST /ledgers") {
     const b = parse(createLedgerSchema, body);
     const id = uuidv7();
@@ -387,6 +398,7 @@ function handle(path: string, init?: RequestInit): unknown {
       color: b.color,
       emoji: b.emoji,
       pinned: false,
+      createdAt: Date.now(),
     });
     const people = b.cloneFrom ? live(b.cloneFrom).filter((x) => x.leftAt === null) : [];
     const keep = people.length ? people : [{ userId: ME, guestName: null, nickname: S.me.displayName }];
@@ -479,6 +491,7 @@ function handle(path: string, init?: RequestInit): unknown {
       description: b.description,
       total: b.total,
       paidAt: b.paidAtEpochMs,
+      createdAt: Date.now(),
       payerMemberId: b.payerMemberId,
       categoryId: b.categoryId,
       notes: b.notes,

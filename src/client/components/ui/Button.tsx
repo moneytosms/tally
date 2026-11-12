@@ -29,6 +29,17 @@ function Spinner() {
   );
 }
 
+/** The button's look as a class string, for a `Link` or `a` that must look like a Button. */
+export function buttonClass({
+  variant = "primary",
+  size = "md",
+  block = false,
+}: Pick<ButtonProps, "variant" | "size" | "block"> = {}) {
+  return `inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[7px] border ${
+    size === "sm" ? "px-3 text-[14px] font-medium" : "px-4 text-[15px] font-semibold"
+  } ${variants[variant]} ${block ? "w-full" : ""} transition-[background-color,border-color,transform,filter] duration-150 ease-out enabled:active:scale-[0.98] disabled:opacity-50 ${focusRing}`;
+}
+
 export function Button({
   variant = "primary",
   size = "md",
@@ -46,9 +57,7 @@ export function Button({
       aria-busy={isLoading || undefined}
       {...props}
       // 44px minimum tap target - dense visuals do not mean dense touch targets.
-      className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[7px] border ${
-        size === "sm" ? "px-3 text-[14px] font-medium" : "px-4 text-[15px] font-semibold"
-      } ${variants[variant]} ${block ? "w-full" : ""} transition-[background-color,border-color,transform,filter] duration-150 ease-out enabled:active:scale-[0.98] disabled:opacity-50 ${focusRing} ${className}`}
+      className={`${buttonClass({ variant, size, block })} ${className}`}
     >
       {isLoading && <Spinner />}
       {children}

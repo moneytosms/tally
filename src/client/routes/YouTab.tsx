@@ -4,25 +4,27 @@ import { startRegistration } from "@simplewebauthn/browser";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Button,
+  Card,
   ConfirmDialog,
   EmptyState,
   Field,
+  Icon,
   Input,
+  Notice,
   PageHeader,
   ScreenSkeleton,
+  SectionHeading,
+  Skeleton,
   pushToast,
 } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import { api, ApiError } from "~/client/lib/api";
-import { qk, useLedgers, useLogout, useMe, useRevokeOwnCredential, useUpdateProfile } from "~/client/lib/queries";
+import { formatDate } from "~/client/lib/format";
+import { qk, useLogout, useMe, useRevokeOwnCredential, useUpdateProfile } from "~/client/lib/queries";
 import { currentPushState, disablePush, enablePush, type PushState } from "~/client/lib/push";
 import { PasswordSection } from "~/client/components/PasswordSection";
 import { ThemePicker } from "~/client/components/ThemePicker";
 import { t } from "~/client/i18n";
-
-// One date format for the whole app: en-IN, day first. Never toLocaleDateString
-// with no locale, which follows the browser and disagrees with every other screen.
-const dayFormat = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
 const pushMessage: Record<PushState["status"], string> = {
   on: "notifications.enabled",
@@ -44,7 +46,12 @@ function NotificationsSection() {
     currentPushState().then(setState, () => setFailed(true));
   }, []);
 
-  if (!state && !failed) return null;
+  if (!state && !failed)
+    return (
+      <Card>
+        <Skeleton className="h-4 w-3/5" />
+      </Card>
+    );
 
   // Only enabling can fail with a message about turning notifications on.
   // Disabling keeps its old behaviour.
@@ -70,10 +77,7 @@ function NotificationsSection() {
   };
 
   return (
-    <div
-      className="rounded-[7px] border px-3.5 py-3.5"
-      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-    >
+    <Card>
       {state && (
         <p role="status" className="mb-2.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t(pushMessage[state.status])}
@@ -85,11 +89,11 @@ function NotificationsSection() {
         </p>
       )}
       {(state?.status === "on" || state?.status === "off") && (
-        <Button variant="ghost" size="sm" disabled={pending} onClick={state.status === "on" ? disable : enable}>
+        <Button variant="ghost" size="sm" isLoading={pending} onClick={state.status === "on" ? disable : enable}>
           {t(state.status === "on" ? "notifications.disable" : "notifications.enable")}
         </Button>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -183,12 +187,10 @@ function SignOutSection() {
   const navigate = useNavigate();
   const [confirming, setConfirming] = useState(false);
 
+  // Sign out is not destructive: a ghost button and a plain confirm.
   return (
-    <div
-      className="rounded-[7px] border px-3.5 py-3.5"
-      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-    >
-      <Button variant="danger" size="sm" disabled={logout.isPending} onClick={() => setConfirming(true)}>
+    <div className="mt-6 border-t pt-4" style={{ borderColor: "var(--line)" }}>
+      <Button variant="ghost" disabled={logout.isPending} onClick={() => setConfirming(true)}>
         {t("profile.signOut")}
       </Button>
       <p className="mt-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
@@ -215,15 +217,8 @@ function SignOutSection() {
   );
 }
 
-const Section = ({ title }: { title: string }) => (
-  <div className="mx-0.5 mt-5 mb-2 text-[13px] font-semibold" style={{ color: "var(--ink-2)" }}>
-    {title}
-  </div>
-);
-
 export function YouTab() {
   const me = useMe();
-  const ledgers = useLedgers();
   const save = useUpdateProfile();
   const [draft, setDraft] = useState<{ displayName: string; vpa: string } | null>(null);
 
@@ -232,7 +227,6 @@ export function YouTab() {
 
   // Only ever this user's own VPA. Another member's VPA is never rendered here.
   const form = draft ?? { displayName: me.data.displayName, vpa: me.data.vpa ?? "" };
-  const archived = (ledgers.data ?? []).filter((l) => l.archivedAt !== null);
 
   // The server answers a bad profile body with 400 `invalid` and does not say which
   // field, so the VPA hint is shown for that code only. Anything else is a plain failure.
@@ -262,76 +256,67 @@ export function YouTab() {
     <>
       <PageHeader title={t("tabs.you")} />
 
-      <form
-        onSubmit={onSubmit}
-        className="rounded-[7px] border px-3.5 py-3.5"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
-        <Field label={t("profile.displayName")}>
-          <Input
-            value={form.displayName}
-            onChange={(e) => {
-              edited();
-              setDraft({ ...form, displayName: e.target.value });
-            }}
-            required
-            maxLength={80}
-          />
-        </Field>
-        <Field label={t("profile.vpa")} error={saveInvalid ? t("profile.vpaInvalid") : undefined}>
-          <Input
-            value={form.vpa}
-            onChange={(e) => {
-              edited();
-              setDraft({ ...form, vpa: e.target.value });
-            }}
-            placeholder="name@bank"
-            inputMode="email"
-            autoComplete="off"
-          />
-        </Field>
-        <p className="mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
-          {t("profile.vpaVisibility")}
-        </p>
-        <Button type="submit" disabled={save.isPending}>
-          {t("action.save")}
-        </Button>
-        {save.isError && !saveInvalid && (
-          <p role="alert" className="mt-2 text-[13px]" style={{ color: "var(--clay)" }}>
-            {t("error.generic")}
+      <SectionHeading>{t("profile.sectionProfile")}</SectionHeading>
+      <Card>
+        <form onSubmit={onSubmit}>
+          <Field label={t("profile.displayName")}>
+            <Input
+              value={form.displayName}
+              onChange={(e) => {
+                edited();
+                setDraft({ ...form, displayName: e.target.value });
+              }}
+              required
+              maxLength={80}
+            />
+          </Field>
+          <Field label={t("profile.vpa")} error={saveInvalid ? t("profile.vpaInvalid") : undefined}>
+            <Input
+              value={form.vpa}
+              onChange={(e) => {
+                edited();
+                setDraft({ ...form, vpa: e.target.value });
+              }}
+              placeholder="name@bank"
+              inputMode="email"
+              autoComplete="off"
+            />
+          </Field>
+          <p className="mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
+            {t("profile.vpaVisibility")}
           </p>
-        )}
-      </form>
+          <Button type="submit" isLoading={save.isPending}>
+            {t("action.save")}
+          </Button>
+          {save.isError && !saveInvalid && (
+            <p role="alert" className="mt-2 text-[13px]" style={{ color: "var(--clay)" }}>
+              {t("error.generic")}
+            </p>
+          )}
+        </form>
+      </Card>
 
-      <Section title={t("profile.devices")} />
-      <div
-        className="rounded-[7px] border px-3.5 py-2"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
+      <SectionHeading>{t("profile.sectionSecurity")}</SectionHeading>
+      <SectionHeading as="h3">{t("profile.devices")}</SectionHeading>
+      <Card>
         {me.data.credentials.length === 0 ? (
           // Not a quiet list item: this is the state where closing the tab can
           // cost the account, so it is styled as the warning it is.
-          <p
-            role="alert"
-            className="my-2 rounded-[6px] border px-3 py-2.5 text-[13px] leading-relaxed"
-            style={{ borderColor: "var(--clay)", background: "var(--clay-wash)", color: "var(--clay)" }}
-          >
-            {t("profile.noDevicesWarning")}
-          </p>
+          <Notice tone="warn">{t("profile.noDevicesWarning")}</Notice>
         ) : (
           me.data.credentials.map((c) => (
             <div key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-[15px]">
               <span className="truncate">
                 {t("profile.passkey")}{" "}
                 <span className="text-[13px]" style={{ color: "var(--ink-3)" }}>
-                  {t("profile.passkeyAdded", { date: dayFormat.format(c.createdAt) })}
+                  {t("profile.passkeyAdded", { date: formatDate(c.createdAt) })}
                 </span>
               </span>
               <span className="flex items-center gap-2">
                 <span className="tnum flex-none text-[13px]" style={{ color: "var(--ink-3)" }}>
                   {c.lastUsedAt === null
                     ? t("profile.passkeyNeverUsed")
-                    : t("profile.passkeyLastUsed", { date: dayFormat.format(c.lastUsedAt) })}
+                    : t("profile.passkeyLastUsed", { date: formatDate(c.lastUsedAt) })}
                 </span>
                 <RevokeCredential credentialId={c.id} disabled={me.data.credentials.length === 1} />
               </span>
@@ -344,40 +329,19 @@ export function YouTab() {
           </p>
         )}
         <AddPasskey displayName={me.data.displayName} />
-      </div>
+      </Card>
 
-      <Section title={t("profile.password")} />
+      <SectionHeading as="h3">{t("profile.password")}</SectionHeading>
       <PasswordSection />
 
-      <Section title={t("profile.theme")} />
+      <SectionHeading>{t("profile.sectionPreferences")}</SectionHeading>
+      <SectionHeading as="h3">{t("profile.theme")}</SectionHeading>
       <ThemePicker />
-
-      <Section title={t("profile.archived")} />
-      {archived.length === 0 ? (
-        <p className="mx-0.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
-          {t("profile.noArchived")}
-        </p>
-      ) : (
-        archived.map((l) => (
-          <Link
-            key={l.id}
-            to={`/ledgers/${l.id}`}
-            className={`mb-2 block truncate rounded-[7px] border px-3.5 py-3 text-[15px] ${focusRing}`}
-            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-          >
-            {l.name}
-          </Link>
-        ))
-      )}
-
-      <Section title={t("notifications.title")} />
+      <SectionHeading as="h3">{t("notifications.title")}</SectionHeading>
       <NotificationsSection />
 
-      <Section title={t("profile.export")} />
-      <div
-        className="rounded-[7px] border px-3.5 py-3.5"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
+      <SectionHeading>{t("profile.sectionData")}</SectionHeading>
+      <Card>
         <p className="mb-2.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("export.body")}
         </p>
@@ -389,16 +353,21 @@ export function YouTab() {
         >
           {t("export.allCsv")}
         </a>
-      </div>
+      </Card>
 
       {me.data.isOwner && (
-        <Link
-          to="/you/admin"
-          className={`mt-5 mb-2 block rounded-[7px] border px-3.5 py-3 text-[15px] ${focusRing}`}
-          style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-        >
-          {t("admin.open")}
-        </Link>
+        <div className="mt-5">
+          <Card interactive>
+            <Link
+              to="/you/admin"
+              className={`-m-3.5 -my-3 flex items-center justify-between gap-2 px-3.5 py-3 text-[15px] font-medium ${focusRing}`}
+              style={{ color: "var(--ink)" }}
+            >
+              {t("admin.open")}
+              <Icon name="chevronRight" size={18} />
+            </Link>
+          </Card>
+        </div>
       )}
 
       <SignOutSection />

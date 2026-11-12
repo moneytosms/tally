@@ -24,6 +24,7 @@ const ledger: LedgerSummary = {
   memberCount: 3,
   net: 0,
   spent: 10_000,
+  lastActivityAt: 0,
 };
 
 const insights: LedgerInsightsData = {

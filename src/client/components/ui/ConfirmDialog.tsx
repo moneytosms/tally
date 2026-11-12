@@ -72,10 +72,8 @@ export function ConfirmDialog({
   }, []);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: "rgb(0 0 0 / 38%)" }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div aria-hidden="true" className="scrim-enter absolute inset-0" style={{ background: "rgb(0 0 0 / 38%)" }} />
       <div
         ref={panel}
         role="alertdialog"
@@ -83,7 +81,7 @@ export function ConfirmDialog({
         tabIndex={-1}
         aria-labelledby={titleId}
         aria-describedby={body ? bodyId : undefined}
-        className="w-full max-w-sm rounded-[10px] border p-4"
+        className="dialog-enter relative w-full max-w-sm rounded-[10px] border p-4"
         style={{ background: "var(--paper)", borderColor: "var(--line)" }}
       >
         <h2 id={titleId} className="serif text-[19px]">

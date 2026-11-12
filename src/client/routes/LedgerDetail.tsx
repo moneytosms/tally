@@ -1,7 +1,21 @@
-import { useState } from "react";
-import { useParams } from "react-router";
-import { Amount, Button, EmptyState, Field, Icon, Input, Select, Skeleton } from "~/client/components/ui";
+import { useEffect, useRef, useState } from "react";
+import { useParams, useSearchParams } from "react-router";
+import {
+  Amount,
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  FilterChip,
+  IconButton,
+  Input,
+  SearchField,
+  Select,
+  Skeleton,
+} from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
+import { FilterSheet } from "~/client/components/FilterSheet";
 import { ExpenseSheet } from "~/client/components/ExpenseSheet";
 import {
   useCategories,
@@ -13,13 +27,13 @@ import {
   type ExpenseFilters,
   type Member,
 } from "~/client/lib/queries";
+import { formatDate } from "~/client/lib/format";
 import { t } from "~/client/i18n";
 
 const memberName = (m: Member | undefined) => m?.nickname ?? t("member.unknown");
 
-const dateFmt = new Intl.DateTimeFormat("en-IN", { day: "numeric", month: "short", year: "numeric" });
-
 export type ExpenseSort = "newest" | "oldest" | "amountHigh" | "amountLow";
+export type ExpenseQuery = ExpenseFilters & { sort: ExpenseSort };
 
 const sortComparators: Record<ExpenseSort, (a: Expense, b: Expense) => number> = {
   newest: (a, b) => b.paidAt - a.paidAt,
@@ -32,11 +46,42 @@ export function sortExpenses(expenses: Expense[], sort: ExpenseSort): Expense[] 
   return [...expenses].sort(sortComparators[sort]);
 }
 
-// yyyy-mm-dd <-> epoch ms for native date inputs. `to` is end-of-day so the
-// picked day is inclusive.
-const dateInputValue = (ms?: number) => (ms ? new Date(ms).toISOString().slice(0, 10) : "");
-const startOfDay = (s: string) => (s ? new Date(`${s}T00:00:00`).getTime() : undefined);
-const endOfDay = (s: string) => (s ? new Date(`${s}T23:59:59.999`).getTime() : undefined);
+// Days in the URL are local yyyy-mm-dd. `to` is end-of-day so the picked day is inclusive.
+const pad = (n: number) => String(n).padStart(2, "0");
+const toDay = (ms: number) => {
+  const d = new Date(ms);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+const fromDay = (value: string | null | undefined, end: boolean): number | undefined => {
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+  const ms = new Date(`${value}T${end ? "23:59:59.999" : "00:00:00"}`).getTime();
+  // Rejects impossible dates such as 2026-02-31, which Date would silently roll over.
+  return Number.isNaN(ms) || toDay(ms) !== value ? undefined : ms;
+};
+
+/** Search, filters and sort live in the URL so they survive opening an expense and the Back button. */
+export function parseExpenseParams(params: URLSearchParams): ExpenseQuery {
+  const sort = params.get("sort") as ExpenseSort;
+  return {
+    q: params.get("q") || undefined,
+    sort: Object.hasOwn(sortComparators, sort) ? sort : "newest",
+    categoryId: params.get("category") || undefined,
+    memberId: params.get("person") || undefined,
+    from: fromDay(params.get("from"), false),
+    to: fromDay(params.get("to"), true),
+  };
+}
+
+export function encodeExpenseParams(query: ExpenseQuery): URLSearchParams {
+  const params = new URLSearchParams();
+  if (query.q) params.set("q", query.q);
+  if (query.sort !== "newest") params.set("sort", query.sort);
+  if (query.categoryId) params.set("category", query.categoryId);
+  if (query.memberId) params.set("person", query.memberId);
+  if (query.from !== undefined) params.set("from", toDay(query.from));
+  if (query.to !== undefined) params.set("to", toDay(query.to));
+  return params;
+}
 
 function ExpenseRow({
   expense,
@@ -54,31 +99,20 @@ function ExpenseRow({
   const myShare = myMemberId ? expense.splits.find((s) => s.memberId === myMemberId) : undefined;
   const who = t(isRefund ? "expense.refundedBy" : "expense.paidByName", { name: memberName(payer) });
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(expense)}
-      className={`row-in row-press mb-2 block w-full rounded-[7px] border px-3.5 py-3 text-left ${focusRing}`}
-      style={{
-        background: "var(--paper-2)",
-        // A refund is marked by its badge, not a side rule.
-        borderColor: "var(--line)",
-      }}
-    >
-      <div className="flex items-center justify-between gap-2.5">
-        <div className="min-w-0">
-          <div className="truncate text-[15px] font-medium">
-            {expense.description}
-            {isRefund && (
-              <span
-                className="ml-2 rounded-[5px] border px-1.5 py-0.5 align-middle text-[13px] tracking-[0.13em] uppercase"
-                style={{ borderColor: "var(--moss)", background: "var(--moss-wash)", color: "var(--moss-2)" }}
-              >
-                {t("expense.refund")}
-              </span>
-            )}
+    <Card interactive className="row-in mb-2">
+      {/* The button fills the card, padding included, so the whole row is the target. */}
+      <button
+        type="button"
+        onClick={() => onSelect(expense)}
+        className={`-mx-3.5 -my-3 flex w-[calc(100%+1.75rem)] items-center justify-between gap-2.5 rounded-[7px] px-3.5 py-3 text-left ${focusRing}`}
+      >
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-[15px] font-medium">{expense.description}</span>
+            {isRefund && <Badge>{t("expense.refund")}</Badge>}
           </div>
-          <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
-            {t("expense.rowMeta", { who, date: dateFmt.format(expense.paidAt) })}
+          <div className="truncate text-[13px]" style={{ color: "var(--ink-3)" }}>
+            {t("expense.rowMeta", { who, date: formatDate(expense.paidAt) })}
           </div>
         </div>
         <div className="flex flex-none flex-col items-end gap-1">
@@ -88,8 +122,8 @@ function ExpenseRow({
               said settled. */}
           {myShare && <Amount paise={myShare.amount} label={t("expense.yourShare")} tone="neutral" />}
         </div>
-      </div>
-    </button>
+      </button>
+    </Card>
   );
 }
 
@@ -99,18 +133,36 @@ export function LedgerDetail() {
   const categories = useCategories();
   const me = useMe();
 
-  const [filters, setFilters] = useState<ExpenseFilters>({});
-  const [sort, setSort] = useState<ExpenseSort>("newest");
+  const [params, setParams] = useSearchParams();
+  const { sort, ...filters } = parseExpenseParams(params);
+  // Replace, not push: each keystroke or filter change must not add a Back step.
+  const update = (change: (query: ExpenseQuery) => ExpenseQuery) =>
+    setParams((prev) => encodeExpenseParams(change(parseExpenseParams(prev))), { replace: true });
+
+  // Typing is local; the URL (and the request) follows after a pause.
+  const [qInput, setQInput] = useState(filters.q ?? "");
+  const qTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(qTimer.current), []);
+  const onSearch = (value: string) => {
+    setQInput(value);
+    clearTimeout(qTimer.current);
+    qTimer.current = setTimeout(() => update((q) => ({ ...q, q: value || undefined })), 250);
+  };
+  const clearAll = () => {
+    clearTimeout(qTimer.current);
+    setQInput("");
+    update(() => ({ sort: "newest" }));
+  };
+  const patch = (p: Partial<ExpenseQuery>) => update((q) => ({ ...q, ...p }));
+
+  const [sheetOpen, setSheetOpen] = useState(false);
   // Store the id, not the expense: the detail is read from the list each render, so a restore or edit shows.
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [searchExpanded, setSearchExpanded] = useState(false);
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // The unfiltered list is kept alongside the filtered one purely so the result
   // count can say "3 of 20" - the server is the only thing that filters.
   const all = useExpenses(ledgerId);
   const expenses = useExpenseSearch(ledgerId, filters);
-  const filtering = Object.values(filters).some((v) => v !== undefined && v !== "");
   // If the expense leaves the list (e.g. deleted), the sheet closes.
   const selected = (all.data ?? []).find((e) => e.id === selectedId);
 
@@ -118,151 +170,70 @@ export function LedgerDetail() {
   const myMemberId = (members.data ?? []).find((m) => m.userId === me.data?.id)?.id;
   const rows = sortExpenses(expenses.data ?? [], sort);
 
-  const patch = (p: Partial<ExpenseFilters>) => setFilters((f) => ({ ...f, ...p }));
+  // Search is not a filter: it is shown in the field, not as a chip or in the count.
+  const filterCount =
+    [filters.categoryId, filters.memberId, filters.from, filters.to].filter((v) => v !== undefined).length +
+    (sort !== "newest" ? 1 : 0);
+  const applied = filterCount > 0 || Boolean(filters.q);
+  const showToolbar = (all.data?.length ?? 0) > 0 || applied;
 
-  // Check if there are active filters (category, member, from, to) - not including search
-  const hasFilterSet =
-    filters.categoryId !== undefined ||
-    filters.memberId !== undefined ||
-    filters.from !== undefined ||
-    filters.to !== undefined;
+  const category = (categories.data ?? []).find((c) => c.id === filters.categoryId);
+  const member = (members.data ?? []).find((m) => m.id === filters.memberId);
+  const chips: { key: string; label: string; onRemove: () => void }[] = [
+    ...(category ? [{ key: "category", label: category.name, onRemove: () => patch({ categoryId: undefined }) }] : []),
+    ...(member ? [{ key: "member", label: memberName(member), onRemove: () => patch({ memberId: undefined }) }] : []),
+    ...(filters.from !== undefined
+      ? [
+          {
+            key: "from",
+            label: t("search.chipFrom", { date: formatDate(filters.from) }),
+            onRemove: () => patch({ from: undefined }),
+          },
+        ]
+      : []),
+    ...(filters.to !== undefined
+      ? [
+          {
+            key: "to",
+            label: t("search.chipTo", { date: formatDate(filters.to) }),
+            onRemove: () => patch({ to: undefined }),
+          },
+        ]
+      : []),
+    ...(sort !== "newest"
+      ? [{ key: "sort", label: t(`sort.${sort}`), onRemove: () => patch({ sort: "newest" }) }]
+      : []),
+  ];
 
   return (
     <>
-      {/* Nothing to filter until there is a list worth filtering, unless a filter is
-          already on: then the controls are the only way to clear it. One toolbar row:
-          search, filters, and sort on the right. */}
-      {((all.data?.length ?? 0) > 0 || filtering) && (
-        <div className="mb-3 grid gap-2">
-          {(searchExpanded || filters.q) && (
-            <Field label={t("search.label")}>
-              <Input
-                type="search"
-                autoFocus
-                value={filters.q ?? ""}
+      {showToolbar && (
+        <div className="sticky top-0 z-10 pb-2" style={{ background: "var(--paper)" }}>
+          <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <SearchField
+                value={qInput}
+                onChange={onSearch}
+                label={t("search.label")}
                 placeholder={t("search.placeholder")}
-                onChange={(e) => patch({ q: e.target.value || undefined })}
-                onBlur={() => {
-                  // Collapse when blurred and empty
-                  if (!filters.q) {
-                    setSearchExpanded(false);
-                  }
-                }}
               />
-            </Field>
-          )}
-
-          <div>
-            <div className="flex items-center gap-2">
-              {!(searchExpanded || filters.q) && (
-                <button
-                  type="button"
-                  onClick={() => setSearchExpanded(true)}
-                  className={`grid min-h-11 min-w-11 place-items-center rounded-[6px] border ${focusRing}`}
-                  style={{ borderColor: "var(--line)", color: "var(--ink-2)", background: "var(--paper-2)" }}
-                  aria-label={t("search.label")}
-                >
-                  <Icon name="search" size={18} />
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => setFiltersExpanded(!filtersExpanded)}
-                aria-expanded={filtersExpanded}
-                className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[6px] border px-3 text-[14px] ${focusRing}`}
-                style={{
-                  borderColor: hasFilterSet ? "var(--moss)" : "var(--line)",
-                  color: hasFilterSet ? "var(--moss-2)" : "var(--ink-2)",
-                  background: hasFilterSet ? "var(--moss-wash)" : "var(--paper-2)",
-                }}
-              >
-                {t("search.filters")}
-                {hasFilterSet && (
-                  <span
-                    className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
-                    style={{ background: "var(--moss)" }}
-                    aria-hidden="true"
-                  />
-                )}
-                <span
-                  className="transition-transform"
-                  style={{ transform: filtersExpanded ? "rotate(180deg)" : undefined }}
-                >
-                  <Icon name="down" size={16} />
-                </span>
-              </button>
-              {(all.data?.length ?? 0) > 1 && (
-                // The wrapper sets the width; Select is always full width of its box.
-                <div className="ml-auto w-[11.5rem] min-w-0">
-                  <Select
-                    aria-label={t("sort.label")}
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value as ExpenseSort)}
-                  >
-                    <option value="newest">{t("sort.newest")}</option>
-                    <option value="oldest">{t("sort.oldest")}</option>
-                    <option value="amountHigh">{t("sort.amountHigh")}</option>
-                    <option value="amountLow">{t("sort.amountLow")}</option>
-                  </Select>
-                </div>
-              )}
             </div>
-            {filtersExpanded && (
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <Field label={t("search.category")}>
-                  <Select
-                    value={filters.categoryId ?? ""}
-                    onChange={(e) => patch({ categoryId: e.target.value || undefined })}
-                  >
-                    <option value="">{t("search.anyCategory")}</option>
-                    {(categories.data ?? []).map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.icon} {c.name}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label={t("search.member")}>
-                  <Select
-                    value={filters.memberId ?? ""}
-                    onChange={(e) => patch({ memberId: e.target.value || undefined })}
-                  >
-                    <option value="">{t("search.anyMember")}</option>
-                    {(members.data ?? []).map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.nickname}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <Field label={t("search.from")}>
-                  <Input
-                    type="date"
-                    value={dateInputValue(filters.from)}
-                    onChange={(e) => patch({ from: startOfDay(e.target.value) })}
-                  />
-                </Field>
-                <Field label={t("search.to")}>
-                  <Input
-                    type="date"
-                    value={dateInputValue(filters.to)}
-                    onChange={(e) => patch({ to: endOfDay(e.target.value) })}
-                  />
-                </Field>
-              </div>
-            )}
+            <IconButton icon="filter" label={t("filter.open")} badge={filterCount} onClick={() => setSheetOpen(true)} />
           </div>
+        </div>
+      )}
 
-          {filtering && (
-            <div className="flex items-center justify-between gap-2" role="status" aria-live="polite">
-              <span className="text-[13px]" style={{ color: "var(--ink-3)" }}>
-                {t("search.results", { count: rows.length, total: all.data?.length ?? rows.length })}
-              </span>
-              <Button size="sm" variant="ghost" onClick={() => setFilters({})}>
-                {t("search.clear")}
-              </Button>
-            </div>
-          )}
+      {showToolbar && applied && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {chips.map((c) => (
+            <FilterChip key={c.key} removeLabel={t("filter.remove", { name: c.label })} onRemove={c.onRemove}>
+              {c.label}
+            </FilterChip>
+          ))}
+          <span className="text-[13px]" style={{ color: "var(--ink-3)" }} role="status" aria-live="polite">
+            {t("search.results", { count: rows.length, total: all.data?.length ?? rows.length })}
+            {expenses.isFetching && !expenses.isPending && ` · ${t("search.updating")}`}
+          </span>
         </div>
       )}
 
@@ -273,10 +244,25 @@ export function LedgerDetail() {
           <Skeleton className="h-[68px] w-full" />
         </div>
       ) : expenses.error ? (
-        <EmptyState title={t("error.generic")} body={t("error.network")} />
+        <EmptyState
+          title={t("error.generic")}
+          body={t("error.network")}
+          action={
+            <Button size="sm" variant="ghost" onClick={() => expenses.refetch()}>
+              {t("action.retry")}
+            </Button>
+          }
+        />
       ) : rows.length === 0 ? (
-        filtering ? (
-          <EmptyState title={t("search.none")} />
+        applied ? (
+          <EmptyState
+            title={t("search.none")}
+            action={
+              <Button size="sm" variant="ghost" onClick={clearAll}>
+                {t("filter.clearAll")}
+              </Button>
+            }
+          />
         ) : (
           <EmptyState title={t("empty.expenses")} body={t("empty.expensesBody")} />
         )
@@ -291,6 +277,57 @@ export function LedgerDetail() {
           />
         ))
       )}
+
+      <FilterSheet
+        open={sheetOpen}
+        onOpenChange={setSheetOpen}
+        title={t("filter.title")}
+        showLabel={t("filter.showExpenses", { count: rows.length })}
+        onClear={clearAll}
+      >
+        <Field label={t("sort.label")}>
+          <Select value={sort} onChange={(e) => patch({ sort: e.target.value as ExpenseSort })}>
+            <option value="newest">{t("sort.newest")}</option>
+            <option value="oldest">{t("sort.oldest")}</option>
+            <option value="amountHigh">{t("sort.amountHigh")}</option>
+            <option value="amountLow">{t("sort.amountLow")}</option>
+          </Select>
+        </Field>
+        <Field label={t("search.category")}>
+          <Select value={filters.categoryId ?? ""} onChange={(e) => patch({ categoryId: e.target.value || undefined })}>
+            <option value="">{t("search.anyCategory")}</option>
+            {(categories.data ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.icon} {c.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label={t("search.member")}>
+          <Select value={filters.memberId ?? ""} onChange={(e) => patch({ memberId: e.target.value || undefined })}>
+            <option value="">{t("search.anyMember")}</option>
+            {(members.data ?? []).map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.nickname}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field label={t("search.from")}>
+          <Input
+            type="date"
+            value={filters.from !== undefined ? toDay(filters.from) : ""}
+            onChange={(e) => patch({ from: fromDay(e.target.value, false) })}
+          />
+        </Field>
+        <Field label={t("search.to")}>
+          <Input
+            type="date"
+            value={filters.to !== undefined ? toDay(filters.to) : ""}
+            onChange={(e) => patch({ to: fromDay(e.target.value, true) })}
+          />
+        </Field>
+      </FilterSheet>
 
       {selected && (
         <ExpenseSheet

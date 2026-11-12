@@ -41,6 +41,17 @@ describe("demo api", () => {
     expect(b.positions.every((p) => p.name.length > 0)).toBe(true);
   });
 
+  it("sorts starred ledgers first, and starring reorders the list", async () => {
+    await demoApi(`/api/ledgers/demo-pair/pin`, { method: "POST", body: JSON.stringify({ pinned: true }) });
+    const flags = (await demoApi<LedgerSummary[]>("/api/ledgers")).map((l) => l.pinned);
+    expect(flags).toEqual([...flags].sort((a, b) => Number(b) - Number(a)));
+    expect(flags.filter(Boolean)).toHaveLength(2);
+  });
+
+  it("gives every ledger a lastActivityAt", async () => {
+    for (const l of await demoApi<LedgerSummary[]>("/api/ledgers")) expect(l.lastActivityAt).toBeGreaterThan(0);
+  });
+
   it("refuses what demo does not support", async () => {
     await expect(demoApi("/api/admin/users")).rejects.toMatchObject({ code: "demo" });
   });

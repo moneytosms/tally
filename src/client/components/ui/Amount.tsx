@@ -28,10 +28,20 @@ export type AmountProps = {
   subject?: string;
   /** Serif hero treatment, label stacked above. */
   hero?: boolean;
+  /** Label above the value, for a narrow cell. Implied by `hero`. */
+  stack?: boolean;
   className?: string;
 };
 
-export function Amount({ paise, label, tone = "position", subject, hero = false, className = "" }: AmountProps) {
+export function Amount({
+  paise,
+  label,
+  tone = "position",
+  subject,
+  hero = false,
+  stack = false,
+  className = "",
+}: AmountProps) {
   const online = useOnline();
   const direction = paise > 0 ? "positive" : paise < 0 ? "negative" : "zero";
   // Direction replaces the visible label for a position. Offline shows no amount,
@@ -52,10 +62,11 @@ export function Amount({ paise, label, tone = "position", subject, hero = false,
           ? "var(--clay)"
           : "var(--ink-2)";
   const smallText = hero ? "text-[14px]" : "text-[13px]";
+  const stacked = hero || stack;
 
   return (
     <span
-      className={`inline-flex ${hero ? "flex-col items-start gap-1" : "flex-wrap items-baseline gap-x-1.5"} ${className}`}
+      className={`inline-flex ${stacked ? "flex-col items-start gap-1" : "flex-wrap items-baseline gap-x-1.5"} ${className}`}
     >
       <span
         className={`${smallText} leading-tight ${directionText ? "sr-only" : ""}`}

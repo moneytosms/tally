@@ -2,27 +2,113 @@
 // a trip is a ledger with an end date, a group is one without, a one-on-one is
 // one with two members. The kind only picks which fields are worth asking for,
 // so nothing here can drift out of sync with the server's idea of a ledger.
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useNavigate } from "react-router";
-import { Button, Field, Input, Rupees, Select, focusRing } from "~/client/components/ui";
+import {
+  Button,
+  Field,
+  Icon,
+  Input,
+  LedgerMark,
+  Rupees,
+  Select,
+  focusRing,
+  ledgerColorVar,
+} from "~/client/components/ui";
 import { rupeesToPaise } from "~/client/components/SplitEditor";
 import { useCreateLedger, useLedgers, type LedgerColor } from "~/client/lib/queries";
 import { LEDGER_COLOR_VALUES } from "~/shared/schemas";
 import { t } from "~/client/i18n";
 
-export type LedgerKind = "trip" | "group" | "pair";
+const COLOR_OPTIONS: Array<LedgerColor | null> = [null, ...LEDGER_COLOR_VALUES];
 
-/** Swatch hex per accent (issue #27). Deliberately fixed, not a CSS token -
- *  themes redefine --moss/--clay/--ochre globally, so a per-ledger accent needs
- *  colours that hold their identity no matter which theme is active. */
-export const LEDGER_COLOR_SWATCH: Record<LedgerColor, string> = {
-  moss: "#5c7355",
-  clay: "#a85f42",
-  ochre: "#b08344",
-  plum: "#7d5a8c",
-  sky: "#3f7ea6",
-  rose: "#b3557a",
-};
+/** Colour and emoji, shared by the create form and "Edit details" so they cannot drift. */
+export function LedgerAppearanceFields({
+  name,
+  color,
+  emoji,
+  onColor,
+  onEmoji,
+}: {
+  name: string;
+  color: LedgerColor | null;
+  emoji: string;
+  onColor: (color: LedgerColor | null) => void;
+  onEmoji: (emoji: string) => void;
+}) {
+  const labelId = useId();
+  const preview = name.trim() || t("ledger.previewName");
+
+  // WAI-ARIA radio group: arrow keys move and select, Tab leaves the group.
+  const onKey = (e: KeyboardEvent<HTMLButtonElement>, i: number) => {
+    const step = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 }[e.key];
+    if (!step) return;
+    e.preventDefault();
+    const next = (i + step + COLOR_OPTIONS.length) % COLOR_OPTIONS.length;
+    onColor(COLOR_OPTIONS[next] ?? null);
+    (e.currentTarget.parentElement?.children[next] as HTMLElement | undefined)?.focus();
+  };
+
+  return (
+    <>
+      <div className="mb-3 flex items-center gap-3">
+        <LedgerMark size="lg" color={color} emoji={emoji.trim() || null} name={preview} />
+        <span className="min-w-0 truncate text-[15px] font-medium">{preview}</span>
+      </div>
+
+      <span id={labelId} className="mb-1.5 block text-[13px]" style={{ color: "var(--ink-3)" }}>
+        {t("ledger.colorOptional")}
+      </span>
+      <div role="radiogroup" aria-labelledby={labelId} className="flex flex-wrap gap-1">
+        {COLOR_OPTIONS.map((c, i) => {
+          const checked = c === color;
+          return (
+            <button
+              key={c ?? "none"}
+              type="button"
+              role="radio"
+              aria-checked={checked}
+              aria-label={c ? t(`ledger.color.${c}`) : t("ledger.colorNone")}
+              tabIndex={checked ? 0 : -1}
+              onClick={() => onColor(c)}
+              onKeyDown={(e) => onKey(e, i)}
+              className={`grid h-11 w-11 place-items-center rounded-full ${focusRing}`}
+            >
+              <span
+                className="grid h-7 w-7 place-items-center rounded-full border-2"
+                style={{
+                  background: c ? ledgerColorVar(c)?.solid : "var(--paper-sunk)",
+                  borderColor: checked ? "var(--ink)" : "var(--line)",
+                  color: c ? "var(--paper)" : "var(--ink)",
+                }}
+              >
+                {checked && <Icon name="check" size={16} />}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {/* The selected colour is named in words too, so the choice is not colour-only. */}
+      <p className="mt-1.5 mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
+        {color ? t(`ledger.color.${color}`) : t("ledger.colorNone")}
+      </p>
+
+      <Field label={t("ledger.emojiOptional")}>
+        <Input
+          value={emoji}
+          onChange={(e) => onEmoji(e.target.value)}
+          placeholder={t("ledger.emojiPlaceholder")}
+          maxLength={8}
+        />
+      </Field>
+      <p className="-mt-2 mb-3 text-[13px]" style={{ color: "var(--ink-3)" }}>
+        {t("ledger.emojiHint")}
+      </p>
+    </>
+  );
+}
+
+export type LedgerKind = "trip" | "group" | "pair";
 
 /** End of the chosen day in LOCAL time - a trip ending "on the 5th" includes
  *  the 5th. Mirrors the local-day rule ExpenseForm uses for paidAt. */
@@ -106,56 +192,19 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
         />
       </Field>
 
-      <Field label={t("ledger.colorOptional")}>
-        <div className="flex flex-wrap items-center gap-2">
-          {/* 44px hit targets; the visible circle inside stays small. */}
-          <button
-            type="button"
-            aria-label={t("ledger.colorNone")}
-            aria-pressed={color === null}
-            onClick={() => {
-              setColor(null);
-              setFailure("");
-            }}
-            className={`grid h-11 w-11 place-items-center rounded-full ${focusRing}`}
-          >
-            <span
-              className="block h-7 w-7 rounded-full border-2"
-              style={{ borderColor: color === null ? "var(--ink)" : "var(--line)", background: "var(--paper-sunk)" }}
-            />
-          </button>
-          {LEDGER_COLOR_VALUES.map((c) => (
-            <button
-              key={c}
-              type="button"
-              aria-label={t(`ledger.color.${c}`)}
-              aria-pressed={color === c}
-              onClick={() => {
-                setColor(c);
-                setFailure("");
-              }}
-              className={`grid h-11 w-11 place-items-center rounded-full ${focusRing}`}
-            >
-              <span
-                className="block h-7 w-7 rounded-full border-2"
-                style={{ borderColor: color === c ? "var(--ink)" : "transparent", background: LEDGER_COLOR_SWATCH[c] }}
-              />
-            </button>
-          ))}
-        </div>
-      </Field>
-
-      <Field label={t("ledger.emojiOptional")}>
-        <Input
-          value={emoji}
-          onChange={(e) => {
-            setEmoji(e.target.value);
-            setFailure("");
-          }}
-          placeholder={t("ledger.emojiPlaceholder")}
-          maxLength={8}
-        />
-      </Field>
+      <LedgerAppearanceFields
+        name={name}
+        color={color}
+        emoji={emoji}
+        onColor={(c) => {
+          setColor(c);
+          setFailure("");
+        }}
+        onEmoji={(e) => {
+          setEmoji(e);
+          setFailure("");
+        }}
+      />
 
       {kind === "trip" && (
         <>
@@ -236,7 +285,7 @@ export function LedgerForm({ kind, onDone }: { kind: LedgerKind; onDone: () => v
       )}
 
       <div className="pad-safe-bottom sticky bottom-0 -mx-4 px-4 pt-2 pb-2" style={{ background: "var(--paper)" }}>
-        <Button type="submit" className="w-full" disabled={create.isPending}>
+        <Button type="submit" className="w-full" isLoading={create.isPending}>
           {t("ledger.create")}
         </Button>
       </div>

@@ -7,17 +7,25 @@ import { focusRing } from "./focus";
 import { Icon } from "./Icon";
 
 type ToastKind = "error" | "success";
-type ToastEntry = { id: string; kind: ToastKind; message: string };
+type ToastEntry = { id: string; kind: ToastKind; message: string; leaving?: boolean };
 
 let toasts: ToastEntry[] = [];
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((l) => l());
 
 const DISMISS_MS = 5000;
+// Matches --dur-fast in tokens.css: the toast stays mounted for its exit animation.
+const EXIT_MS = 150;
 
 function dismiss(id: string) {
-  toasts = toasts.filter((t) => t.id !== id);
+  const current = toasts.find((t) => t.id === id);
+  if (!current || current.leaving) return;
+  toasts = toasts.map((t) => (t.id === id ? { ...t, leaving: true } : t));
   notify();
+  setTimeout(() => {
+    toasts = toasts.filter((t) => t.id !== id);
+    notify();
+  }, EXIT_MS);
 }
 
 /** Pushed from anywhere - the mutation default handler in `lib/queries.ts`,
@@ -48,15 +56,12 @@ const useToasts = () =>
 export function ToastViewport() {
   const items = useToasts();
   return (
-    <div
-      className="no-print pointer-events-none fixed inset-x-0 z-[60] flex flex-col items-center gap-2 px-3.5 md:left-[232px]"
-      style={{ bottom: "calc(var(--bar-h) + 12px + env(safe-area-inset-bottom))" }}
-    >
+    <div className="no-print pointer-events-none fixed inset-x-0 z-[60] flex flex-col items-center gap-2 px-3.5 bottom-[calc(var(--bar-h)_+_12px_+_var(--fab-clearance,0px)_+_env(safe-area-inset-bottom))] md:left-[232px] md:bottom-[calc(var(--bar-h)_+_12px_+_env(safe-area-inset-bottom))]">
       {items.map((toast) => (
         <div
           key={toast.id}
           role={toast.kind === "error" ? "alert" : "status"}
-          className="animate-[toast-in_.18s_ease-out] pointer-events-auto flex w-full max-w-sm items-center gap-2.5 rounded-[7px] border px-3.5 py-2.5 text-[13px] shadow-sm"
+          className={`${toast.leaving ? "toast-exit pointer-events-none" : "toast-enter pointer-events-auto"} flex w-full max-w-sm items-center gap-2.5 rounded-[7px] border px-3.5 py-2.5 text-[13px] shadow-sm`}
           style={
             toast.kind === "error"
               ? { background: "var(--clay-wash)", borderColor: "var(--clay)", color: "var(--clay)" }
@@ -68,7 +73,7 @@ export function ToastViewport() {
             type="button"
             onClick={() => dismiss(toast.id)}
             aria-label={t("action.close")}
-            className={`min-h-11 min-w-11 shrink-0 rounded-[5px] text-[13px] opacity-70 hover:opacity-100 ${focusRing}`}
+            className={`min-h-11 min-w-11 shrink-0 rounded-[5px] text-[var(--ink-3)] hover:text-[var(--ink)] ${focusRing}`}
           >
             <Icon name="close" size={16} className="mx-auto" />
           </button>
