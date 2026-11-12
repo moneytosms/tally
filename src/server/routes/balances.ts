@@ -42,7 +42,10 @@ balances.get("/ledgers/:ledgerId/balances", requireSession, requireMember, async
       ...t,
       trail: trailFor(expenses, settlements, t.fromMemberId, t.toMemberId),
     })),
-    pairs: grossPairs(expenses, settlements),
+    pairs: grossPairs(expenses, settlements).map((p) => ({
+      ...p,
+      trail: trailFor(expenses, settlements, p.fromMemberId, p.toMemberId),
+    })),
     settlements: settlements.map(({ id, fromMemberId, toMemberId, amount, method, note, declaredAt }) => ({
       id,
       fromMemberId,

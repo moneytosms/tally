@@ -36,7 +36,12 @@ type Ledger = {
       amount: number;
     }>;
   }>;
-  pairs: Array<{ fromMemberId: string; toMemberId: string; amount: number }>;
+  pairs: Array<{
+    fromMemberId: string;
+    toMemberId: string;
+    amount: number;
+    trail: Array<{ kind: "expense" | "settlement"; expenseId: string | null; amount: number }>;
+  }>;
   settlements: Array<{ id: string; fromMemberId: string; toMemberId: string; amount: number; declaredAt: number }>;
   totals: { spent: number; expenseCount: number };
 };
@@ -156,6 +161,28 @@ describe("GET /ledgers/:ledgerId/balances", () => {
     );
   });
 
+  it("gives every gross pair a trail whose signed rows sum to the pair amount", async () => {
+    await expense("L1", {
+      total: 6_000,
+      payerMemberId: "m_ada",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹60.00
+    await expense("L1", {
+      total: 6_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }],
+    }); // ₹60.00
+
+    const b = await ledgerBalances("L1");
+    expect(b.pairs).toHaveLength(2);
+    for (const p of b.pairs) {
+      expect(p.trail.length).toBeGreaterThan(0);
+      expect(p.trail.reduce((a, r) => a + r.amount, 0)).toBe(p.amount);
+    }
+    const bobAda = b.pairs.find((p) => p.fromMemberId === "m_bob" && p.toMemberId === "m_ada")!;
+    expect(bobAda.trail.map((r) => [r.kind, r.amount])).toEqual([["expense", 3_000]]); // ₹30.00
+  });
+
   it("nets the trail: an expense running the other way subtracts from it", async () => {
     // Bob pays ₹100.00 split with Ada, then Ada pays ₹40.00 split with Bob.
     await expense("L1", {
@@ -214,6 +241,28 @@ describe("GET /ledgers/:ledgerId/balances", () => {
     expect(net(b).get("m_ada")).toBe(-1_000); // only the ₹20.00 remains
     expect(b.positions.reduce((a, p) => a + p.net, 0)).toBe(0);
     expect(b.transfers[0]!.trail).toHaveLength(1);
+  });
+
+  it("leaves a soft-deleted expense out of a pair trail", async () => {
+    const { id } = (await (
+      await expense("L1", {
+        total: 10_000,
+        payerMemberId: "m_bob",
+        participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+      })
+    ) // ₹100.00
+      .json()) as { id: string };
+    await expense("L1", {
+      total: 2_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹20.00
+    await app.request(req(h, `/api/ledgers/L1/expenses/${id}`, { method: "DELETE" }));
+
+    const [p] = (await ledgerBalances("L1")).pairs;
+    expect(p!.amount).toBe(1_000); // ₹10.00 - only the ₹20.00 share remains
+    expect(p!.trail.map((r) => r.expenseId)).not.toContain(id);
+    expect(p!.trail.reduce((a, r) => a + r.amount, 0)).toBe(p!.amount);
   });
 
   it("nets a settlement out of the gross pairs too", async () => {

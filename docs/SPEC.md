@@ -224,6 +224,8 @@ Ledgers · expenses · splits · balances · settle-up · invites · member mana
 
 Activity feed + comments · categories + notes · search + filter · CSV export · cross-ledger net balance · recurring expenses · push notifications · full edit history + undo
 
+The Settle tab also offers a people-and-transfers graph, CSV/Excel settle exports (`/api/ledgers/:id/settle.csv|xlsx`) and a print-to-PDF settle report page (`/ledgers/:id/settle/report`, saved with the browser's Save as PDF).
+
 ### Self-hosting-native
 
 Natural-language quick add · trip budget + burn rate · bulk settle across ledgers · lifetime personal analytics · clone members on ledger creation · owner admin panel · minimal backup + restore

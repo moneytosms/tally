@@ -34,6 +34,7 @@ const AdminPanel = lazy(() => import("./routes/AdminPanel"));
 const RecurringTab = lazy(() => import("./routes/RecurringTab"));
 const ActivityTab = lazy(() => import("./routes/ActivityTab"));
 const LedgerInsights = lazy(() => import("./routes/LedgerInsights"));
+const SettleReport = lazy(() => import("./routes/SettleReport"));
 
 /** Explicit, and a live region - offline is never inferred from a missing number. */
 function OfflineBanner() {
@@ -42,7 +43,7 @@ function OfflineBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="px-4 py-2 text-[13px]"
+      className="no-print px-4 py-2 text-[13px]"
       style={{ background: "var(--clay-wash)", color: "var(--clay)" }}
     >
       <strong className="font-medium">{t("offline.title")}</strong> {t("offline.body")}
@@ -57,7 +58,7 @@ function DemoBanner() {
   return (
     <div
       role="status"
-      className="flex items-center justify-between gap-3 px-4 text-[13px] leading-snug"
+      className="no-print flex items-center justify-between gap-3 px-4 text-[13px] leading-snug"
       style={{ background: "var(--paper-sunk)", color: "var(--ink-2)" }}
     >
       <span className="min-w-0 py-1.5">{t("demo.banner")}</span>
@@ -192,6 +193,8 @@ export function App() {
           {/* Editing is a full screen, not the add sheet: it needs an expense
               loaded from the server before anything can be shown. */}
           <Route path="ledgers/:ledgerId/expenses/:expenseId" element={<ExpenseEditor />} />
+          {/* A print page inside Shell, not a tab: the tab bar is hidden in print only (no-print), not on this route. */}
+          <Route path="ledgers/:ledgerId/settle/report" element={<SettleReport />} />
           <Route path="balances" element={<BalancesTab />} />
           <Route path="insights" element={<InsightsTab />} />
           <Route path="you" element={<YouTab />} />

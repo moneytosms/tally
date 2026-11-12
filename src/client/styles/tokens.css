@@ -454,3 +454,65 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Printed settle report (Save as PDF). Screens are untouched: all of this is print-only. */
+@page {
+  margin: 14mm;
+}
+@media print {
+  /* Palette redefined on the shell, so a dark theme still prints white with dark text. */
+  .paper-ground {
+    --paper: #fff;
+    --paper-2: #fff;
+    --paper-sunk: #f1f1f1;
+    --line: #bbb;
+    --line-2: #999;
+    --ink: #111;
+    --ink-2: #333;
+    --ink-3: #4a4a4a;
+    --moss: #3d5233;
+    --moss-2: #2d3d26;
+    --clay: #7a3f28;
+    background: #fff !important;
+    color: #111 !important;
+  }
+  .paper-ground::before {
+    display: none;
+  }
+  html,
+  body,
+  #root,
+  .paper-ground,
+  .paper-ground > div,
+  main {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-block,
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  thead {
+    display: table-header-group;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid;
+  }
+}
+
+/* Settle graph: focus thickens and recolours the shape itself, since outlines on SVG groups are unreliable. */
+.settle-graph-target {
+  outline: none;
+}
+.settle-graph-target:focus-visible .settle-graph-shape {
+  stroke: var(--moss) !important;
+  stroke-width: 5px;
+}

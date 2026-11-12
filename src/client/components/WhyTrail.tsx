@@ -66,57 +66,84 @@ export function WhyTrail({
       >
         {t("settle.showTrail")}
       </summary>
-      {trail.length === 0 ? (
+      <TrailList
+        ledgerId={ledgerId}
+        fromMemberId={fromMemberId}
+        toMemberId={toMemberId}
+        amount={amount}
+        trail={trail}
+      />
+    </details>
+  );
+}
+
+/** The trail rows, always expanded. WhyTrail wraps them in a disclosure; the
+ *  printed settle report shows them straight. */
+export function TrailList({
+  ledgerId,
+  fromMemberId,
+  toMemberId,
+  amount,
+  trail,
+}: {
+  ledgerId: string;
+  fromMemberId: string;
+  toMemberId: string;
+  amount: number;
+  trail: TrailRow[];
+}) {
+  const members = useMembers(ledgerId);
+  const name = (id: string) => (members.data ?? []).find((m) => m.id === id)?.nickname ?? t("member.unknown");
+
+  return trail.length === 0 ? (
+    <p className="py-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
+      {t("settle.trailSimplified")}
+    </p>
+  ) : (
+    <>
+      <ul className="mt-1 mb-1">
+        {trail.map((r) => {
+          // The sign already says who paid: a row that adds to what `from`
+          // owes came from `to`'s pocket, and vice versa.
+          const paidByTo = r.amount > 0;
+          const payer = name(paidByTo ? toMemberId : fromMemberId);
+          return (
+            <li
+              key={`${r.kind}-${r.id}`}
+              className="flex items-center justify-between gap-3 border-b py-1.5 last:border-b-0"
+              style={{ borderColor: "var(--line)" }}
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13px]">
+                  {r.kind === "settlement" ? t("settle.trailSettlement") : r.description}
+                </span>
+                <span className="block text-[13px]" style={{ color: "var(--ink-3)" }}>
+                  {t("settle.trailMeta", {
+                    date: day.format(r.at),
+                    by:
+                      r.kind === "settlement"
+                        ? t("settle.trailSettledBy", { name: payer })
+                        : t("expense.paidByName", { name: payer }),
+                  })}
+                </span>
+              </span>
+              {/* Sign is from the payer-of-the-transfer's side: negative = they
+                      owe it. `subject` makes the spoken direction match - this is
+                      never the viewer's own balance. */}
+              <Amount
+                paise={-r.amount}
+                label={t("settle.trailShare", { name: name(fromMemberId) })}
+                subject={name(fromMemberId)}
+              />
+            </li>
+          );
+        })}
+      </ul>
+      {!fullyExplained(trail, amount) && (
         <p className="py-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("settle.trailSimplified")}
         </p>
-      ) : (
-        <>
-          <ul className="mt-1 mb-1">
-            {trail.map((r) => {
-              // The sign already says who paid: a row that adds to what `from`
-              // owes came from `to`'s pocket, and vice versa.
-              const paidByTo = r.amount > 0;
-              const payer = name(paidByTo ? toMemberId : fromMemberId);
-              return (
-                <li
-                  key={`${r.kind}-${r.id}`}
-                  className="flex items-center justify-between gap-3 border-b py-1.5 last:border-b-0"
-                  style={{ borderColor: "var(--line)" }}
-                >
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[13px]">
-                      {r.kind === "settlement" ? t("settle.trailSettlement") : r.description}
-                    </span>
-                    <span className="block text-[13px]" style={{ color: "var(--ink-3)" }}>
-                      {t("settle.trailMeta", {
-                        date: day.format(r.at),
-                        by:
-                          r.kind === "settlement"
-                            ? t("settle.trailSettledBy", { name: payer })
-                            : t("expense.paidByName", { name: payer }),
-                      })}
-                    </span>
-                  </span>
-                  {/* Sign is from the payer-of-the-transfer's side: negative = they
-                      owe it. `subject` makes the spoken direction match - this is
-                      never the viewer's own balance. */}
-                  <Amount
-                    paise={-r.amount}
-                    label={t("settle.trailShare", { name: name(fromMemberId) })}
-                    subject={name(fromMemberId)}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-          {!fullyExplained(trail, amount) && (
-            <p className="py-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
-              {t("settle.trailSimplified")}
-            </p>
-          )}
-        </>
       )}
-    </details>
+    </>
   );
 }
