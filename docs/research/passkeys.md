@@ -8,7 +8,7 @@ No passwords, no SMTP. There is no email fallback, so recovery is a design probl
 **Bottom line:** passkeys are fine as the only auth mechanism at this scale, on current platforms.
 The recovery answer is **owner-initiated re-invite**, plus nudging a second passkey after first
 sign-in. Recovery codes are the wrong shape for this audience. Details in
-[Recovery](#account-recovery-with-no-email-server) below.
+[Recovery](#5-account-recovery-with-no-email-server) below.
 
 ---
 

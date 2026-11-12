@@ -2,3 +2,4 @@ pnpm-lock.yaml
 dist
 migrations/meta
 .remember
+site

@@ -1,0 +1,27 @@
+---
+import Landing from "../layouts/Landing.astro";
+import Mark from "../components/landing/Mark.astro";
+import { cfg, withBase } from "../lib/source";
+---
+
+<Landing title={`Not in the ledger, ${cfg.name}`} description="Page not found.">
+  <div class="nf">
+    <a class="nf__brand" href={withBase("")}><Mark size={24} /> {cfg.name}</a>
+    <h1>This page <span>not in the ledger</span></h1>
+    <p>Nothing is written on this line. The address may be mistyped, or the page moved.</p>
+    <p class="nf__links"><a href={withBase("")}>Back to the sheet</a> <a href={withBase("guide/")}>Read the guide</a></p>
+  </div>
+</Landing>
+
+<style is:global>
+  :root { color-scheme: light dark; --paper: #f7f4ec; --ink: #23241d; --ink-2: #5c5f52; --moss: #485c43; --line: #e0d9c8; }
+  @media (prefers-color-scheme: dark) { :root { --paper: #191a15; --ink: #e8e6da; --ink-2: #a3a595; --moss: #8fa885; --line: #2e3128; } }
+  body { margin: 0; background: var(--paper); color: var(--ink); font: 1.0625rem/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .nf { max-width: 40rem; margin: 0 auto; padding: 1.25rem 16px 4rem; }
+  .nf__brand { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 44px; color: var(--moss); font: 500 1.25rem ui-serif, Georgia, serif; text-decoration: none; }
+  .nf h1 { margin: 4rem 0 1rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--line); font: 400 clamp(1.8rem, 6vw, 2.6rem)/1.15 ui-serif, Georgia, serif; }
+  .nf h1 span { margin-left: 0.4em; padding-left: 0.6em; border-left: 1px solid var(--line); color: var(--ink-2); font-style: italic; }
+  .nf p { margin: 0 0 1rem; color: var(--ink-2); }
+  .nf__links { display: flex; flex-wrap: wrap; gap: 0 1.5rem; }
+  .nf__links a { display: inline-flex; align-items: center; min-height: 44px; color: var(--moss); text-underline-offset: 0.25em; }
+</style>

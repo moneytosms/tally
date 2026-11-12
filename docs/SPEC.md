@@ -14,16 +14,16 @@ A single self-hosted instance, run by one person, used by their friend groups to
 
 ### Fixed constraints
 
-|            |                                                                              |
-| ---------- | ---------------------------------------------------------------------------- |
-| Deployment | One instance, run by the owner. Distributable self-hosting is not a feature. |
-| Money      | Ledger only. `upi://` deep links on settle-up. No funds touch the server.    |
-| Offline    | Online-only with optimistic UI. No write queue, no conflict resolution.      |
-| Auth       | Invite link + passkey. No passwords, no SMTP.                                |
-| Currency   | INR only.                                                                    |
-| Language   | English only, behind a `t()` layer so others can be added.                   |
-| Budget     | $0/mo.                                                                       |
-| Scale      | ~20 people, a few ledgers, thousands of expenses over years.                 |
+|            |                                                                           |
+| ---------- | ------------------------------------------------------------------------- |
+| Deployment | One instance per deploy, run by its owner. Forks self-host (MIT).         |
+| Money      | Ledger only. `upi://` deep links on settle-up. No funds touch the server. |
+| Offline    | Online-only with optimistic UI. No write queue, no conflict resolution.   |
+| Auth       | Invite link + passkey or password (ADR 0006). No SMTP.                    |
+| Currency   | INR only.                                                                 |
+| Language   | English only, behind a `t()` layer so others can be added.                |
+| Budget     | $0/mo.                                                                    |
+| Scale      | ~20 people, a few ledgers, thousands of expenses over years.              |
 
 ---
 
@@ -184,7 +184,9 @@ Bulk settle is a multi-ledger write that **must not half-apply** - see §11.
 
 [Passkey research](https://github.com/moneytosms/tally/issues/5) · [Security model](https://github.com/moneytosms/tally/issues/12)
 
-### Passkeys only
+### Passkeys and passwords
+
+Passwords sit alongside passkeys ([ADR 0006](adr/0006-password-auth-and-instance-invites.md)). Passkey rules below still hold.
 
 - SimpleWebAuthn. **Multiple credentials per user from day one.**
 - **Recovery is owner-initiated re-invite**, and it must **revoke** the lost credential, not merely add one. Recovery codes were rejected: they reintroduce a bearer secret, and friends won't save them but will believe they're covered.
@@ -232,7 +234,7 @@ UPI VPA (co-members only) · display name · avatar (generated initials, no imag
 
 ### Out of scope
 
-Multi-currency · Splitwise import · receipt images · OCR · real payment processing · trip kitty · payment rotation · read-only share links · in-app chat · profile reliability scores · offline-first write sync · public signup · distributable self-hosting
+Multi-currency · receipt images · OCR · real payment processing · trip kitty · payment rotation · read-only share links · in-app chat · profile reliability scores · offline-first write sync · public signup
 
 ---
 

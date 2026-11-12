@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="664" viewBox="0 0 1200 664" role="img" aria-labelledby="t d">
+<title id="t">tally ledger sheet</title>
+<desc id="d">A ledger sheet for a Goa trip: five expenses totalling ₹34,100.00, a double rule, one transfer "Ravi pays Asha ₹5,185.00 via UPI", and net positions that sum to ₹0.00.</desc>
+<rect width="1200" height="664" rx="24" fill="#191a15"/>
+<rect x=".5" y=".5" width="1199" height="663" rx="23.5" fill="none" stroke="#3a3b30"/>
+<g transform="translate(80 54) scale(3)" fill="none" stroke="#8fa885" stroke-width="2" stroke-linecap="round"><path d="M6 5.5v13M10 5v13.5M14 5.5v13M18 5v13.5"/><path d="M3.5 15.5 20.5 8" stroke="#c9836a"/></g>
+<g font-family="ui-serif,Georgia,'Times New Roman',serif">
+<text x="170" y="112" font-size="64" font-weight="700" fill="#e8e6da">tally</text>
+<text x="1120" y="108" text-anchor="end" font-size="24" fill="#a9a898">Goa trip · 5 members · 5 expenses</text>
+<line x1="80" x2="1120" y1="150" y2="150" stroke="#e8e6da" stroke-width="2"/>
+<text x="80" y="196" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="17" letter-spacing="2" fill="#a9a898">EXPENSE</text>
+<text x="1120" y="196" text-anchor="end" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="17" letter-spacing="2" fill="#a9a898">AMOUNT</text>
+<line x1="80" x2="1120" y1="212" y2="212" stroke="#3a3b30" stroke-width="1.5"/>
+<text x="80" y="250" font-size="26" fill="#e8e6da">Beach villa</text><text x="470" y="250" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="19" fill="#a9a898">paid by Asha · equal/5</text><text x="1120" y="250" text-anchor="end" font-size="26" fill="#e8e6da" font-variant-numeric="tabular-nums">₹24,000.00</text><line x1="80" x2="1120" y1="266" y2="266" stroke="#3a3b30" stroke-width="1.5"/><text x="80" y="304" font-size="26" fill="#e8e6da">Seafood dinner</text><text x="470" y="304" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="19" fill="#a9a898">paid by Sam · equal/5</text><text x="1120" y="304" text-anchor="end" font-size="26" fill="#e8e6da" font-variant-numeric="tabular-nums">₹4,200.00</text><line x1="80" x2="1120" y1="320" y2="320" stroke="#3a3b30" stroke-width="1.5"/><text x="80" y="358" font-size="26" fill="#e8e6da">Airport cab</text><text x="470" y="358" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="19" fill="#a9a898">paid by Meera · equal/4</text><text x="1120" y="358" text-anchor="end" font-size="26" fill="#e8e6da" font-variant-numeric="tabular-nums">₹1,500.00</text><line x1="80" x2="1120" y1="374" y2="374" stroke="#3a3b30" stroke-width="1.5"/><text x="80" y="412" font-size="26" fill="#e8e6da">Scooter rental</text><text x="470" y="412" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="19" fill="#a9a898">paid by Ravi · by shares/3</text><text x="1120" y="412" text-anchor="end" font-size="26" fill="#e8e6da" font-variant-numeric="tabular-nums">₹1,800.00</text><line x1="80" x2="1120" y1="428" y2="428" stroke="#3a3b30" stroke-width="1.5"/><text x="80" y="466" font-size="26" fill="#e8e6da">Beach shack drinks</text><text x="470" y="466" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="19" fill="#a9a898">paid by Karthik · equal/5</text><text x="1120" y="466" text-anchor="end" font-size="26" fill="#e8e6da" font-variant-numeric="tabular-nums">₹2,600.00</text><line x1="80" x2="1120" y1="482" y2="482" stroke="#3a3b30" stroke-width="1.5"/>
+<text x="80" y="552" font-size="26" font-weight="700" fill="#e8e6da">Total</text>
+<text x="1120" y="552" text-anchor="end" font-size="26" font-weight="700" fill="#e8e6da" font-variant-numeric="tabular-nums">₹34,100.00</text>
+<line x1="80" x2="1120" y1="570" y2="570" stroke="#e8e6da" stroke-width="2"/>
+<line x1="80" x2="1120" y1="576" y2="576" stroke="#e8e6da" stroke-width="2"/>
+<text x="80" y="616" font-size="26" fill="#8fa885" font-weight="700">Ravi pays Asha ₹5,185.00 via UPI</text>
+<text x="1120" y="616" text-anchor="end" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="19" fill="#a9a898">net positions sum to ₹0.00</text>
+</g></svg>
