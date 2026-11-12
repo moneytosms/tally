@@ -7,27 +7,38 @@
 // This screen is the one place a member checks the arithmetic by hand: every
 // figure comes from the server, and the only sum computed here is the visible
 // check line over net positions. Nothing here changes a calculation.
+//
+// Order: summary, who pays whom (the action), the graph, net positions (collapsed),
+// settlements recorded, export. Each figure appears once, except the graph, which
+// is a second view of the same transfers.
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { useParams } from "react-router";
 import {
   Amount,
   Avatar,
   Button,
+  Card,
+  ConfirmDialog,
   EmptyState,
   Field,
+  Icon,
   Input,
+  Notice,
   Rupees,
   ScreenSkeleton,
+  SectionHeading,
+  Segmented,
   Sheet,
   Skeleton,
   pushToast,
 } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
+import { ExportSheet } from "~/client/components/ExportSheet";
 import { SettleGraph, type Selection } from "~/client/components/SettleGraph";
-import { WhyTrail, disclosureSummaryClass, fullyExplained } from "~/client/components/WhyTrail";
-import { dayFormat } from "~/client/components/ActivityRow";
+import { WhyTrail, TrailList, disclosureSummaryClass, fullyExplained } from "~/client/components/WhyTrail";
 import { paiseToRupeeString, rupeesToPaise } from "~/client/components/SplitEditor";
 import { formatPaise } from "~/shared/money";
+import { formatDate } from "~/client/lib/format";
 import {
   useBalances,
   useCreateSettlement,
@@ -85,6 +96,11 @@ export function netSum(positions: Array<{ net: number }>): number {
 type Transfer = { fromMemberId: string; toMemberId: string; amount: number };
 type TransferKey = { fromMemberId: string; toMemberId: string };
 
+/** Identity of a transfer or direct debt: its payer and payee. */
+export function pairKey(key: TransferKey): string {
+  return `${key.fromMemberId}>${key.toMemberId}`;
+}
+
 /** The open transfer, looked up fresh: if it was settled elsewhere it is gone, so the sheet closes. */
 export function activeTransfer<T extends TransferKey>(transfers: T[], key: TransferKey | null): T | null {
   if (!key) return null;
@@ -137,10 +153,6 @@ export function memberLine(p: {
   return t("settle.graph.sentenceFull", { base, out, inn, outcome });
 }
 
-const card = { background: "var(--paper-2)", borderColor: "var(--line)" };
-const muted = { color: "var(--ink-3)" };
-const item = `flex min-h-11 w-full items-center px-3.5 py-2.5 text-left text-[15px] ${focusRing}`;
-
 /** A reminder to whoever owes me. The endpoint and its 12-hour server-side rate
  *  limit already existed; nothing in the UI ever called it. Guests have no user,
  *  so there is nobody to notify - the button is simply absent for them. */
@@ -157,7 +169,7 @@ function Nudge({ ledgerId, toUserId }: { ledgerId: string; toUserId: string | nu
         : "";
 
   return (
-    <div className="mt-1.5 flex items-center gap-2.5">
+    <div className="mt-2 flex items-center gap-2.5">
       <Button
         size="sm"
         variant="ghost"
@@ -166,7 +178,7 @@ function Nudge({ ledgerId, toUserId }: { ledgerId: string; toUserId: string | nu
       >
         {t("notifications.nudge")}
       </Button>
-      <span role="status" aria-live="polite" className="text-[13px]" style={muted}>
+      <span role="status" aria-live="polite" className="text-[13px] text-[var(--ink-3)]">
         {message}
       </span>
     </div>
@@ -185,16 +197,12 @@ function MemberExpenses({ ledgerId, memberId, name }: { ledgerId: string; member
     );
   if (expenses.isError)
     return (
-      <p role="alert" className="text-[13px]" style={{ color: "var(--clay)" }}>
+      <p role="alert" className="text-[13px] text-[var(--clay)]">
         {t("settle.graph.loadFailed")}
       </p>
     );
   if (expenses.data.length === 0)
-    return (
-      <p className="text-[13px]" style={muted}>
-        {t("settle.graph.noExpenses", { name })}
-      </p>
-    );
+    return <p className="text-[13px] text-[var(--ink-3)]">{t("settle.graph.noExpenses", { name })}</p>;
   return (
     <ul>
       {expenses.data.map((e) => {
@@ -207,9 +215,7 @@ function MemberExpenses({ ledgerId, memberId, name }: { ledgerId: string; member
           >
             <div className="min-w-0">
               <div className="truncate text-[15px]">{e.description}</div>
-              <div className="text-[13px]" style={muted}>
-                {dayFormat.format(e.paidAt)}
-              </div>
+              <div className="text-[13px] text-[var(--ink-3)]">{formatDate(e.paidAt)}</div>
             </div>
             <div className="flex flex-none flex-col items-end gap-1">
               {e.payerMemberId === memberId && (
@@ -223,6 +229,11 @@ function MemberExpenses({ ledgerId, memberId, name }: { ledgerId: string; member
     </ul>
   );
 }
+
+const viewOptions: { value: "plan" | "direct"; label: string }[] = [
+  { value: "plan", label: t("settle.graph.planView") },
+  { value: "direct", label: t("settle.graph.directView") },
+];
 
 export default function SettleUp() {
   const { ledgerId = "" } = useParams();
@@ -238,9 +249,14 @@ export default function SettleUp() {
   const [method, setMethod] = useState<SettleMethod>("manual");
   const [note, setNote] = useState("");
   const [failure, setFailure] = useState("");
+  const [confirmWriteOff, setConfirmWriteOff] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const online = useOnline();
   const [view, setView] = useState<"plan" | "direct">("plan");
   const [selection, setSelection] = useState<Selection | null>(null);
+  // Transfer-plan "why?" disclosures that are open. The selected-arrow panel
+  // defers to an open one rather than repeating its trail.
+  const [openTrails, setOpenTrails] = useState<ReadonlySet<string>>(() => new Set());
 
   const roster = members.data ?? [];
   const member = (id: string) => roster.find((m) => m.id === id);
@@ -259,6 +275,13 @@ export default function SettleUp() {
     setMethod(m);
     setFailure("");
   };
+  const setTrailOpen = (key: string, isOpen: boolean) =>
+    setOpenTrails((prev) => {
+      const next = new Set(prev);
+      if (isOpen) next.add(key);
+      else next.delete(key);
+      return next;
+    });
 
   const open = (tr: Transfer) => {
     setActiveKey({ fromMemberId: tr.fromMemberId, toMemberId: tr.toMemberId });
@@ -269,7 +292,18 @@ export default function SettleUp() {
   };
 
   if (balances.isPending) return <ScreenSkeleton />;
-  if (balances.isError) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
+  if (balances.isError)
+    return (
+      <EmptyState
+        title={t("error.generic")}
+        body={t("error.network")}
+        action={
+          <Button variant="ghost" onClick={() => void balances.refetch()}>
+            {t("action.retry")}
+          </Button>
+        }
+      />
+    );
 
   const { positions, transfers, pairs, settlements, totals } = balances.data;
   // Server names are authoritative here, including for members who have left.
@@ -288,6 +322,10 @@ export default function SettleUp() {
   const paise = parsed && "paise" in parsed ? parsed.paise : null;
   const sheetTitle = active ? t("settle.pays", { from: name(active.fromMemberId), to: name(active.toMemberId) }) : "";
 
+  const transferList = sortTransfers(transfers, myMemberId);
+  // The one primary action on the screen: the viewer's first outgoing transfer.
+  const primaryTransfer = transferList.find((tr) => tr.fromMemberId === myMemberId);
+
   const named = sortPositions(
     positions.map((p) => ({ ...p, name: name(p.memberId) })),
     myMemberId,
@@ -302,6 +340,7 @@ export default function SettleUp() {
   // Gone from this view or data: forget it, so it cannot reappear later (same pattern as activeKey).
   if (selection && !edgeSel && !memberSel) setSelection(null);
   const trailOf = edgeSel?.trail ?? [];
+  const trailShownAbove = view === "plan" && edgeSel !== null && openTrails.has(pairKey(edgeSel));
   const rerouted =
     view === "plan" && edgeSel && !fullyExplained(trailOf, edgeSel.amount) ? reroutedReason(edgeSel, pairs) : null;
   const showRerouted = rerouted !== null && rerouted.payerOwes.length + rerouted.payeeOwed.length > 0;
@@ -324,149 +363,109 @@ export default function SettleUp() {
     }
   }
 
+  // Writing off is final, so it is confirmed first. UPI and manual record directly.
+  const onRecord = () => {
+    if (shown === "forgiven") setConfirmWriteOff(true);
+    else void record();
+  };
+
   return (
     <>
       {archived && (
-        <p className="mb-4 text-[13px]" style={muted}>
-          {t("settle.archivedNote")}
-        </p>
+        <div className="mb-2">
+          <Notice>{t("settle.archivedNote")}</Notice>
+        </div>
       )}
 
-      <section className="mb-6">
-        <div className="flex items-end justify-between gap-3 rounded-[7px] border px-3.5 py-3" style={card}>
-          <Amount paise={totals.spent} label={t("settle.totalSpent")} tone="neutral" />
-          <span className="text-[13px]" style={muted}>
-            {t("settle.expenseCount", { count: totals.expenseCount })}
-          </span>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
+        <Amount paise={totals.spent} label={t("settle.totalSpent")} tone="neutral" />
+        <span className="text-[13px] text-[var(--ink-3)]">
+          {t("settle.expenseCount", { count: totals.expenseCount })}
+        </span>
+      </div>
+      {transfers.length === 0 && (
+        <div className="mt-2">
+          <EmptyState title={t("settle.allSettled")} body={t("settle.allSettledBody")} />
         </div>
-      </section>
+      )}
 
-      <section className="mb-6">
-        <h2 className="mb-1 text-[15px] font-semibold">{t("settle.netHeading")}</h2>
-        <p className="mb-3 text-[13px]" style={muted}>
-          {t("settle.netExplain")}
-        </p>
-        {sortPositions(
-          positions.map((p) => ({ ...p, name: name(p.memberId) })),
-          myMemberId,
-        ).map((p) => {
-          const mine = p.memberId === myMemberId;
-          return (
-            <div key={p.memberId} className="mb-2 rounded-[7px] border px-3.5 py-3" style={card}>
-              <div className="flex items-center justify-between gap-2.5">
-                <div className="flex min-w-0 items-center gap-2.5">
-                  <Avatar name={p.name} />
-                  <span className="truncate text-[15px] font-medium">
-                    {mine ? t("settle.you", { name: p.name }) : p.name}
-                  </span>
-                </div>
-                <Amount
-                  paise={p.net}
-                  label={t("settle.netPosition")}
-                  tone="position"
-                  subject={mine ? undefined : p.name}
-                />
-              </div>
-              <div className="mt-2.5 flex flex-col gap-1.5 border-t pt-2.5" style={{ borderColor: "var(--line)" }}>
-                <Amount paise={p.paid} label={t("settle.paid")} tone="neutral" className="w-full justify-between" />
-                <Amount
-                  paise={p.share}
-                  label={t("settle.shareOfExpenses")}
-                  tone="neutral"
-                  className="w-full justify-between"
-                />
-                {p.settledOut !== 0 && (
-                  <Amount
-                    paise={p.settledOut}
-                    label={t("settle.settlementsSent")}
-                    tone="neutral"
-                    className="w-full justify-between"
+      {transfers.length > 0 && (
+        <section>
+          <SectionHeading>{t("settle.whoHeading")}</SectionHeading>
+          <p className="mb-2 text-[13px] text-[var(--ink-3)]">{t("settle.whoExplain")}</p>
+          <ul className="flex flex-col gap-2">
+            {transferList.map((tr) => {
+              const mine = tr.fromMemberId === myMemberId;
+              const owedToMe = tr.toMemberId === myMemberId;
+              const primary = tr === primaryTransfer;
+              const key = pairKey(tr);
+              return (
+                <Card as="li" key={key}>
+                  <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2.5">
+                    <div className="min-w-[12rem] flex-1">
+                      <div className="text-[15px] font-medium">
+                        {t("settle.pays", { from: name(tr.fromMemberId), to: name(tr.toMemberId) })}
+                      </div>
+                      <Amount paise={tr.amount} label={t("settle.amount")} tone="neutral" className="mt-1" />
+                    </div>
+                    {!archived &&
+                      (mine ? (
+                        <Button variant={primary ? "primary" : "ghost"} onClick={() => open(tr)}>
+                          {t("settle.startSettle")}
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" onClick={() => open(tr)}>
+                          {t("settle.recordFor", { name: name(tr.fromMemberId) })}
+                        </Button>
+                      ))}
+                  </div>
+                  {owedToMe && !archived && (
+                    <Nudge ledgerId={ledgerId} toUserId={member(tr.fromMemberId)?.userId ?? null} />
+                  )}
+                  <WhyTrail
+                    fromName={name(tr.fromMemberId)}
+                    toName={name(tr.toMemberId)}
+                    amount={tr.amount}
+                    trail={tr.trail ?? []}
+                    open={openTrails.has(key)}
+                    onToggle={(isOpen) => setTrailOpen(key, isOpen)}
                   />
-                )}
-                {p.settledIn !== 0 && (
-                  <Amount
-                    paise={p.settledIn}
-                    label={t("settle.settlementsReceived")}
-                    tone="neutral"
-                    className="w-full justify-between"
-                  />
-                )}
-              </div>
-            </div>
-          );
-        })}
-        {idle.map((m) => (
-          <p key={m.id} className="mb-1 text-[13px]" style={muted}>
-            {t("settle.noActivity", { name: m.nickname })}
-          </p>
-        ))}
-        <div className="mt-3">
-          {sum === 0 ? (
-            <Amount paise={0} label={t("settle.checkLabel")} tone="neutral" />
-          ) : (
-            <p role="alert" className="text-[13px]" style={{ color: "var(--clay)" }}>
-              {t("settle.checkFailed")} <Amount paise={sum} label={t("settle.checkSum")} tone="neutral" />
-            </p>
-          )}
-        </div>
-      </section>
+                </Card>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
-      <section className="mb-6">
-        <h2 className="mb-1 text-[15px] font-semibold">{t("settle.graph.heading")}</h2>
-        <p className="mb-3 text-[13px]" style={muted}>
-          {t("settle.graph.explain")}
-        </p>
+      <section>
+        <SectionHeading>{t("settle.graph.heading")}</SectionHeading>
+        <p className="mb-3 text-[13px] text-[var(--ink-3)]">{t("settle.graph.explain")}</p>
         {!online ? (
-          <p className="text-[13px]" style={muted}>
-            {t("offline.body")}
-          </p>
+          <p className="text-[13px] text-[var(--ink-3)]">{t("offline.body")}</p>
         ) : (
           <>
-            <div className="mb-3 flex flex-wrap gap-2">
-              {(["plan", "direct"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  aria-pressed={view === v}
-                  onClick={() => setView(v)}
-                  className={disclosureSummaryClass}
-                  style={{
-                    borderColor: "var(--line-2)",
-                    color: "var(--ink)",
-                    background: view === v ? "var(--paper-sunk)" : undefined,
-                    fontWeight: view === v ? 600 : 500,
-                  }}
-                >
-                  {t(v === "plan" ? "settle.graph.planView" : "settle.graph.directView")}
-                </button>
-              ))}
-            </div>
+            <Segmented label={t("settle.graph.heading")} options={viewOptions} value={view} onChange={setView} />
 
             {named.length > 0 && (
-              <SettleGraph
-                positions={named.map((p) => ({ memberId: p.memberId, name: p.name, net: p.net }))}
-                edges={edges}
-                selected={selection}
-                onSelect={setSelection}
-                label={t("settle.graph.label")}
-              />
+              <div className="mt-3">
+                <SettleGraph
+                  positions={named.map((p) => ({ memberId: p.memberId, name: p.name, net: p.net }))}
+                  edges={edges}
+                  selected={selection}
+                  onSelect={setSelection}
+                  label={t("settle.graph.label")}
+                />
+              </div>
             )}
 
             {edgeSel && (
-              <div className="mt-3 mb-2 rounded-[7px] border px-3.5 py-3" style={card}>
+              <Card className="mt-3">
                 <div className="text-[15px] font-medium">
                   {view === "plan"
                     ? t("settle.pays", { from: name(edgeSel.fromMemberId), to: name(edgeSel.toMemberId) })
                     : t("settle.owes", { from: name(edgeSel.fromMemberId), to: name(edgeSel.toMemberId) })}
                 </div>
                 <Amount paise={edgeSel.amount} label={t("settle.amount")} tone="neutral" className="mt-1" />
-                <WhyTrail
-                  ledgerId={ledgerId}
-                  fromMemberId={edgeSel.fromMemberId}
-                  toMemberId={edgeSel.toMemberId}
-                  amount={edgeSel.amount}
-                  trail={trailOf}
-                />
                 {showRerouted && rerouted && (
                   <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
                     <h3 className="mb-1 text-[13px] font-medium">{t("settle.graph.reroutedHeading")}</h3>
@@ -479,16 +478,28 @@ export default function SettleUp() {
                         className="w-full justify-between"
                       />
                     ))}
-                    <p className="mt-1 text-[13px]" style={muted}>
+                    <p className="mt-1 text-[13px] text-[var(--ink-3)]">
                       {t("settle.graph.rerouted", { from: name(edgeSel.fromMemberId), to: name(edgeSel.toMemberId) })}
                     </p>
                   </div>
                 )}
-              </div>
+                <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
+                  {trailShownAbove ? (
+                    <p className="py-2 text-[13px] text-[var(--ink-3)]">{t("settle.graph.trailAbove")}</p>
+                  ) : (
+                    <TrailList
+                      fromName={name(edgeSel.fromMemberId)}
+                      toName={name(edgeSel.toMemberId)}
+                      amount={edgeSel.amount}
+                      trail={trailOf}
+                    />
+                  )}
+                </div>
+              </Card>
             )}
 
             {memberSel && (
-              <div className="mt-3 mb-2 rounded-[7px] border px-3.5 py-3" style={card}>
+              <Card className="mt-3">
                 <p className="text-[14px]">{memberLine(memberSel)}</p>
                 <h3 className="mt-3 mb-1 text-[13px] font-medium">
                   {t("settle.graph.detailMember", { name: memberSel.name })}
@@ -499,81 +510,20 @@ export default function SettleUp() {
                   memberId={memberSel.memberId}
                   name={memberSel.name}
                 />
-              </div>
+              </Card>
             )}
-
-            <div className="mt-3">
-              {named.map((p) => (
-                <p key={p.memberId} className="mb-1 text-[13px]" style={{ color: "var(--ink-2)" }}>
-                  {memberLine(p)}
-                </p>
-              ))}
-            </div>
           </>
         )}
-      </section>
 
-      <section className="mb-6">
-        <h2 className="mb-1 text-[15px] font-semibold">{t("settle.whoHeading")}</h2>
-        <p className="mb-3 text-[13px]" style={muted}>
-          {t("settle.whoExplain")}
-        </p>
-        {transfers.length === 0 ? (
-          <EmptyState title={t("settle.allSettled")} />
-        ) : (
-          sortTransfers(transfers, myMemberId).map((tr) => {
-            const mine = tr.fromMemberId === myMemberId;
-            const owedToMe = tr.toMemberId === myMemberId;
-            return (
-              <div
-                key={`${tr.fromMemberId}-${tr.toMemberId}`}
-                className="mb-2 rounded-[7px] border px-3.5 py-3"
-                style={card}
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2.5">
-                  <div className="min-w-0">
-                    <div className="text-[15px] font-medium">
-                      {t("settle.pays", { from: name(tr.fromMemberId), to: name(tr.toMemberId) })}
-                    </div>
-                    <Amount paise={tr.amount} label={t("settle.amount")} tone="neutral" className="mt-1" />
-                  </div>
-                  {archived ? null : mine ? (
-                    <Button onClick={() => open(tr)}>{t("settle.startSettle")}</Button>
-                  ) : (
-                    <Button variant="ghost" onClick={() => open(tr)}>
-                      {t("settle.recordFor", { name: name(tr.fromMemberId) })}
-                    </Button>
-                  )}
-                </div>
-                {owedToMe && !archived && (
-                  <Nudge ledgerId={ledgerId} toUserId={member(tr.fromMemberId)?.userId ?? null} />
-                )}
-                <WhyTrail
-                  ledgerId={ledgerId}
-                  fromMemberId={tr.fromMemberId}
-                  toMemberId={tr.toMemberId}
-                  amount={tr.amount}
-                  trail={tr.trail ?? []}
-                />
-              </div>
-            );
-          })
-        )}
         {pairs.length > 0 && (
-          <details className="mt-1">
+          <details className="mt-3">
             <summary className={disclosureSummaryClass} style={{ borderColor: "var(--line-2)", color: "var(--ink)" }}>
-              {t("settle.pairsSummary")}
+              {t("settle.pairsText")}
             </summary>
-            <p className="py-2 text-[13px]" style={muted}>
-              {t("settle.pairsExplain")}
-            </p>
+            <p className="py-2 text-[13px] text-[var(--ink-3)]">{t("settle.pairsExplain")}</p>
             <ul>
               {pairs.map((p) => (
-                <li
-                  key={`${p.fromMemberId}-${p.toMemberId}`}
-                  className="border-b py-1.5 last:border-b-0"
-                  style={{ borderColor: "var(--line)" }}
-                >
+                <li key={pairKey(p)} className="border-b py-1.5 last:border-b-0" style={{ borderColor: "var(--line)" }}>
                   <Amount
                     paise={p.amount}
                     label={t("settle.owes", { from: name(p.fromMemberId), to: name(p.toMemberId) })}
@@ -587,77 +537,128 @@ export default function SettleUp() {
         )}
       </section>
 
-      <section className="mb-6">
-        <h2 className="mb-3 text-[15px] font-semibold">{t("settle.settlementsHeading")}</h2>
-        {settlements.length === 0 ? (
-          <p className="text-[13px]" style={muted}>
-            {t("settle.noSettlements")}
-          </p>
-        ) : (
-          settlements.map((s) => {
-            const date = dayFormat.format(s.declaredAt);
-            const method = t(`settle.method.${s.method}`);
-            const meta = s.note
-              ? t("settle.recordMetaNote", { date, method, note: s.note })
-              : t("settle.recordMeta", { date, method });
-            return (
-              <div
-                key={s.id}
-                className="mb-2 flex items-center justify-between gap-3 rounded-[7px] border px-3.5 py-3"
-                style={card}
-              >
-                <div className="min-w-0">
-                  <div className="text-[15px]">
-                    {s.method === "forgiven"
-                      ? t("settle.wroteOff", { from: name(s.fromMemberId), to: name(s.toMemberId) })
-                      : t("settle.paidTo", { from: name(s.fromMemberId), to: name(s.toMemberId) })}
+      <section>
+        <SectionHeading>{t("settle.netHeading")}</SectionHeading>
+        <details>
+          <summary className={disclosureSummaryClass} style={{ borderColor: "var(--line-2)", color: "var(--ink)" }}>
+            {t("settle.netShow")}
+          </summary>
+          <p className="mt-2 mb-2 text-[13px] text-[var(--ink-3)]">{t("settle.netExplain")}</p>
+          <ul className="flex flex-col gap-2">
+            {named.map((p) => {
+              const mine = p.memberId === myMemberId;
+              return (
+                <Card as="li" key={p.memberId}>
+                  <div className="flex items-center justify-between gap-2.5">
+                    <div className="flex min-w-0 items-center gap-2.5">
+                      <Avatar name={p.name} />
+                      <span className="truncate text-[15px] font-medium">
+                        {mine ? t("settle.you", { name: p.name }) : p.name}
+                      </span>
+                    </div>
+                    <Amount
+                      paise={p.net}
+                      label={t("settle.netPosition")}
+                      tone="position"
+                      subject={mine ? undefined : p.name}
+                    />
                   </div>
-                  <div className="text-[13px]" style={muted}>
-                    {meta}
+                  <div className="mt-2.5 flex flex-col gap-1.5 border-t pt-2.5" style={{ borderColor: "var(--line)" }}>
+                    <Amount paise={p.paid} label={t("settle.paid")} tone="neutral" className="w-full justify-between" />
+                    <Amount
+                      paise={p.share}
+                      label={t("settle.shareOfExpenses")}
+                      tone="neutral"
+                      className="w-full justify-between"
+                    />
+                    {p.settledOut !== 0 && (
+                      <Amount
+                        paise={p.settledOut}
+                        label={t("settle.settlementsSent")}
+                        tone="neutral"
+                        className="w-full justify-between"
+                      />
+                    )}
+                    {p.settledIn !== 0 && (
+                      <Amount
+                        paise={p.settledIn}
+                        label={t("settle.settlementsReceived")}
+                        tone="neutral"
+                        className="w-full justify-between"
+                      />
+                    )}
                   </div>
-                </div>
-                <Amount paise={s.amount} label={t("settle.amount")} tone="neutral" />
-              </div>
-            );
-          })
-        )}
+                </Card>
+              );
+            })}
+          </ul>
+          {idle.map((m) => (
+            <p key={m.id} className="mt-2 text-[13px] text-[var(--ink-3)]">
+              {t("settle.noActivity", { name: m.nickname })}
+            </p>
+          ))}
+          <div className="mt-3">
+            {sum === 0 ? (
+              <Amount paise={0} label={t("settle.checkLabel")} tone="neutral" />
+            ) : (
+              <p role="alert" className="text-[13px] text-[var(--clay)]">
+                {t("settle.checkFailed")} <Amount paise={sum} label={t("settle.checkSum")} tone="neutral" />
+              </p>
+            )}
+          </div>
+        </details>
       </section>
 
-      <section className="mb-6">
-        <h2 className="mb-3 text-[15px] font-semibold">{t("settle.export.heading")}</h2>
-        {!online ? (
-          <p className="text-[13px]" style={muted}>
-            {t("offline.body")}
-          </p>
+      <section>
+        <SectionHeading>{t("settle.settlementsHeading")}</SectionHeading>
+        {settlements.length === 0 ? (
+          <p className="text-[13px] text-[var(--ink-3)]">{t("settle.noSettlements")}</p>
         ) : (
-          <ul className="rounded-[7px] border" style={card}>
-            <li className="border-b last:border-b-0" style={{ borderColor: "var(--line)" }}>
-              <a href={`/api/ledgers/${ledgerId}/settle.csv`} download className={item}>
-                {t("settle.export.csv")}
-              </a>
-            </li>
-            <li className="border-b last:border-b-0" style={{ borderColor: "var(--line)" }}>
-              <a href={`/api/ledgers/${ledgerId}/settle.xlsx`} download className={item}>
-                {t("settle.export.xlsx")}
-              </a>
-            </li>
-            <li className="border-b last:border-b-0" style={{ borderColor: "var(--line)" }}>
-              <Link to="report" className={item}>
-                {t("settle.export.pdf")}
-              </Link>
-            </li>
+          <ul className="flex flex-col gap-2">
+            {settlements.map((s) => {
+              const date = formatDate(s.declaredAt);
+              const method = t(`settle.method.${s.method}`);
+              const meta = s.note
+                ? t("settle.recordMetaNote", { date, method, note: s.note })
+                : t("settle.recordMeta", { date, method });
+              return (
+                <Card as="li" key={s.id} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="text-[15px]">
+                      {s.method === "forgiven"
+                        ? t("settle.wroteOff", { from: name(s.fromMemberId), to: name(s.toMemberId) })
+                        : t("settle.paidTo", { from: name(s.fromMemberId), to: name(s.toMemberId) })}
+                    </div>
+                    <div className="text-[13px] text-[var(--ink-3)]">{meta}</div>
+                  </div>
+                  <Amount paise={s.amount} label={t("settle.amount")} tone="neutral" />
+                </Card>
+              );
+            })}
           </ul>
         )}
       </section>
+
+      <section>
+        <SectionHeading>{t("settle.export.heading")}</SectionHeading>
+        {!online ? (
+          <p className="text-[13px] text-[var(--ink-3)]">{t("offline.body")}</p>
+        ) : (
+          <Button variant="ghost" onClick={() => setExportOpen(true)}>
+            <Icon name="download" size={18} />
+            {t("settle.export.open")}
+          </Button>
+        )}
+      </section>
+
+      <ExportSheet ledgerId={ledgerId} open={exportOpen} onClose={() => setExportOpen(false)} />
 
       <Sheet open={active !== null} onOpenChange={(o) => !o && setActiveKey(null)} title={sheetTitle}>
         {active && (
           <>
             <Field label={t("settle.amount")} error={parsed && "error" in parsed ? parsed.error : undefined}>
               <Rupees value={amountRaw} onChange={changeAmount} />
-              <span className="mt-1.5 block text-[13px]" style={muted}>
-                {t("settle.partialHint")}
-              </span>
+              <span className="mt-1.5 block text-[13px] text-[var(--ink-3)]">{t("settle.partialHint")}</span>
             </Field>
 
             <div className="mb-3 flex items-center gap-4">
@@ -668,7 +669,7 @@ export default function SettleUp() {
             </div>
 
             <fieldset className="mb-3">
-              <legend className="mb-1.5 block text-[13px] tracking-[0.13em] uppercase" style={muted}>
+              <legend className="mb-1.5 block text-[13px] tracking-[0.13em] text-[var(--ink-3)] uppercase">
                 {t("settle.methodLabel")}
               </legend>
               {(["upi", "manual", "forgiven"] as const).map((m) => (
@@ -685,15 +686,11 @@ export default function SettleUp() {
                 </label>
               ))}
               {!payeeVpa && (
-                <p className="text-[13px]" style={muted}>
+                <p className="text-[13px] text-[var(--ink-3)]">
                   {t("settle.noVpa", { name: name(active.toMemberId) })}
                 </p>
               )}
-              {shown === "forgiven" && (
-                <p className="text-[13px]" style={{ color: "var(--ink-2)" }}>
-                  {t("settle.forgivenExplain")}
-                </p>
-              )}
+              {shown === "forgiven" && <p className="text-[13px] text-[var(--ink-2)]">{t("settle.forgivenExplain")}</p>}
             </fieldset>
 
             {/* Convenience on top of the record, never a substitute for it. */}
@@ -717,16 +714,27 @@ export default function SettleUp() {
               />
             </Field>
 
-            <p role="alert" aria-live="assertive" className="mb-2 text-[13px]" style={{ color: "var(--clay)" }}>
+            <p role="alert" aria-live="assertive" className="mb-2 text-[13px] text-[var(--clay)]">
               {failure}
             </p>
 
-            <Button block disabled={paise === null} isLoading={create.isPending} onClick={record}>
+            <Button block disabled={paise === null} isLoading={create.isPending} onClick={onRecord}>
               {t("settle.record")}
             </Button>
           </>
         )}
       </Sheet>
+
+      {confirmWriteOff && active && (
+        <ConfirmDialog
+          title={t("settle.writeOffTitle")}
+          body={t("settle.writeOffBody")}
+          confirmLabel={t("settle.writeOffConfirm")}
+          busy={create.isPending}
+          onCancel={() => setConfirmWriteOff(false)}
+          onConfirm={() => void record().then(() => setConfirmWriteOff(false))}
+        />
+      )}
     </>
   );
 }

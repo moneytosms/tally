@@ -20,6 +20,18 @@
     "current": "current tab",
     "main": "Main"
   },
+  "badge": {
+    "count": "{count} active",
+    "dot": "Active"
+  },
+  "time": {
+    "today": "Today",
+    "yesterday": "Yesterday",
+    "daysAgo": {
+      "one": "{count} day ago",
+      "other": "{count} days ago"
+    }
+  },
   "action": {
     "save": "Save",
     "skip": "Skip for now",
@@ -30,7 +42,9 @@
     "cancel": "Cancel",
     "edit": "Edit",
     "reload": "Reload",
-    "select": "Select…"
+    "select": "Select…",
+    "clearSearch": "Clear search",
+    "retry": "Try again"
   },
   "confirm": {
     "deleteExpense": { "title": "Delete this expense?", "action": "Delete expense" },
@@ -100,7 +114,6 @@
     "spent": "spent",
     "budget": "budget",
     "perDayLeft": "a day left",
-    "standing": "standing",
     "ended": "ended",
     "daysLeft": {
       "one": "{count} day left",
@@ -132,6 +145,8 @@
     "cloneNone": "Nobody yet, I'll invite them",
     "menu": {
       "open": "Ledger options",
+      "groupThis": "This ledger",
+      "export": "Export",
       "edit": "Edit details",
       "members": "Members",
       "invite": "Invite link",
@@ -161,19 +176,21 @@
     "duplicateAction": "Create",
     "duplicateFailed": "Could not duplicate this ledger.",
     "colorOptional": "Colour (optional)",
-    "colorNone": "None",
+    "colorNone": "No colour",
     "color": {
-      "moss": "Moss",
-      "clay": "Clay",
-      "ochre": "Ochre",
+      "moss": "Teal",
+      "clay": "Indigo",
+      "ochre": "Slate",
       "plum": "Plum",
       "sky": "Sky",
       "rose": "Rose"
     },
     "emojiOptional": "Emoji (optional)",
     "emojiPlaceholder": "e.g. ✈️",
-    "pin": "Pin to top",
-    "unpin": "Unpin"
+    "emojiHint": "One emoji, shown on the ledger's tile. Leave empty to use its first letter.",
+    "previewName": "Untitled ledger",
+    "pin": "Star",
+    "unpin": "Remove star"
   },
   "member": {
     "guest": "guest",
@@ -228,6 +245,11 @@
     "remainderNote": "Odd paise go to the payer.",
     "remainingToAllocate": "{amount} left to allocate",
     "overAllocated": "{amount} over-allocated",
+    "remainingOffline": "Not fully allocated yet.",
+    "overAllocatedOffline": "Over-allocated. Check the split.",
+    "reasonAmount": "Enter an amount",
+    "reasonDescription": "Enter a description",
+    "reasonDate": "Enter a date",
     "splitMode": {
       "equal": "Equal",
       "exact": "Exact",
@@ -277,7 +299,8 @@
     "restore": "Restore",
     "restored": "Version restored.",
     "restoreFailed": "Could not restore that version.",
-    "deleted": "Expense deleted.",
+    "goneTitle": "This expense was deleted.",
+    "goneBody": "It was removed, possibly by someone else. Go back to the ledger for the current list.",
     "comments": "Comments",
     "commentPlaceholder": "Add a comment",
     "commentSend": "Post",
@@ -297,6 +320,8 @@
     },
     "moreDetails": "More details",
     "lessDetails": "Hide details",
+    "detailsSummary": "{date} · {note}",
+    "noNote": "no note",
     "splitEvenly": "Split evenly"
   },
   "balances": {
@@ -317,6 +342,7 @@
     "recordedNone": "Nothing was recorded - this balance can't be settled from here. Open the ledger it comes from.",
     "alreadyRecorded": "Already recorded a moment ago. Nothing new was written.",
     "bulkNote": "This records the {recorded} you owe {name}. {name} owes you {remainder} in other ledgers; that is not changed, so afterwards {name} will owe you {remainder}.",
+    "bulkNoteOffline": "This records what you owe {name}. What {name} owes you in other ledgers is not changed, so afterwards they will still owe you.",
     "skippedNotRecorded": {
       "one": "1 transfer was not recorded. Settle it inside its ledger.",
       "other": "{count} transfers were not recorded. Settle them inside their ledger."
@@ -369,6 +395,9 @@
       "forgiven": "Written off"
     },
     "forgivenExplain": "Writes the debt off for good. It's recorded, never silent.",
+    "writeOffTitle": "Write this off for good?",
+    "writeOffBody": "Nobody will be asked to pay it. This cannot be undone.",
+    "writeOffConfirm": "Write off for good",
     "openUpi": "Open UPI app",
     "noVpa": "{name} hasn't added a UPI VPA, so record it manually.",
     "errorAmount": "Enter an amount, like 500.00.",
@@ -376,11 +405,13 @@
     "archivedNote": "This ledger is archived, so settlements can no longer be recorded.",
     "recorded": "Settlement recorded",
     "allSettled": "All settled up.",
+    "allSettledBody": "Nobody owes anyone in this ledger. New expenses and settlements show here.",
     "totalSpent": "Total spent",
     "expenseCount": {
       "one": "{count} expense",
       "other": "{count} expenses"
     },
+    "netShow": "Show each member's figures",
     "netHeading": "How each net position is worked out",
     "netExplain": "Net position = paid − share + settlements sent − settlements received.",
     "netPosition": "Net position",
@@ -395,6 +426,7 @@
     "checkFailed": "These net positions do not add up to zero. Please report this.",
     "whoHeading": "Who pays whom",
     "whoExplain": "A short list of payments that clears every net position: never more than one fewer than the number of people. Each person's total is unchanged.",
+    "pairsText": "Text version: direct debts before simplifying",
     "pairsSummary": "Show direct debts before simplifying",
     "pairsExplain": "These are the debts between each pair of people. The payments above replace them with fewer transfers that leave everyone with the same net position.",
     "owes": "{from} owes {to}",
@@ -441,12 +473,12 @@
       "shareLabel": "Share",
       "reroutedHeading": "Why this was rerouted",
       "rerouted": "The plan lets {from} pay {to} directly, so fewer transfers are needed.",
+      "trailAbove": "The expenses behind this are open in the transfer plan above.",
       "loadFailed": "Could not load the expenses for this member."
     },
     "export": {
       "heading": "Export",
-      "csv": "Download CSV",
-      "xlsx": "Download Excel",
+      "open": "Export or print",
       "pdf": "Print or save as PDF"
     }
   },
@@ -471,9 +503,10 @@
     "revokeFailed": "Could not revoke that passkey.",
     "signOut": "Sign out",
     "signOutHint": "Ends this session on this device only. Your other sessions and passkeys are untouched.",
-    "archived": "Archived ledgers",
-    "noArchived": "Nothing archived yet.",
-    "export": "Export",
+    "sectionProfile": "Profile",
+    "sectionSecurity": "Sign-in and security",
+    "sectionPreferences": "Preferences",
+    "sectionData": "Your data",
     "email": "Email",
     "emailNone": "No email set",
     "emailHint": "Your sign-in address. Set once, along with a password.",
@@ -599,17 +632,34 @@
   },
   "search": {
     "label": "Search expenses",
-    "placeholder": "Search description or notes",
-    "filters": "Filters",
+    "placeholder": "Search expenses",
     "category": "Category",
     "member": "Person",
     "from": "From",
     "to": "To",
-    "clear": "Clear filters",
+    "chipFrom": "From {date}",
+    "chipTo": "To {date}",
+    "updating": "Updating…",
     "results": "{count} of {total} expenses",
     "none": "Nothing matches those filters.",
     "anyCategory": "Any category",
     "anyMember": "Anyone"
+  },
+  "filter": {
+    "open": "Filter and sort",
+    "title": "Filter and sort",
+    "activityOpen": "Filter",
+    "activityTitle": "Filter",
+    "clearAll": "Clear all",
+    "remove": "Remove {name}",
+    "showExpenses": {
+      "one": "Show {count} expense",
+      "other": "Show {count} expenses"
+    },
+    "showEvents": {
+      "one": "Show {count} event",
+      "other": "Show {count} events"
+    }
   },
   "insights": {
     "youSpent": "You spent",
@@ -638,6 +688,7 @@
     "range12m": "Last 12 months",
     "range30d": "Last 30 days",
     "rangeCustom": "Custom",
+    "rangeLabel": "Date range",
     "customFrom": "From",
     "customTo": "To",
     "invalidRange": "End date must be on or after the start date.",
@@ -650,6 +701,8 @@
   "recurring": {
     "title": "Recurring",
     "add": "New recurring expense",
+    "intro": "Expenses that repeat, like rent or a subscription. Each one is added to this ledger on schedule.",
+    "seriesTitle": "Series",
     "none": "No recurring expenses on this ledger.",
     "noneBody": "Rent, subscriptions, the shared broadband bill, anything that repeats on a schedule.",
     "every": "Every",
@@ -736,12 +789,15 @@
     "clearPasswordDone": "Password cleared.",
     "emergencyHint": "For a lost device or a leaked password. Neither deletes anything: passkeys and expense history are untouched.",
     "restricted": "Restricted",
+    "on": "On",
+    "off": "Off",
     "promote": "Promote to full account",
     "promoteHint": "Joined via a ledger invite, so they can only use ledgers they're already in. Promoting gives them full run of the instance - there is no way back.",
     "promoteDone": "Promoted to a full account."
   },
   "activity": {
     "none": "Nothing has happened here yet.",
+    "noneBody": "Expenses, settlements and changes to members appear here as they happen.",
     "added": "{name} added {description}",
     "edited": "{name} edited {description}",
     "deleted": "{name} deleted {description}",
@@ -757,7 +813,10 @@
     "filterType": "Type",
     "anyType": "Any type",
     "results": "{count} of {total} events",
-    "clear": "Clear filters",
+    "count": {
+      "one": "{count} event",
+      "other": "{count} events"
+    },
     "noneFiltered": "Nothing matches those filters.",
     "kindLabel": {
       "added": "Expense added",
@@ -771,9 +830,17 @@
     }
   },
   "export": {
-    "ledgerCsv": "Export this ledger",
     "allCsv": "Export everything",
-    "body": "Plain CSV, opens in any spreadsheet. This is the escape hatch, and it does not depend on this instance staying up."
+    "body": "Plain CSV, opens in any spreadsheet. This is the escape hatch, and it does not depend on this instance staying up.",
+    "expensesCsv": "Expenses (CSV)",
+    "expensesCsvBody": "Every expense in this ledger, one row each, with who paid and each share.",
+    "settleCsv": "Settle-up (CSV)",
+    "settleCsvBody": "The transfer plan and each member's position, for a spreadsheet.",
+    "settleXlsx": "Settle-up (Excel)",
+    "settleXlsxBody": "The same settle-up sheets as the CSV, in one Excel workbook.",
+    "reportPdf": "Printable report (PDF)",
+    "reportPdfBody": "The settle-up on one page, ready to print or save as a PDF.",
+    "offline": "Exports need a connection. Try again when you're back online."
   },
   "import": {
     "menuLabel": "Import",
@@ -790,7 +857,6 @@
     "mapUnmapped": "Not mapped",
     "createGuest": "Create guest \"{name}\"",
     "confirm": "Import",
-    "confirming": "Importing…",
     "done": "Imported {count} expenses.",
     "failed": "Import failed."
   },
@@ -813,7 +879,10 @@
     "overallCaption": "Across all your active ledgers",
     "newLedger": "New ledger",
     "settleUp": "Settle up",
-    "ledgerMeta": "{members} · {run}",
+    "ledgerMeta": "{members} · {activity}",
+    "ledgerMetaRun": "{members} · {run} · {activity}",
+    "starred": "Starred",
+    "allLedgers": "All ledgers",
     "recent": "Recent activity",
     "archived": {
       "one": "{count} archived ledger",

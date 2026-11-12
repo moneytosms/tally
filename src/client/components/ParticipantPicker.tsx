@@ -60,7 +60,7 @@ export function ParticipantPicker({
                 aria-pressed={on}
                 aria-label={t(on ? "expense.exclude" : "expense.include", { name: m.name })}
                 onClick={() => toggle(m.id)}
-                className={`flex w-[68px] flex-col items-center gap-1 rounded-[8px] border px-1 py-2 ${focusRing}`}
+                className={`chip-press flex w-[68px] flex-col items-center gap-1 rounded-[8px] border px-1 py-2 ${focusRing}`}
                 style={{
                   background: on ? "var(--moss-wash)" : "transparent",
                   borderColor: on ? "var(--moss)" : "var(--line-2)",

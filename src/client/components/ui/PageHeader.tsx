@@ -13,6 +13,7 @@ export function PageHeader({
   action,
   railTitle = false,
   mark = false,
+  leading,
 }: {
   title: string;
   /** The title repeats the rail's brand at md+, so it is visually hidden there but stays the page's h1. */
@@ -22,6 +23,8 @@ export function PageHeader({
   subtitle?: string;
   back?: string;
   action?: ReactNode;
+  /** Content before the title block, e.g. a ledger's identity tile. */
+  leading?: ReactNode;
 }) {
   return (
     <header className="flex items-center gap-2 py-2">
@@ -35,6 +38,7 @@ export function PageHeader({
           <Icon name="back" size={22} />
         </Link>
       )}
+      {leading && <div className="flex flex-none items-center">{leading}</div>}
       <div className="min-w-0 flex-1">
         <div className={`flex items-center gap-2 ${railTitle ? "md:sr-only" : ""}`}>
           {mark && <Mark />}

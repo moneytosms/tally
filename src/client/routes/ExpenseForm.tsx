@@ -8,8 +8,9 @@
 // the split validation to drift.
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
-import { Button, Field, Input, Rupees, Select, pushToast } from "~/client/components/ui";
+import { Button, Field, Icon, Input, Rupees, Select, pushToast } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
+import { formatRelative } from "~/client/lib/format";
 import {
   SplitEditor,
   paiseToRupeeString,
@@ -26,6 +27,7 @@ import {
   useLedgers,
   useMe,
   useMembers,
+  useOnline,
   useUpdateExpense,
   type Expense,
 } from "~/client/lib/queries";
@@ -98,6 +100,20 @@ export default function ExpenseForm({
   const [failure, setFailure] = useState("");
   // Any edit makes the last save error stale: drop it so it does not outlive the fix.
   const touch = () => setFailure("");
+  const online = useOnline();
+
+  // The category row scrolls sideways. Scroll the chosen one into view once the
+  // list is here, and fade the trailing edge only while there is more to reach.
+  const chipRow = useRef<HTMLUListElement>(null);
+  const [moreChips, setMoreChips] = useState(false);
+  const measureChips = () => {
+    const el = chipRow.current;
+    setMoreChips(el !== null && el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  };
+  useEffect(() => {
+    chipRow.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ block: "nearest", inline: "center" });
+    measureChips();
+  }, [categories.data]);
 
   const roster = useMemo(() => (members.data ?? []).filter((m) => m.leftAt === null), [members.data]);
   const rosterKey = roster.map((m) => m.id).join(",");
@@ -135,6 +151,23 @@ export default function ExpenseForm({
   const result = preview({ total: total ?? 0, mode, payerIndex, participants, raw });
   const remaining = remainingToAllocate({ total: total ?? 0, mode, payerIndex, participants, raw });
   const blocked = !description.trim() || !date || total === null || total === 0 || "error" in result || save.isPending;
+  // Why the submit is disabled, said in words above it. Empty while saving.
+  const reason = save.isPending
+    ? ""
+    : total === null || total === 0
+      ? t("expense.reasonAmount")
+      : !description.trim()
+        ? t("expense.reasonDescription")
+        : !date
+          ? t("expense.reasonDate")
+          : "error" in result
+            ? result.error
+            : "";
+  const dateMs = new Date(`${date}T00:00`).getTime();
+  const notesText = notes.trim() || t("expense.noNote");
+  const detailsSummary = Number.isNaN(dateMs)
+    ? notesText
+    : t("expense.detailsSummary", { date: formatRelative(dateMs), note: notesText });
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -202,7 +235,7 @@ export default function ExpenseForm({
             touch();
             setAmountRaw(v);
           }}
-          autoFocus
+          autoFocus={!expense}
           style={{ fontSize: 28, fontVariantNumeric: "tabular-nums" }}
           className="serif"
         />
@@ -226,8 +259,15 @@ export default function ExpenseForm({
         <span className="mb-1.5 block text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t("expense.category")}
         </span>
-        <ul className="no-scrollbar -mx-1 flex snap-x gap-1 overflow-x-auto px-1 pb-1">
-          {[{ id: null, name: t("expense.categoryNone"), icon: "—" }, ...(categories.data ?? [])].map((c) => {
+        <ul
+          ref={chipRow}
+          onScroll={measureChips}
+          className="no-scrollbar -mx-1 flex snap-x gap-1 overflow-x-auto px-1 pb-1"
+          style={
+            moreChips ? { maskImage: "linear-gradient(to right, #000 calc(100% - 32px), transparent)" } : undefined
+          }
+        >
+          {[{ id: null, name: t("expense.categoryNone"), icon: "" }, ...(categories.data ?? [])].map((c) => {
             const on = categoryId === c.id;
             const key = c.id ?? "none";
             return (
@@ -239,17 +279,24 @@ export default function ExpenseForm({
                     touch();
                     setCategoryId(c.id);
                   }}
-                  className={`flex min-w-18 flex-col items-center gap-1 rounded-[8px] border px-2 py-2 whitespace-nowrap ${focusRing}`}
+                  // Selected: a heavier border and a check mark, so it is not colour alone.
+                  className={`chip-press flex min-w-18 flex-col items-center gap-1 rounded-[8px] border px-2 py-2 whitespace-nowrap ${focusRing}`}
                   style={{
                     background: on ? "var(--moss-wash)" : "var(--paper-2)",
                     borderColor: on ? "var(--moss)" : "var(--line)",
+                    borderWidth: on ? 2 : 1,
                   }}
                 >
-                  <span className="text-[20px] leading-none">{c.icon}</span>
+                  {c.icon ? (
+                    <span className="text-[20px] leading-none">{c.icon}</span>
+                  ) : (
+                    <span aria-hidden="true" className="h-5" />
+                  )}
                   <span
-                    className={`text-center text-[13px] ${on ? "font-semibold" : ""}`}
-                    style={{ color: on ? "var(--moss-2)" : "var(--ink-2)" }}
+                    className="flex items-center gap-1 text-center text-[13px]"
+                    style={{ color: on ? "var(--moss-2)" : "var(--ink-2)", fontWeight: on ? 600 : 400 }}
                   >
+                    {on && <Icon name="check" size={14} />}
                     {c.name}
                   </span>
                 </button>
@@ -314,19 +361,30 @@ export default function ExpenseForm({
           className="mb-3 text-[13px]"
           style={{ color: remaining.amount < 0 ? "var(--clay)" : "var(--ink-2)" }}
         >
-          {t(remaining.amount < 0 ? "expense.overAllocated" : "expense.remainingToAllocate", {
-            amount:
-              remaining.unit === "percent" ? `${Math.abs(remaining.amount)}%` : formatPaise(Math.abs(remaining.amount)),
-          })}
+          {/* Offline: the word, never the number (SPEC §10). */}
+          {online
+            ? t(remaining.amount < 0 ? "expense.overAllocated" : "expense.remainingToAllocate", {
+                amount:
+                  remaining.unit === "percent"
+                    ? `${Math.abs(remaining.amount)}%`
+                    : formatPaise(Math.abs(remaining.amount)),
+              })
+            : t(remaining.amount < 0 ? "expense.overAllocatedOffline" : "expense.remainingOffline")}
         </p>
       )}
 
       {/* Date and notes are right nearly every time - today, nothing to add.
           Category moved out to a chip row above (SPEC §10); these two stay
-          behind one tap since they cost nothing there. */}
+          behind one tap since they cost nothing there. The collapsed toggle
+          says what is hidden, so the default date is visible without opening it. */}
       <div className="mb-3">
         <Button variant="ghost" size="sm" aria-expanded={showDetails} onClick={() => setShowDetails((v) => !v)}>
-          {t(showDetails ? "expense.lessDetails" : "expense.moreDetails")}
+          {showDetails ? t("expense.lessDetails") : t("expense.moreDetails")}
+          {!showDetails && (
+            <span className="min-w-0 truncate font-normal" style={{ color: "var(--ink-3)" }}>
+              {detailsSummary}
+            </span>
+          )}
         </Button>
 
         {showDetails && (
@@ -361,7 +419,17 @@ export default function ExpenseForm({
 
       {/* Sticky: this form is taller than a phone screen, and a Save button below
           the fold from the moment the sheet opens is a Save button nobody finds. */}
-      <div className="pad-safe-bottom sticky bottom-0 -mx-4 px-4 pt-2 pb-2" style={{ background: "var(--paper)" }}>
+      {/* The inset is applied by the sticky offset, not as padding: inside a Sheet the
+          Sheet body already pads the bottom, and padding here as well would double it. */}
+      <div
+        className="sticky bottom-[env(safe-area-inset-bottom)] -mx-4 px-4 pt-2 pb-2 after:absolute after:inset-x-0 after:top-full after:h-[env(safe-area-inset-bottom)] after:content-['']"
+        style={{ background: "var(--paper)" }}
+      >
+        {reason && (
+          <p className="mb-2 text-[13px]" style={{ color: "var(--ink-2)" }}>
+            {reason}
+          </p>
+        )}
         <Button type="submit" disabled={blocked} isLoading={save.isPending} block>
           {t(expense ? "expense.editSave" : "expense.add")}
         </Button>

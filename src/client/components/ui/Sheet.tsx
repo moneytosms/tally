@@ -7,9 +7,10 @@ import { t } from "~/client/i18n";
 // mounted this long after close so the slide-down actually plays instead of
 // the sheet just vanishing (issue #45).
 const CLOSE_MS = 180;
+const FOCUSABLE = "button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled)";
 
-/** Bottom sheet / modal. Escape and backdrop close it; focus moves in and returns
- *  to whatever opened it. The slide transitions are killed by the global
+/** Bottom sheet / modal. Escape and backdrop close it; focus moves in, Tab stays
+ *  inside it, and focus returns to whatever opened it. The slide transitions are killed by the global
  *  prefers-reduced-motion rule in tokens.css. */
 export function Sheet({
   open,
@@ -44,7 +45,27 @@ export function Sheet({
   useEffect(() => {
     if (!open) return;
     opener.current = document.activeElement as HTMLElement | null;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onOpenChangeRef.current(false);
+    // Tab stays inside the panel; the panel itself counts as the first stop.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") return onOpenChangeRef.current(false);
+      const el = panel.current;
+      if (e.key !== "Tab" || !el) return;
+      const items = el.querySelectorAll<HTMLElement>(FOCUSABLE);
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (!first || !last) return e.preventDefault();
+      if (!el.contains(active)) {
+        e.preventDefault();
+        first.focus();
+      } else if (e.shiftKey && (active === first || active === el)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
     return () => {

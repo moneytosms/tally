@@ -2,13 +2,16 @@ import { useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Avatar,
+  Badge,
   Button,
+  Card,
   ConfirmDialog,
   EmptyState,
   Field,
   Input,
   PageHeader,
   ScreenSkeleton,
+  SectionHeading,
   Skeleton,
 } from "~/client/components/ui";
 import { api, ApiError } from "~/client/lib/api";
@@ -31,30 +34,22 @@ import {
 import { useCopied } from "~/client/lib/useCopied";
 import { t } from "~/client/i18n";
 
-const Section = ({ title }: { title: string }) => (
-  <div className="mx-0.5 mt-5 mb-2 text-[13px] font-semibold" style={{ color: "var(--ink-2)" }}>
-    {title}
-  </div>
-);
-
-const card = { background: "var(--paper-2)", borderColor: "var(--line)" } as const;
-
 function InstanceSection() {
   const instance = useAdminInstance();
   if (instance.isPending) {
     return (
-      <div className="rounded-[7px] border px-3.5 py-3.5" style={card}>
+      <Card>
         <Skeleton className="mb-2 h-4 w-full" />
         <Skeleton className="mb-2 h-4 w-full" />
         <Skeleton className="mb-2 h-4 w-2/3" />
         <Skeleton className="h-4 w-2/3" />
-      </div>
+      </Card>
     );
   }
   if (instance.error || !instance.data) return <EmptyState title={t("error.generic")} body={t("error.network")} />;
   const d = instance.data;
   return (
-    <div className="rounded-[7px] border px-3.5 py-3.5" style={card}>
+    <Card>
       <div className="flex items-center justify-between py-1 text-[15px]">
         <span style={{ color: "var(--ink-3)" }}>{t("admin.rpId")}</span>
         <span className="tnum">{d.rpId}</span>
@@ -72,13 +67,13 @@ function InstanceSection() {
       </div>
       <div className="flex items-center justify-between py-1 text-[15px]">
         <span style={{ color: "var(--ink-3)" }}>{t("notifications.title")}</span>
-        <span>{d.pushConfigured ? "✓" : "-"}</span>
+        <span>{t(d.pushConfigured ? "admin.on" : "admin.off")}</span>
       </div>
       <div className="flex items-center justify-between py-1 text-[15px]">
         <span style={{ color: "var(--ink-3)" }}>{t("recurring.title")}</span>
-        <span>{d.recurringConfigured ? "✓" : "-"}</span>
+        <span>{t(d.recurringConfigured ? "admin.on" : "admin.off")}</span>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -145,11 +140,11 @@ function EmergencyRow({ userId, name, hasPassword }: { userId: string; name: str
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
       <div className="flex flex-wrap items-center gap-2">
-        <Button variant="ghost" size="sm" isLoading={signOut.isPending} onClick={() => setConfirmingSignOut(true)}>
+        <Button variant="danger" size="sm" isLoading={signOut.isPending} onClick={() => setConfirmingSignOut(true)}>
           {t("admin.signOutUser")}
         </Button>
         <Button
-          variant="ghost"
+          variant="danger"
           size="sm"
           disabled={!hasPassword}
           isLoading={clearPassword.isPending}
@@ -211,7 +206,7 @@ function PromoteRow({ userId, name }: { userId: string; name: string }) {
   const [confirming, setConfirming] = useState(false);
   return (
     <div className="mt-2 border-t pt-2" style={{ borderColor: "var(--line)" }}>
-      <Button variant="ghost" size="sm" isLoading={promote.isPending} onClick={() => setConfirming(true)}>
+      <Button variant="danger" size="sm" isLoading={promote.isPending} onClick={() => setConfirming(true)}>
         {t("admin.promote")}
       </Button>
       <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
@@ -232,7 +227,6 @@ function PromoteRow({ userId, name }: { userId: string; name: string }) {
           title={t("confirm.promote.title", { name })}
           body={t("admin.promoteHint")}
           confirmLabel={t("confirm.promote.action")}
-          danger={false}
           onCancel={() => setConfirming(false)}
           onConfirm={() => {
             setConfirming(false);
@@ -278,13 +272,14 @@ function PeopleSection() {
     return (
       <>
         {[0, 1, 2].map((i) => (
-          <div key={i} className="mb-2 rounded-[7px] border px-3.5 py-3" style={card}>
+          <Card key={i} className="mb-2">
             <div className="flex items-center gap-2.5">
-              <Skeleton className="h-9 w-9 shrink-0 rounded-full" />
+              {/* Same size and radius as the real Avatar, so the list does not jump on load. */}
+              <Skeleton className="h-[29px] w-[29px] shrink-0 rounded-[6px]!" />
               <Skeleton className="h-4 w-1/2" />
             </div>
             <Skeleton className="mt-2.5 h-3 w-2/3" />
-          </div>
+          </Card>
         ))}
       </>
     );
@@ -311,26 +306,12 @@ function PeopleSection() {
         {t("admin.peopleBody")}
       </p>
       {users.data.map((u) => (
-        <div key={u.id} className="mb-2 rounded-[7px] border px-3.5 py-3" style={card}>
+        <Card key={u.id} className="mb-2">
           <div className="flex items-center gap-2.5">
             <Avatar name={u.displayName} />
             <span className="flex-1 truncate text-[15px] font-medium">{u.displayName}</span>
-            {u.isOwner && (
-              <span
-                className="rounded-[4px] px-1.5 py-0.5 text-[13px] font-medium"
-                style={{ background: "var(--moss-wash)", color: "var(--moss-2)" }}
-              >
-                {t("admin.owner")}
-              </span>
-            )}
-            {u.accountType === "restricted" && (
-              <span
-                className="rounded-[4px] px-1.5 py-0.5 text-[13px] font-medium"
-                style={{ background: "var(--paper-sunk)", color: "var(--ink-3)" }}
-              >
-                {t("admin.restricted")}
-              </span>
-            )}
+            {u.isOwner && <Badge>{t("admin.owner")}</Badge>}
+            {u.accountType === "restricted" && <Badge>{t("admin.restricted")}</Badge>}
           </div>
           <div
             className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]"
@@ -393,7 +374,7 @@ function PeopleSection() {
               </p>
             </div>
           )}
-        </div>
+        </Card>
       ))}
 
       {removeUser.isError && (
@@ -464,11 +445,7 @@ function CategoriesSection() {
   return (
     <>
       {categories.data.map((c) => (
-        <div
-          key={c.id}
-          className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-2.5"
-          style={card}
-        >
+        <Card key={c.id} className="mb-2 flex items-center justify-between gap-2.5">
           <span className="flex min-w-0 items-center gap-2 text-[15px]">
             <span aria-hidden="true">{c.icon}</span>
             <span className="truncate">{c.name}</span>
@@ -482,20 +459,22 @@ function CategoriesSection() {
               {t("admin.categoryDelete")}
             </Button>
           )}
-        </div>
+        </Card>
       ))}
 
-      <form onSubmit={onSubmit} className="mt-2 rounded-[7px] border px-3.5 py-3.5" style={card}>
-        <Field label={t("admin.categoryName")}>
-          <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} />
-        </Field>
-        <Field label={t("admin.categoryIcon")}>
-          <Input value={icon} onChange={(e) => setIcon(e.target.value)} required maxLength={8} />
-        </Field>
-        <Button type="submit" isLoading={save.isPending}>
-          {t("admin.categoryAdd")}
-        </Button>
-      </form>
+      <Card className="mt-2">
+        <form onSubmit={onSubmit}>
+          <Field label={t("admin.categoryName")}>
+            <Input value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} />
+          </Field>
+          <Field label={t("admin.categoryIcon")}>
+            <Input value={icon} onChange={(e) => setIcon(e.target.value)} required maxLength={8} />
+          </Field>
+          <Button type="submit" isLoading={save.isPending}>
+            {t("admin.categoryAdd")}
+          </Button>
+        </form>
+      </Card>
 
       {confirming && (
         <ConfirmDialog
@@ -527,7 +506,7 @@ function InstanceInviteCard() {
   });
 
   return (
-    <div className="mb-2 rounded-[7px] border px-3.5 py-3.5" style={card}>
+    <Card className="mb-2">
       <div className="mb-2 text-[15px] font-medium">{t("admin.inviteInstance")}</div>
       {link === null ? (
         <>
@@ -556,7 +535,7 @@ function InstanceInviteCard() {
       <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("admin.inviteInstanceHint")}
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -595,11 +574,7 @@ function InvitesSection() {
       {invites.data.map((inv) => {
         const hours = Math.max(0, Math.round((inv.expiresAt - Date.now()) / 3_600_000));
         return (
-          <div
-            key={inv.id}
-            className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-3"
-            style={card}
-          >
+          <Card key={inv.id} className="mb-2 flex items-center justify-between gap-2.5">
             <div className="min-w-0">
               {/* Null ledgerName means an instance invite - it joins no ledger,
                   so its scope has to be spelled out rather than left blank. */}
@@ -611,7 +586,7 @@ function InvitesSection() {
             <Button variant="danger" size="sm" isLoading={revoke.isPending} onClick={() => setConfirming(inv.id)}>
               {t("admin.inviteRevoke")}
             </Button>
-          </div>
+          </Card>
         );
       })}
 
@@ -657,16 +632,16 @@ export default function AdminPanel() {
     <>
       <PageHeader title={t("admin.title")} back={back} />
 
-      <Section title={t("admin.instance")} />
+      <SectionHeading>{t("admin.instance")}</SectionHeading>
       <InstanceSection />
 
-      <Section title={t("admin.people")} />
+      <SectionHeading>{t("admin.people")}</SectionHeading>
       <PeopleSection />
 
-      <Section title={t("admin.categories")} />
+      <SectionHeading>{t("admin.categories")}</SectionHeading>
       <CategoriesSection />
 
-      <Section title={t("admin.invites")} />
+      <SectionHeading>{t("admin.invites")}</SectionHeading>
       <InstanceInviteCard />
       <InvitesSection />
     </>

@@ -41,8 +41,8 @@ export function TabBar({ addButton }: { addButton?: ReactNode }) {
             key={tab.key}
             to={tab.to}
             aria-current={isActive ? "page" : undefined}
-            className={`flex min-h-11 flex-1 flex-col items-center justify-center py-2.5 text-[12px] no-underline md:flex-none md:flex-row md:justify-start md:gap-3 md:rounded-[7px] md:px-2.5 md:py-0 md:text-[15px] ${focusRing} ${
-              isActive ? "is-active md:font-semibold md:bg-[var(--moss-wash)]" : ""
+            className={`flex min-h-11 flex-1 flex-col items-center justify-center py-2.5 text-[12px] no-underline transition-[color,background-color,font-weight,scale] duration-150 ease-out active:scale-[0.98] md:flex-none md:flex-row md:justify-start md:gap-3 md:rounded-[7px] md:px-2.5 md:py-0 md:text-[15px] ${focusRing} ${
+              isActive ? "md:font-semibold md:bg-[var(--moss-wash)]" : ""
             }`}
             style={{ color: isActive ? "var(--moss-2)" : "var(--ink-3)" }}
           >

@@ -25,7 +25,26 @@
   --clay-wash: #f2e4dd;
   --ochre: #b08344; /* third earth, charts */
 
+  /* ledger identity, keyed by stored value. Not semantic: never owed/owe. Hues are
+     chosen apart from moss, clay and ochre in every theme (see DESIGN.md). */
+  --ledger-moss: #1f7a72; /* teal */
+  --ledger-moss-wash: #dbe8e2;
+  --ledger-clay: #4d56a8; /* indigo */
+  --ledger-clay-wash: #e3e2ea;
+  --ledger-ochre: #5f6b7b; /* slate */
+  --ledger-ochre-wash: #e5e6e3;
+  --ledger-plum: #7d4f8a;
+  --ledger-plum-wash: #eae1e6;
+  --ledger-sky: #2a86c2;
+  --ledger-sky-wash: #ddeaef;
+  --ledger-rose: #b8476f;
+  --ledger-rose-wash: #f4e0e1;
+
   --radius: 7px;
+  /* Motion: one pair of durations and one curve for every entrance and press. */
+  --dur-fast: 150ms;
+  --dur: 180ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   /* Height of the bottom tab bar, which the floating UI clears. Gone at md+. */
   --bar-h: 66px;
 
@@ -58,6 +77,19 @@
   --clay-wash: #f2e4dd;
   --ochre: #b08344;
 
+  --ledger-moss: #1f7a72;
+  --ledger-moss-wash: #dbe8e2;
+  --ledger-clay: #4d56a8;
+  --ledger-clay-wash: #e3e2ea;
+  --ledger-ochre: #5f6b7b;
+  --ledger-ochre-wash: #e5e6e3;
+  --ledger-plum: #7d4f8a;
+  --ledger-plum-wash: #eae1e6;
+  --ledger-sky: #2a86c2;
+  --ledger-sky-wash: #ddeaef;
+  --ledger-rose: #b8476f;
+  --ledger-rose-wash: #f4e0e1;
+
   --grain-opacity: 0.055;
   --grain-blend: multiply;
 }
@@ -86,6 +118,19 @@
     --clay-wash: #2c211c;
     --ochre: #c99f63;
 
+    --ledger-moss: #5fc1b3;
+    --ledger-moss-wash: #304b43;
+    --ledger-clay: #8c93ec;
+    --ledger-clay-wash: #3c3f51;
+    --ledger-ochre: #8f9bad;
+    --ledger-ochre-wash: #3d4141;
+    --ledger-plum: #b58bd0;
+    --ledger-plum-wash: #473d4a;
+    --ledger-sky: #6cb8ee;
+    --ledger-sky-wash: #344952;
+    --ledger-rose: #e07c9e;
+    --ledger-rose-wash: #52393d;
+
     /* toned paper, not a grey slab */
     --grain-opacity: 0.1;
     --grain-blend: screen;
@@ -111,6 +156,19 @@
   --clay: #c9836a;
   --clay-wash: #2c211c;
   --ochre: #c99f63;
+
+  --ledger-moss: #5fc1b3;
+  --ledger-moss-wash: #304b43;
+  --ledger-clay: #8c93ec;
+  --ledger-clay-wash: #3c3f51;
+  --ledger-ochre: #8f9bad;
+  --ledger-ochre-wash: #3d4141;
+  --ledger-plum: #b58bd0;
+  --ledger-plum-wash: #473d4a;
+  --ledger-sky: #6cb8ee;
+  --ledger-sky-wash: #344952;
+  --ledger-rose: #e07c9e;
+  --ledger-rose-wash: #52393d;
 
   --grain-opacity: 0.1;
   --grain-blend: screen;
@@ -138,6 +196,19 @@
   --clay-wash: #e3ece8;
   --ochre: #9c6b3f;
 
+  --ledger-moss: #0f8a84;
+  --ledger-moss-wash: #d9e8e8;
+  --ledger-clay: #4d56a8;
+  --ledger-clay-wash: #e3e0ee;
+  --ledger-ochre: #55668a;
+  --ledger-ochre-wash: #e4e2e9;
+  --ledger-plum: #7d4f8a;
+  --ledger-plum-wash: #eadfe9;
+  --ledger-sky: #2a86c2;
+  --ledger-sky-wash: #dde7f2;
+  --ledger-rose: #c2507f;
+  --ledger-rose-wash: #f5dfe7;
+
   --grain-opacity: 0.055;
   --grain-blend: multiply;
 }
@@ -162,6 +233,19 @@
   --clay: #b1442b;
   --clay-wash: #f6e5df;
   --ochre: #8a6a2e;
+
+  --ledger-moss: #1f9a8f;
+  --ledger-moss-wash: #d8eded;
+  --ledger-clay: #4d56a8;
+  --ledger-clay-wash: #dfe2f1;
+  --ledger-ochre: #5f6b7b;
+  --ledger-ochre-wash: #e2e6ea;
+  --ledger-plum: #7d4f8a;
+  --ledger-plum-wash: #e7e1ec;
+  --ledger-sky: #2a86c2;
+  --ledger-sky-wash: #daeaf5;
+  --ledger-rose: #b8476f;
+  --ledger-rose-wash: #f0e0e8;
 
   --grain-opacity: 0.055;
   --grain-blend: multiply;
@@ -188,6 +272,19 @@
   --clay: #bc7290;
   --clay-wash: #2a1c24;
   --ochre: #c2a06e;
+
+  --ledger-moss: #4fc7b6;
+  --ledger-moss-wash: #2a464e;
+  --ledger-clay: #6f8ef0;
+  --ledger-clay-wash: #32375d;
+  --ledger-ochre: #8c97a8;
+  --ledger-ochre-wash: #3a3a4a;
+  --ledger-plum: #d487d6;
+  --ledger-plum-wash: #4d3656;
+  --ledger-sky: #5fb8ef;
+  --ledger-sky-wash: #2e425c;
+  --ledger-rose: #ff7fa8;
+  --ledger-rose-wash: #58344a;
 
   --grain-opacity: 0.1;
   --grain-blend: screen;
@@ -216,6 +313,19 @@
   --clay: #6f9c95;
   --clay-wash: #1a2624;
   --ochre: #c98b5e;
+
+  --ledger-moss: #3fc9b4;
+  --ledger-moss-wash: #27463e;
+  --ledger-clay: #8c93ec;
+  --ledger-clay-wash: #3b384d;
+  --ledger-ochre: #9aa8c8;
+  --ledger-ochre-wash: #3f3d44;
+  --ledger-plum: #b58bd0;
+  --ledger-plum-wash: #463646;
+  --ledger-sky: #6cb8ee;
+  --ledger-sky-wash: #33424d;
+  --ledger-rose: #e07c9e;
+  --ledger-rose-wash: #513239;
 
   --grain-opacity: 0.1;
   --grain-blend: screen;
@@ -444,6 +554,61 @@ textarea {
 }
 .page-in {
   animation: page-in 0.16s ease-out;
+}
+
+/* Entrances and exits for the ui primitives. Durations come from the motion tokens. */
+@keyframes toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.dialog-enter {
+  animation: dialog-in var(--dur) var(--ease-out);
+}
+.scrim-enter {
+  animation: sheet-backdrop-in var(--dur) ease-out;
+}
+.toast-enter {
+  animation: toast-in var(--dur) var(--ease-out);
+}
+.toast-exit {
+  animation: toast-out var(--dur-fast) ease-in forwards;
+}
+/* Popover and menu entrance: opacity plus a 4px drop. */
+.menu-in {
+  animation: menu-in var(--dur-fast) var(--ease-out);
+}
+/* Pressable chips and segments: a hover tint and a 0.98 press. A selected state
+   is the caller's own fill (inline style wins over the hover tint). */
+.chip-press {
+  transition:
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    transform var(--dur-fast) var(--ease-out);
+}
+@media (hover: hover) {
+  .chip-press:hover {
+    background-color: var(--paper-sunk);
+  }
+}
+.chip-press:active {
+  transform: scale(0.98);
 }
 
 @media (prefers-reduced-motion: reduce) {

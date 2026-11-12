@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Field, Input, Mark, focusRing, pushToast } from "~/client/components/ui";
+import { Button, Field, Input, Mark, Notice, focusRing, pushToast } from "~/client/components/ui";
 import { api } from "~/client/lib/api";
 import { enterDemo } from "~/client/lib/demo";
 import { qk, useMe } from "~/client/lib/queries";
@@ -58,7 +58,7 @@ function usePlatformAuthenticator() {
 function OpenInBrowser({ title }: { title: string }) {
   return (
     <div>
-      <h2 className="serif mb-2 text-[18px]">{title}</h2>
+      <h2 className="serif mb-2 text-[19px]">{title}</h2>
       <p className="mb-3 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
         {t("onboarding.noWebauthnBody")}
       </p>
@@ -307,24 +307,24 @@ export function Onboarding() {
       <div className="relative z-10 mx-auto w-full max-w-[420px] px-5 py-10">
         <div className="mb-1 flex items-center gap-2.5">
           <Mark size={28} />
-          <h1 className="serif text-[28px] tracking-[-0.01em]">{t("onboarding.title")}</h1>
+          <h1 className="serif text-[26px] tracking-[-0.01em]">{t("onboarding.title")}</h1>
         </div>
         <p className="mb-7 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t(inviteToken ? "onboarding.invitedSubtitle" : "onboarding.subtitle")}
         </p>
 
         {failure && (
-          <div
-            role="alert"
-            className="mb-4 rounded-[6px] border px-3 py-2"
-            style={{ borderColor: "var(--clay)", background: "var(--clay-wash)", color: "var(--clay)" }}
-          >
-            <p className="text-[13px]">{t(failure.messageKey)}</p>
-            {/* The owner is the support desk on a self-hosted instance. Without
-                the error name a report is "it said something went wrong". */}
-            {failure.detail && (
-              <p className="mt-1 text-[13px] opacity-70">{t("onboarding.errorDetail", { code: failure.detail })}</p>
-            )}
+          <div className="mb-4">
+            <Notice tone="danger">
+              {t(failure.messageKey)}
+              {/* The owner is the support desk on a self-hosted instance. Without
+                  the error name a report is "it said something went wrong". */}
+              {failure.detail && (
+                <span className="mt-1 block text-[13px]" style={{ color: "var(--ink-3)" }}>
+                  {t("onboarding.errorDetail", { code: failure.detail })}
+                </span>
+              )}
+            </Notice>
           </div>
         )}
 
@@ -360,7 +360,7 @@ export function Onboarding() {
                 autoComplete="current-password"
               />
             </Field>
-            <Button type="submit" className="w-full" disabled={busy}>
+            <Button type="submit" className="w-full" isLoading={busy}>
               {t("onboarding.signInWithPassword")}
             </Button>
 
@@ -370,7 +370,7 @@ export function Onboarding() {
               {t("onboarding.signInPasskey")}
             </Button>
 
-            {/* Secondary routes are links, not four equal buttons: sign-in is the job here. */}
+            {/* Secondary routes are quiet links under the primary action, not buttons. */}
             <div className="mt-8 border-t pt-5" style={{ borderColor: "var(--line)" }}>
               <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
                 {t("onboarding.contactAdmin")}
@@ -391,34 +391,28 @@ export function Onboarding() {
                     {t("onboarding.iRunThis")}
                   </button>
                 )}
+                <button
+                  type="button"
+                  className={linkClass}
+                  onClick={() => {
+                    enterDemo();
+                    qc.clear();
+                    navigate("/", { replace: true });
+                  }}
+                >
+                  {t("demo.try")}
+                </button>
               </div>
-            </div>
-
-            <div
-              className="mt-6 rounded-[7px] border p-4"
-              style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-            >
-              <p className="mb-3 text-[13px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
+              <p className="mt-1 text-[13px]" style={{ color: "var(--ink-3)" }}>
                 {t("demo.tryBody")}
               </p>
-              <Button
-                variant="ghost"
-                block
-                onClick={() => {
-                  enterDemo();
-                  qc.clear();
-                  navigate("/", { replace: true });
-                }}
-              >
-                {t("demo.try")}
-              </Button>
             </div>
           </form>
         )}
 
         {view === "signup" && (
           <form onSubmit={onSignUp} noValidate>
-            <h2 className="serif mb-2 text-[18px]">{t("onboarding.signUpTitle")}</h2>
+            <h2 className="serif mb-2 text-[19px]">{t("onboarding.signUpTitle")}</h2>
             <p className="mb-4 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
               {t("onboarding.signUpBody")}
             </p>
@@ -445,7 +439,7 @@ export function Onboarding() {
                 autoComplete="new-password"
               />
             </Field>
-            <Button type="submit" className="w-full" disabled={busy}>
+            <Button type="submit" className="w-full" isLoading={busy}>
               {t("onboarding.createAccount")}
             </Button>
 
@@ -497,11 +491,11 @@ export function Onboarding() {
 
         {view === "passkey" && authenticator === "available" && (
           <div>
-            <h2 className="serif mb-2 text-[18px]">{t("onboarding.passkeyTitle")}</h2>
+            <h2 className="serif mb-2 text-[19px]">{t("onboarding.passkeyTitle")}</h2>
             <p className="mb-4 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
               {t("onboarding.passkeyBody")}
             </p>
-            <Button className="w-full" onClick={registerPasskey} disabled={busy}>
+            <Button className="w-full" onClick={registerPasskey} isLoading={busy}>
               {t("onboarding.createPasskey")}
             </Button>
           </div>
@@ -509,14 +503,14 @@ export function Onboarding() {
 
         {view === "vpa" && (
           <div>
-            <h2 className="serif mb-2 text-[18px]">{t("onboarding.vpaTitle")}</h2>
+            <h2 className="serif mb-2 text-[19px]">{t("onboarding.vpaTitle")}</h2>
             <p className="mb-4 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
               {t("onboarding.vpaBody")}
             </p>
             <Field label={t("profile.vpa")}>
               <Input value={vpa} onChange={(e) => setVpa(e.target.value)} placeholder="name@bank" autoComplete="off" />
             </Field>
-            <Button className="w-full" onClick={() => saveVpa(false)} disabled={busy}>
+            <Button className="w-full" onClick={() => saveVpa(false)} isLoading={busy}>
               {t("action.save")}
             </Button>
             <Button variant="ghost" className="mt-2 w-full" onClick={() => saveVpa(true)} disabled={busy}>

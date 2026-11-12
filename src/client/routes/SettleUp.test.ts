@@ -6,6 +6,7 @@ import {
   effectiveMethod,
   memberLine,
   netSum,
+  pairKey,
   reroutedReason,
   settleAmount,
   sortPositions,
@@ -47,6 +48,12 @@ describe("upiLink", () => {
     );
     expect(upiLink({ vpa: "a@b", name: "A", paise: 1234_56 })).toContain("am=1234.56");
     expect(upiLink({ vpa: "a@b", name: "A", paise: 3299 })).toContain("am=32.99");
+  });
+});
+
+describe("pairKey", () => {
+  it("is direction-sensitive: A to B is not B to A", () => {
+    expect(pairKey({ fromMemberId: "a", toMemberId: "b" })).not.toBe(pairKey({ fromMemberId: "b", toMemberId: "a" }));
   });
 });
 

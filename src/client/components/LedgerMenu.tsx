@@ -5,12 +5,25 @@
 //
 // Native button plus an absolutely-positioned panel - no menu library, and no
 // new dependency for what a few lines of state cover.
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Amount, Avatar, Button, ConfirmDialog, Field, Icon, Input, Rupees, Select } from "~/client/components/ui";
+import {
+  Amount,
+  Avatar,
+  Button,
+  ConfirmDialog,
+  Field,
+  Icon,
+  Input,
+  Rupees,
+  Select,
+  Skeleton,
+} from "~/client/components/ui";
 import { Sheet } from "~/client/components/ui/Sheet";
 import { focusRing } from "~/client/components/ui/focus";
+import { LedgerAppearanceFields } from "~/client/components/LedgerForm";
+import { ExportSheet } from "~/client/components/ExportSheet";
 import { guessMapping } from "~/client/lib/guessMapping";
 import { rupeesToPaise, paiseToRupeeString } from "~/client/components/SplitEditor";
 import { api, ApiError } from "~/client/lib/api";
@@ -32,6 +45,7 @@ import {
   useRemoveMember,
   useUpdateLedger,
   type ImportParseResult,
+  type LedgerColor,
   type LedgerSummary,
   type Member,
 } from "~/client/lib/queries";
@@ -50,7 +64,7 @@ const localDateValue = (ms: number | null) => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 };
 
-export type LedgerEdit = { name: string; endDate: string; budget: string };
+export type LedgerEdit = { name: string; endDate: string; budget: string; color: LedgerColor | null; emoji: string };
 
 /** The edit form's fields -> a PATCH body holding ONLY what actually changed.
  *  Both nullable fields have an empty string meaning "clear it", which is not
@@ -58,7 +72,7 @@ export type LedgerEdit = { name: string; endDate: string; budget: string };
  *  budget from an untouched one. Paise are integers here or the patch is
  *  refused - a half-parsed amount must never reach the wire. */
 export function ledgerPatch(
-  ledger: Pick<LedgerSummary, "name" | "endDate" | "budget">,
+  ledger: Pick<LedgerSummary, "name" | "endDate" | "budget" | "color" | "emoji">,
   edit: LedgerEdit,
 ): { ok: true; patch: UpdateLedger } | { ok: false; error: string } {
   const name = edit.name.trim();
@@ -77,6 +91,9 @@ export function ledgerPatch(
   if (name !== ledger.name) patch.name = name;
   if (endDate !== ledger.endDate) patch.endDate = endDate;
   if (budget !== ledger.budget) patch.budget = budget;
+  if (edit.color !== ledger.color) patch.color = edit.color;
+  const emoji = edit.emoji.trim() || null;
+  if (emoji !== ledger.emoji) patch.emoji = emoji;
   return { ok: true, patch };
 }
 
@@ -91,10 +108,13 @@ function EditPanel({ ledger }: { ledger: LedgerSummary }) {
   // What the form was opened with. The diff is against this, not the live ledger:
   // if someone else renames it while this is open, an untouched field must not
   // send the old name back.
-  const [baseline, setBaseline] = useState<Pick<LedgerSummary, "name" | "endDate" | "budget">>(ledger);
+  const [baseline, setBaseline] =
+    useState<Pick<LedgerSummary, "name" | "endDate" | "budget" | "color" | "emoji">>(ledger);
   const [name, setName] = useState(baseline.name);
   const [endDate, setEndDate] = useState(localDateValue(baseline.endDate));
   const [budget, setBudget] = useState(baseline.budget === null ? "" : paiseToRupeeString(baseline.budget));
+  const [color, setColor] = useState<LedgerColor | null>(baseline.color);
+  const [emoji, setEmoji] = useState(baseline.emoji ?? "");
   const [failure, setFailure] = useState("");
   const [saved, setSaved] = useState(false);
 
@@ -107,7 +127,7 @@ function EditPanel({ ledger }: { ledger: LedgerSummary }) {
     e.preventDefault();
     setFailure("");
     setSaved(false);
-    const result = ledgerPatch(baseline, { name, endDate, budget });
+    const result = ledgerPatch(baseline, { name, endDate, budget, color, emoji });
     if (!result.ok) return setFailure(t(result.error));
     const { patch } = result;
     update.mutate(patch, {
@@ -118,6 +138,8 @@ function EditPanel({ ledger }: { ledger: LedgerSummary }) {
           name: patch.name ?? b.name,
           endDate: patch.endDate === undefined ? b.endDate : patch.endDate,
           budget: patch.budget === undefined ? b.budget : patch.budget,
+          color: patch.color === undefined ? b.color : patch.color,
+          emoji: patch.emoji === undefined ? b.emoji : patch.emoji,
         }));
         setSaved(true);
       },
@@ -140,6 +162,19 @@ function EditPanel({ ledger }: { ledger: LedgerSummary }) {
           maxLength={80}
         />
       </Field>
+      <LedgerAppearanceFields
+        name={name}
+        color={color}
+        emoji={emoji}
+        onColor={(c) => {
+          edited();
+          setColor(c);
+        }}
+        onEmoji={(e) => {
+          edited();
+          setEmoji(e);
+        }}
+      />
       <Field label={t("ledger.endDateOptional")}>
         <Input
           type="date"
@@ -177,7 +212,7 @@ function EditPanel({ ledger }: { ledger: LedgerSummary }) {
         </p>
       )}
 
-      <Button type="submit" className="w-full" disabled={update.isPending}>
+      <Button type="submit" className="w-full" isLoading={update.isPending}>
         {t("action.save")}
       </Button>
     </form>
@@ -221,7 +256,9 @@ function AddExistingMember({ ledgerId }: { ledgerId: string }) {
       <div className="mb-1.5 text-[13px] font-semibold" style={sectionLabel}>
         {t("member.addExisting")}
       </div>
-      {candidates.length === 0 ? (
+      {addable.isPending ? (
+        <Skeleton className="h-11 w-full" />
+      ) : candidates.length === 0 ? (
         <p className="text-[13px]" style={hint}>
           {t("member.addExistingNone")}
         </p>
@@ -242,7 +279,9 @@ function AddExistingMember({ ledgerId }: { ledgerId: string }) {
           <Button
             size="sm"
             className="mb-3"
-            disabled={!pickedUser || add.isPending}
+            variant={pickedUser ? "primary" : "ghost"}
+            disabled={!pickedUser}
+            isLoading={add.isPending}
             onClick={() => {
               if (!pickedUser) return;
               setAdded("");
@@ -300,7 +339,14 @@ function AddGuest({ ledgerId }: { ledgerId: string }) {
             <Input value={guestName} onChange={(e) => setGuestName(e.target.value)} maxLength={80} />
           </Field>
         </span>
-        <Button type="submit" size="sm" className="mb-3" disabled={!guestName.trim() || addGuest.isPending}>
+        <Button
+          type="submit"
+          size="sm"
+          className="mb-3"
+          variant={guestName.trim() ? "primary" : "ghost"}
+          isLoading={addGuest.isPending}
+          disabled={!guestName.trim()}
+        >
           {t("member.addGuestAction")}
         </Button>
       </div>
@@ -391,6 +437,14 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
 
   const positionByMemberId = new Map((balances.data?.positions ?? []).map((p) => [p.memberId, p.net]));
 
+  if (members.isPending)
+    return (
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-12 w-full" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    );
+
   return (
     <>
       {(members.data ?? []).map((m) => {
@@ -445,8 +499,6 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
       })}
       <AddExistingMember ledgerId={ledgerId} />
       {me.data?.isOwner && <AddGuest ledgerId={ledgerId} />}
-      <LeaveLedger ledgerId={ledgerId} />
-
       {removeFailure && (
         <p role="alert" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
           {removeFailure}
@@ -501,7 +553,9 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
             <Button
               size="sm"
               className="mb-3"
-              disabled={!mergeTargetMember || mergeGuest.isPending}
+              variant={mergeTargetMember ? "primary" : "ghost"}
+              disabled={!mergeTargetMember}
+              isLoading={mergeGuest.isPending}
               onClick={() => setMerge({ ...merge, confirming: true })}
             >
               {t("member.mergeAction")}
@@ -538,6 +592,8 @@ function MembersPanel({ ledgerId }: { ledgerId: string }) {
           )}
         </div>
       )}
+      {/* Leaving is the one destructive action here, so it sits last, apart from the rest. */}
+      <LeaveLedger ledgerId={ledgerId} />
     </>
   );
 }
@@ -606,7 +662,7 @@ function InvitePanel({ ledger }: { ledger: LedgerSummary }) {
         <div className="mt-2.5 border-t pt-2.5" style={rule}>
           {link === null ? (
             <>
-              <Button variant="ghost" size="sm" disabled={create.isPending} onClick={mint}>
+              <Button variant="ghost" size="sm" isLoading={create.isPending} onClick={mint}>
                 {t("ledger.invite")}
               </Button>
               {create.isError && (
@@ -657,7 +713,7 @@ function DuplicatePanel({ ledger, onDone }: { ledger: LedgerSummary; onDone: (le
     if (!trimmed) return setFailure(t("ledger.nameRequired"));
     setFailure("");
     create.mutate(
-      { name: trimmed, cloneFrom: ledger.id, endDate: null, budget: null, color: null, emoji: null },
+      { name: trimmed, cloneFrom: ledger.id, endDate: null, budget: null, color: ledger.color, emoji: ledger.emoji },
       {
         onSuccess: (created) => onDone(created.id),
         onError: () => setFailure(t("ledger.duplicateFailed")),
@@ -678,7 +734,7 @@ function DuplicatePanel({ ledger, onDone }: { ledger: LedgerSummary; onDone: (le
           {failure}
         </p>
       )}
-      <Button type="submit" className="w-full" disabled={create.isPending}>
+      <Button type="submit" className="w-full" isLoading={create.isPending}>
         {t("ledger.duplicateAction")}
       </Button>
     </form>
@@ -820,8 +876,8 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
             </p>
           )}
 
-          <Button className="w-full" disabled={!canConfirm || commit.isPending} onClick={onConfirm}>
-            {commit.isPending ? t("import.confirming") : t("import.confirm")}
+          <Button className="w-full" disabled={!canConfirm} isLoading={commit.isPending} onClick={onConfirm}>
+            {t("import.confirm")}
           </Button>
         </>
       )}
@@ -829,7 +885,20 @@ function ImportPanel({ ledgerId }: { ledgerId: string }) {
   );
 }
 
-type Panel = "edit" | "members" | "invite" | "duplicate" | "import";
+type Panel = "edit" | "members" | "invite" | "duplicate" | "import" | "export";
+
+/** A labelled run of menu items. The label is announced as the group's name. */
+function MenuGroup({ label, children }: { label: string; children: ReactNode }) {
+  const id = useId();
+  return (
+    <div role="group" aria-labelledby={id} className="py-1">
+      <div id={id} className="px-3.5 pt-1.5 pb-0.5 text-[13px] font-semibold" style={{ color: "var(--ink-3)" }}>
+        {label}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
   const navigate = useNavigate();
@@ -873,7 +942,7 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
       ? t("ledger.deleteBlocked")
       : t("ledger.deleteFailed");
 
-  const item = `flex min-h-11 w-full items-center px-3.5 py-2.5 text-left text-[15px] ${focusRing}`;
+  const item = `chip-press flex min-h-11 w-full items-center gap-3 px-3.5 py-2.5 text-left text-[15px] ${focusRing}`;
 
   return (
     <>
@@ -897,50 +966,55 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
             <div
               role="menu"
               aria-label={t("ledger.menu.open")}
-              className="absolute right-0 z-50 mt-1 w-56 overflow-hidden rounded-[8px] border py-1"
+              className="menu-in absolute right-0 z-50 mt-1 w-60 overflow-hidden rounded-[8px] border py-1"
               style={{ background: "var(--paper)", borderColor: "var(--line)" }}
             >
-              <button type="button" role="menuitem" className={item} onClick={() => pick("edit")}>
-                {t("ledger.menu.edit")}
-              </button>
-              <button type="button" role="menuitem" className={item} onClick={() => pick("members")}>
-                {t("ledger.menu.members")}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                className={item}
-                onClick={() => {
-                  trigger.current?.focus();
-                  setOpen(false);
-                  navigate(`/ledgers/${ledger.id}/recurring`);
-                }}
-              >
-                {t("ledgerNav.recurring")}
-              </button>
-              {me.data?.accountType !== "restricted" && (
-                <button type="button" role="menuitem" className={item} onClick={() => pick("invite")}>
-                  {t("ledger.menu.invite")}
+              <MenuGroup label={t("ledger.menu.groupThis")}>
+                <button type="button" role="menuitem" className={item} onClick={() => pick("edit")}>
+                  <Icon name="edit" size={18} />
+                  {t("ledger.menu.edit")}
                 </button>
-              )}
+                <button type="button" role="menuitem" className={item} onClick={() => pick("members")}>
+                  <Icon name="users" size={18} />
+                  {t("ledger.menu.members")}
+                </button>
+                {me.data?.accountType !== "restricted" && (
+                  <button type="button" role="menuitem" className={item} onClick={() => pick("invite")}>
+                    <Icon name="link" size={18} />
+                    {t("ledger.menu.invite")}
+                  </button>
+                )}
+              </MenuGroup>
+              <MenuGroup label={t("ledgerNav.expenses")}>
+                <button
+                  type="button"
+                  role="menuitem"
+                  className={item}
+                  onClick={() => {
+                    trigger.current?.focus();
+                    setOpen(false);
+                    navigate(`/ledgers/${ledger.id}/recurring`);
+                  }}
+                >
+                  <Icon name="repeat" size={18} />
+                  {t("ledgerNav.recurring")}
+                </button>
+                <button type="button" role="menuitem" className={item} onClick={() => pick("import")}>
+                  <Icon name="upload" size={18} />
+                  {t("import.menuLabel")}
+                </button>
+                <button type="button" role="menuitem" className={item} onClick={() => pick("export")}>
+                  <Icon name="download" size={18} />
+                  {t("ledger.menu.export")}
+                </button>
+              </MenuGroup>
+              <div className="my-1 border-t" style={rule} />
               {me.data?.accountType !== "restricted" && (
                 <button type="button" role="menuitem" className={item} onClick={() => pick("duplicate")}>
+                  <Icon name="copy" size={18} />
                   {t("ledger.menu.duplicate")}
                 </button>
               )}
-              <button type="button" role="menuitem" className={item} onClick={() => pick("import")}>
-                {t("import.menuLabel")}
-              </button>
-              <a
-                href={`/api/ledgers/${ledger.id}/export.csv`}
-                download
-                role="menuitem"
-                className={item}
-                onClick={() => setOpen(false)}
-              >
-                {t("export.ledgerCsv")}
-              </a>
-              <div className="my-1 border-t" style={rule} />
               <button
                 type="button"
                 role="menuitem"
@@ -953,6 +1027,7 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
                   else setConfirming("archive");
                 }}
               >
+                <Icon name="archive" size={18} />
                 {t(archived ? "ledger.menu.reopen" : "ledger.menu.archive")}
               </button>
               <button
@@ -966,6 +1041,7 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
                   setConfirming("delete");
                 }}
               >
+                <Icon name="trash" size={18} />
                 {t("ledger.menu.delete")}
               </button>
             </div>
@@ -994,6 +1070,8 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
       <Sheet open={panel === "import"} onOpenChange={() => setPanel(null)} title={t("import.title")}>
         <ImportPanel ledgerId={ledger.id} />
       </Sheet>
+
+      <ExportSheet ledgerId={ledger.id} open={panel === "export"} onClose={() => setPanel(null)} />
 
       {(lifecycle.isError || remove.isError) && (
         <p role="alert" className="mx-0.5 mb-2 text-[13px]" style={{ color: "var(--clay)" }}>

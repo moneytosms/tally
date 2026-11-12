@@ -1,6 +1,19 @@
 import { Suspense, useMemo, useState } from "react";
-import { Amount, Avatar, EmptyState, PageHeader } from "~/client/components/ui";
-import { CategoryChart, ChartFallback, MonthChart, SectionHeading } from "~/client/components/charts";
+import {
+  Amount,
+  Avatar,
+  Button,
+  Card,
+  EmptyState,
+  Field,
+  Input,
+  Notice,
+  PageHeader,
+  ScreenSkeleton,
+  SectionHeading,
+  Segmented,
+} from "~/client/components/ui";
+import { CategoryChart, ChartFallback, MonthChart } from "~/client/components/charts";
 import { useInsights, type Insights } from "~/client/lib/queries";
 import { t } from "~/client/i18n";
 
@@ -23,28 +36,26 @@ export function parseCustomRange(fromInput: string, toInput: string): { from: nu
 function InsightsBody({ data }: { data: Insights }) {
   return (
     <>
-      <div
-        className="mb-4 rounded-[7px] border px-3.5 py-4"
-        style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-      >
-        <div className="flex flex-wrap gap-5">
-          <Amount paise={data.totals.spent} label={t("insights.youSpent")} tone="neutral" hero />
-          <Amount paise={data.totals.paid} label={t("insights.youPaid")} tone="neutral" hero />
-        </div>
-        <div className="mt-3 border-t pt-2.5 text-[13px]" style={{ borderColor: "var(--line)", color: "var(--ink-3)" }}>
-          {t("insightsTab.totalsLine", {
-            expenses: t("insights.expenseCount", { count: data.totals.expenseCount }),
-            ledgers: t("insights.ledgerCount", { count: data.totals.ledgerCount }),
-          })}
-        </div>
-      </div>
-
-      <section className="mb-5">
-        <SectionHeading>{t("insights.byCategory")}</SectionHeading>
+      <Card className="mb-4">
+        {/* The one hero amount on this screen. */}
+        <Amount paise={data.totals.spent} label={t("insights.youSpent")} tone="neutral" hero />
         <div
-          className="rounded-[7px] border px-3.5 py-3"
-          style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+          className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-2.5"
+          style={{ borderColor: "var(--line)" }}
         >
+          <Amount paise={data.totals.paid} label={t("insights.youPaid")} tone="neutral" />
+          <span className="text-[13px]" style={{ color: "var(--ink-3)" }}>
+            {t("insightsTab.totalsLine", {
+              expenses: t("insights.expenseCount", { count: data.totals.expenseCount }),
+              ledgers: t("insights.ledgerCount", { count: data.totals.ledgerCount }),
+            })}
+          </span>
+        </div>
+      </Card>
+
+      <section>
+        <SectionHeading>{t("insights.byCategory")}</SectionHeading>
+        <Card>
           {/* One bar is a rectangle, not a comparison. The list below carries the
               same numbers, so the chart only earns its space once there's a shape. */}
           {data.byCategory.length > 1 && (
@@ -63,43 +74,38 @@ function InsightsBody({ data }: { data: Insights }) {
               </li>
             ))}
           </ul>
-        </div>
+        </Card>
       </section>
 
       {data.byMonth.length > 1 && (
-        <section className="mb-5">
+        <section>
           <SectionHeading>{t("insights.byMonth")}</SectionHeading>
-          <div
-            className="rounded-[7px] border px-3.5 py-3"
-            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-          >
+          <Card>
             <Suspense fallback={<ChartFallback height={180} />}>
               <MonthChart data={data.byMonth} />
             </Suspense>
-          </div>
+          </Card>
         </section>
       )}
 
-      <section className="mb-2">
+      <section>
         <SectionHeading>{t("insights.mostSpentWith")}</SectionHeading>
-        {data.mostSpentWith.map((p) => (
-          <div
-            key={p.userId}
-            className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-3"
-            style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-          >
-            <div className="flex min-w-0 items-center gap-2.5">
-              <Avatar name={p.displayName} />
-              <div className="min-w-0">
-                <div className="truncate text-[15px]">{p.displayName}</div>
-                <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
-                  {t("insights.sharedExpenses", { count: p.sharedExpenseCount })}
+        <ul className="flex flex-col gap-2">
+          {data.mostSpentWith.map((p) => (
+            <Card as="li" key={p.userId} className="flex items-center justify-between gap-2.5">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <Avatar name={p.displayName} />
+                <div className="min-w-0">
+                  <div className="truncate text-[15px]">{p.displayName}</div>
+                  <div className="text-[13px]" style={{ color: "var(--ink-3)" }}>
+                    {t("insights.sharedExpenses", { count: p.sharedExpenseCount })}
+                  </div>
                 </div>
               </div>
-            </div>
-            <Amount paise={p.sharedTotal} label={t("ledger.spent")} tone="neutral" />
-          </div>
-        ))}
+              <Amount paise={p.sharedTotal} label={t("ledger.spent")} tone="neutral" />
+            </Card>
+          ))}
+        </ul>
       </section>
     </>
   );
@@ -126,77 +132,55 @@ export function InsightsTab() {
     <>
       <PageHeader title={t("tabs.insights")} />
 
-      <div className="mb-4 flex gap-2">
-        {(
-          [
-            ["all", "insights.rangeAll"],
-            ["12m", "insights.range12m"],
-            ["30d", "insights.range30d"],
-            ["custom", "insights.rangeCustom"],
-          ] as const
-        ).map(([r, key]) => (
-          <button
-            key={r}
-            type="button"
-            onClick={() => setRange(r)}
-            aria-pressed={range === r}
-            className="min-h-11 flex-1 rounded-[6px] border px-2 text-[13px]"
-            style={{
-              borderColor: range === r ? "var(--moss)" : "var(--line)",
-              background: range === r ? "var(--moss-wash)" : "var(--paper-2)",
-              color: range === r ? "var(--moss-2)" : "var(--ink-2)",
-            }}
-          >
-            {t(key)}
-          </button>
-        ))}
+      <div className="mb-4">
+        <Segmented<Range>
+          label={t("insights.rangeLabel")}
+          value={range}
+          onChange={setRange}
+          options={[
+            { value: "all", label: t("insights.rangeAll") },
+            { value: "12m", label: t("insights.range12m") },
+            { value: "30d", label: t("insights.range30d") },
+            { value: "custom", label: t("insights.rangeCustom") },
+          ]}
+        />
       </div>
 
       {range === "custom" && (
         <div className="mb-4">
-          <div className="flex gap-2">
-            <label className="flex-1 text-[13px]">
-              <span className="mb-1 block" style={{ color: "var(--ink-3)" }}>
-                {t("insights.customFrom")}
-              </span>
-              <input
-                type="date"
-                value={customFrom}
-                max={customTo || undefined}
-                onChange={(e) => setCustomFrom(e.target.value)}
-                className="min-h-11 w-full rounded-[6px] border px-2 text-[13px]"
-                style={{ borderColor: "var(--line)", background: "var(--paper-2)", color: "var(--ink-2)" }}
-              />
-            </label>
-            <label className="flex-1 text-[13px]">
-              <span className="mb-1 block" style={{ color: "var(--ink-3)" }}>
-                {t("insights.customTo")}
-              </span>
-              <input
-                type="date"
-                value={customTo}
-                min={customFrom || undefined}
-                onChange={(e) => setCustomTo(e.target.value)}
-                className="min-h-11 w-full rounded-[6px] border px-2 text-[13px]"
-                style={{ borderColor: "var(--line)", background: "var(--paper-2)", color: "var(--ink-2)" }}
-              />
-            </label>
-          </div>
-          {customInvalid && (
-            <p className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
-              {t("insights.invalidRange")}
-            </p>
-          )}
-          {!customBounds && !customInvalid && (
-            <p className="mt-1.5 text-[13px]" style={{ color: "var(--ink-3)" }}>
-              {t("insightsTab.pickBoth")}
-            </p>
-          )}
+          <Field label={t("insights.customFrom")}>
+            <Input
+              type="date"
+              value={customFrom}
+              max={customTo || undefined}
+              onChange={(e) => setCustomFrom(e.target.value)}
+            />
+          </Field>
+          <Field label={t("insights.customTo")}>
+            <Input
+              type="date"
+              value={customTo}
+              min={customFrom || undefined}
+              onChange={(e) => setCustomTo(e.target.value)}
+            />
+          </Field>
+          {customInvalid && <Notice tone="danger">{t("insights.invalidRange")}</Notice>}
+          {!customBounds && !customInvalid && <Notice tone="info">{t("insightsTab.pickBoth")}</Notice>}
         </div>
       )}
 
-      {range === "custom" && !customBounds ? null : insights.isPending ? null : insights.error ? (
-        <EmptyState title={t("error.generic")} body={t("error.network")} />
+      {range === "custom" && !customBounds ? null : insights.isPending ? (
+        <ScreenSkeleton />
+      ) : insights.error ? (
+        <EmptyState
+          title={t("error.generic")}
+          body={t("error.network")}
+          action={
+            <Button size="sm" variant="ghost" onClick={() => insights.refetch()}>
+              {t("action.retry")}
+            </Button>
+          }
+        />
       ) : insights.data.totals.expenseCount === 0 ? (
         <EmptyState title={t("empty.insights")} body={t("empty.insightsBody")} />
       ) : (

@@ -5,10 +5,10 @@
 // same server data the Settle tab shows. Offline shows no numbers at all (SPEC §10).
 import { Suspense, useState, type ReactNode } from "react";
 import { Link, useParams } from "react-router";
-import { Amount, Button, EmptyState, ScreenSkeleton } from "~/client/components/ui";
+import { Amount, Button, Card, EmptyState, ScreenSkeleton, SectionHeading } from "~/client/components/ui";
 import { SettleGraph } from "~/client/components/SettleGraph";
 import { TrailList, disclosureSummaryClass, fullyExplained } from "~/client/components/WhyTrail";
-import { dayFormat } from "~/client/components/ActivityRow";
+import { formatDate } from "~/client/lib/format";
 import { CategoryChart, ChartFallback, MemberPieChart, type PieDatum } from "~/client/components/charts";
 import { netSum, reroutedReason, sortPositions } from "~/client/routes/SettleUp";
 import {
@@ -30,7 +30,7 @@ type Edge = LedgerBalances["transfers"][number];
 
 const muted = { color: "var(--ink-3)" };
 const line = { borderColor: "var(--line)" };
-const th = "border-b px-2 py-1.5 text-left align-bottom text-[12px] font-semibold";
+const th = "border-b px-2 py-1.5 text-left align-bottom text-[13px] font-semibold";
 const td = "border-b px-2 py-2 align-top text-[13px]";
 
 export default function SettleReport() {
@@ -82,13 +82,11 @@ export default function SettleReport() {
 /** One suggested transfer or direct debt, its trail expanded. A transfer its trail
  *  does not fully explain gets the direct debts around it, as the Settle tab shows. */
 function EdgeRow({
-  ledgerId,
   edge,
   sentence,
   reason,
   name,
 }: {
-  ledgerId: string;
   edge: Edge;
   sentence: string;
   reason: { payerOwes: Edge[]; payeeOwed: Edge[] } | null;
@@ -118,9 +116,8 @@ function EdgeRow({
       )}
       <h4 className="mt-2 mb-1 text-[13px] font-medium">{t("report.trailHeading")}</h4>
       <TrailList
-        ledgerId={ledgerId}
-        fromMemberId={edge.fromMemberId}
-        toMemberId={edge.toMemberId}
+        fromName={name(edge.fromMemberId)}
+        toName={name(edge.toMemberId)}
         amount={edge.amount}
         trail={edge.trail ?? []}
       />
@@ -172,19 +169,16 @@ function Report({
   return (
     <div className="flex flex-col gap-6">
       <header className="print-block">
-        <h1 className="serif text-[26px] leading-tight">{ledger.name}</h1>
+        <h1 className="serif text-[22px] leading-tight">{ledger.name}</h1>
         <p className="text-[14px]" style={muted}>
-          {t("report.title")} · {t("report.generated", { date: dayFormat.format(generated) })}
+          {t("report.title")} · {t("report.generated", { date: formatDate(generated) })}
         </p>
-        <div
-          className="mt-3 flex items-end justify-between gap-3 rounded-[7px] border px-3.5 py-3"
-          style={{ background: "var(--paper-2)", ...line }}
-        >
+        <Card className="mt-3 flex items-end justify-between gap-3">
           <Amount paise={totals.spent} label={t("settle.totalSpent")} tone="neutral" />
           <span className="text-[13px]" style={muted}>
             {t("settle.expenseCount", { count: totals.expenseCount })}
           </span>
-        </div>
+        </Card>
       </header>
 
       {totals.expenseCount === 0 ? (
@@ -192,17 +186,17 @@ function Report({
       ) : (
         <>
           <section className="print-block">
-            <h2 className="mb-2 text-[15px] font-semibold">{t("settle.graph.planView")}</h2>
+            <SectionHeading>{t("settle.graph.planView")}</SectionHeading>
             <SettleGraph positions={graphPositions} edges={transfers} label={t("settle.graph.label")} />
           </section>
 
           <section className="print-block">
-            <h2 className="mb-2 text-[15px] font-semibold">{t("settle.graph.directView")}</h2>
+            <SectionHeading>{t("settle.graph.directView")}</SectionHeading>
             <SettleGraph positions={graphPositions} edges={pairs} label={t("settle.graph.label")} />
           </section>
 
           <section className="print-block">
-            <h2 className="mb-1 text-[15px] font-semibold">{t("settle.netHeading")}</h2>
+            <SectionHeading>{t("settle.netHeading")}</SectionHeading>
             <p className="mb-3 text-[13px]" style={muted}>
               {t("settle.netExplain")}
             </p>
@@ -292,7 +286,7 @@ function Report({
           </section>
 
           <section className="print-block">
-            <h2 className="mb-2 text-[15px] font-semibold">{t("settle.whoHeading")}</h2>
+            <SectionHeading>{t("settle.whoHeading")}</SectionHeading>
             {transfers.length === 0 ? (
               <EmptyState title={t("settle.allSettled")} />
             ) : (
@@ -300,7 +294,6 @@ function Report({
                 {transfers.map((tr) => (
                   <EdgeRow
                     key={`${tr.fromMemberId}-${tr.toMemberId}`}
-                    ledgerId={ledger.id}
                     edge={tr}
                     sentence={t("settle.pays", { from: name(tr.fromMemberId), to: name(tr.toMemberId) })}
                     reason={fullyExplained(tr.trail ?? [], tr.amount) ? null : reroutedReason(tr, pairs)}
@@ -312,7 +305,7 @@ function Report({
           </section>
 
           <section className="print-block">
-            <h2 className="mb-2 text-[15px] font-semibold">{t("settle.pairsSummary")}</h2>
+            <SectionHeading>{t("settle.pairsSummary")}</SectionHeading>
             <p className="mb-2 text-[13px]" style={muted}>
               {t("settle.pairsExplain")}
             </p>
@@ -323,7 +316,6 @@ function Report({
                 {pairs.map((p) => (
                   <EdgeRow
                     key={`${p.fromMemberId}-${p.toMemberId}`}
-                    ledgerId={ledger.id}
                     edge={p}
                     sentence={t("settle.owes", { from: name(p.fromMemberId), to: name(p.toMemberId) })}
                     reason={null}
@@ -335,7 +327,7 @@ function Report({
           </section>
 
           <section className="print-block">
-            <h2 className="mb-3 text-[15px] font-semibold">{t("settle.settlementsHeading")}</h2>
+            <SectionHeading>{t("settle.settlementsHeading")}</SectionHeading>
             {settlements.length === 0 ? (
               <p className="text-[13px]" style={muted}>
                 {t("settle.noSettlements")}
@@ -370,7 +362,7 @@ function Report({
                     {settlements.map((s) => (
                       <tr key={s.id}>
                         <td className={td} style={line}>
-                          {dayFormat.format(s.declaredAt)}
+                          {formatDate(s.declaredAt)}
                         </td>
                         <td className={td} style={line}>
                           {name(s.fromMemberId)}
@@ -396,7 +388,7 @@ function Report({
           </section>
 
           <section className="print-block">
-            <h2 className="mb-3 text-[15px] font-semibold">{t("report.spending")}</h2>
+            <SectionHeading>{t("report.spending")}</SectionHeading>
 
             {insights.byCategory.length > 0 && (
               <div className="print-block mb-5">
@@ -496,7 +488,7 @@ function Report({
           </section>
 
           <section className="print-block">
-            <h2 className="mb-2 text-[15px] font-semibold">{t("report.expenses")}</h2>
+            <SectionHeading>{t("report.expenses")}</SectionHeading>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] border-collapse">
                 <caption className="mb-2 text-left text-[13px]" style={muted}>
@@ -525,7 +517,7 @@ function Report({
                   {expenses.map((x) => (
                     <tr key={x.id} className="print-block">
                       <td className={td} style={line}>
-                        {dayFormat.format(x.paidAt)}
+                        {formatDate(x.paidAt)}
                       </td>
                       <td className={td} style={line}>
                         {x.description}

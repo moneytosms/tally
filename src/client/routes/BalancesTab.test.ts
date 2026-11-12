@@ -1,7 +1,7 @@
 // Pure arithmetic behind the bulk settle note. Amounts are paise, written as integers
 // with the rupee value in a comment.
 import { describe, expect, it } from "vitest";
-import { bulkNoteShown, bulkNotRecorded, bulkRemainder } from "./BalancesTab";
+import { bulkNoteShown, bulkNotRecorded, bulkRemainder, queryView } from "./BalancesTab";
 
 describe("bulkNotRecorded", () => {
   it("does not count duplicates, which were already recorded", () => {
@@ -29,5 +29,23 @@ describe("bulkRemainder", () => {
     expect(bulkNoteShown(bulkRemainder(50000, 50000))).toBe(false);
     // remainder -100.00 (-10000): viewer still owes friend, "owes you" would be false, no note
     expect(bulkNoteShown(bulkRemainder(40000, 30000))).toBe(false);
+  });
+});
+
+describe("queryView", () => {
+  it("is loading, never settled, before data arrives", () => {
+    expect(queryView({ data: undefined, isError: false })).toBe("loading");
+  });
+
+  it("is an error, never settled, when the first request fails", () => {
+    expect(queryView({ data: undefined, isError: true })).toBe("error");
+  });
+
+  it("is empty only once data has arrived with no rows", () => {
+    expect(queryView({ data: [], isError: false })).toBe("empty");
+  });
+
+  it("is rows when data exists, even if a background refetch failed", () => {
+    expect(queryView({ data: [{}], isError: true })).toBe("rows");
   });
 });

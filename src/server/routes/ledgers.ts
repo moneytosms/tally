@@ -13,6 +13,7 @@ import { requireSession } from "~/server/middleware/session";
 import { requireFull, requireMember } from "~/server/middleware/membership";
 import { isLedgerCreator, requireOwner } from "~/server/middleware/owner";
 import { uuidv7 } from "~/shared/id";
+import { compareLedgers, lastActivityAt } from "~/shared/ledgerOrder";
 import {
   addGuestSchema,
   addMemberSchema,
@@ -27,12 +28,15 @@ type Ledger = NonNullable<Awaited<ReturnType<Db["findLedger"]>>>;
 /** Net positions of a whole ledger. Derived on every call - never stored. */
 async function positionsOf(db: Db, ledgerId: string) {
   const [expenses, settlements] = await Promise.all([db.listExpenses(ledgerId), db.listSettlements(ledgerId)]);
-  return { positions: netPositions(expenses, settlements), expenses };
+  return { positions: netPositions(expenses, settlements), expenses, settlements };
 }
 
 /** `LedgerSummary` on the wire. `net` is the VIEWER's position in this ledger. */
 async function summarise(db: Db, ledger: Ledger, viewerMemberId: string) {
-  const [{ positions, expenses }, members] = await Promise.all([positionsOf(db, ledger.id), db.listMembers(ledger.id)]);
+  const [{ positions, expenses, settlements }, members] = await Promise.all([
+    positionsOf(db, ledger.id),
+    db.listMembers(ledger.id),
+  ]);
   return {
     id: ledger.id,
     name: ledger.name,
@@ -45,6 +49,7 @@ async function summarise(db: Db, ledger: Ledger, viewerMemberId: string) {
     // member's, or one person's home screen would rearrange everyone's.
     pinned: members.find((m) => m.id === viewerMemberId)?.pinned ?? false,
     archivedAt: ledger.archivedAt,
+    lastActivityAt: lastActivityAt(ledger.createdAt, expenses, settlements),
     memberCount: members.length,
     net: positions.find((p) => p.memberId === viewerMemberId)?.net ?? 0,
     spent: expenses.reduce((sum, e) => sum + e.total, 0),
@@ -77,7 +82,11 @@ ledgers.get("/ledgers", async (c) => {
   const rows = await c.var.db.listLedgersForUser(c.var.user.id);
   // ponytail: one pass per ledger. ~20 users, a handful of ledgers each - well
   // inside the 10 ms CPU budget. Denormalise only if that stops being true.
-  return c.json(await Promise.all(rows.map((r) => summarise(c.var.db, r.ledger, r.memberId))));
+  const listed = await Promise.all(
+    rows.map(async (r) => ({ ...(await summarise(c.var.db, r.ledger, r.memberId)), createdAt: r.ledger.createdAt })),
+  );
+  // Order is derived here, not in SQL, so the client and demo sort with the same comparator.
+  return c.json(listed.sort(compareLedgers).map(({ createdAt: _createdAt, ...summary }) => summary));
 });
 
 ledgers.post("/ledgers", requireFull, async (c) => {

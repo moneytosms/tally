@@ -21,6 +21,7 @@ import {
 } from "react";
 import { formatPaise } from "~/shared/money";
 import { t } from "~/client/i18n";
+import { Button, IconButton } from "~/client/components/ui";
 
 export type Selection =
   { kind: "member"; memberId: string } | { kind: "edge"; fromMemberId: string; toMemberId: string };
@@ -289,19 +290,6 @@ function useMeasuredWidth(ref: RefObject<HTMLDivElement | null>): number | null 
 type Position = { memberId: string; name: string; net: number };
 type Edge = { fromMemberId: string; toMemberId: string; amount: number };
 type Txt = { text: string; x: number; y: number; anchor: "start" | "middle" | "end"; strong: boolean };
-
-const btn = {
-  minHeight: 44,
-  minWidth: 44,
-  padding: "0 14px",
-  borderRadius: 10,
-  border: "1px solid var(--line-2)",
-  background: "var(--paper-2)",
-  color: "var(--ink)",
-  font: "inherit",
-  fontSize: 14,
-  cursor: "pointer",
-} as const;
 
 export function SettleGraph({
   positions,
@@ -888,39 +876,31 @@ export function SettleGraph({
       </div>
       {interactive && box && (
         <>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-            <button
-              type="button"
-              style={{ ...btn, opacity: v.k >= MAX_K ? 0.5 : 1 }}
-              disabled={v.k >= MAX_K}
-              onClick={() => zoomBy(1.25)}
-            >
-              {t("settle.graph.zoomIn")}
-            </button>
-            <button
-              type="button"
-              style={{ ...btn, opacity: v.k <= MIN_K ? 0.5 : 1 }}
-              disabled={v.k <= MIN_K}
-              onClick={() => zoomBy(0.8)}
-            >
-              {t("settle.graph.zoomOut")}
-            </button>
-            <button
-              type="button"
-              style={{ ...btn, opacity: v.k === 1 && Object.keys(overrides).length === 0 ? 0.5 : 1 }}
+          <div className="mt-3 flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
               disabled={v.k === 1 && Object.keys(overrides).length === 0}
               onClick={resetAll}
             >
               {t("settle.graph.resetView")}
-            </button>
+            </Button>
+            <IconButton
+              icon="minus"
+              label={t("settle.graph.zoomOut")}
+              disabled={v.k <= MIN_K}
+              onClick={() => zoomBy(0.8)}
+            />
+            <IconButton
+              icon="plus"
+              label={t("settle.graph.zoomIn")}
+              disabled={v.k >= MAX_K}
+              onClick={() => zoomBy(1.25)}
+            />
           </div>
-          <p className="mt-2 text-center text-[13px]" style={{ color: "var(--ink-2)" }}>
-            {t("settle.graph.help")}
-          </p>
+          <p className="mt-2 text-center text-[13px] text-[var(--ink-3)]">{t("settle.graph.help")}</p>
           {layout && layout.hidden > 0 && (
-            <p className="mt-1 text-center text-[13px]" style={{ color: "var(--ink-2)" }}>
-              {t("settle.graph.hiddenLabels")}
-            </p>
+            <p className="mt-1 text-center text-[13px] text-[var(--ink-3)]">{t("settle.graph.hiddenLabels")}</p>
           )}
         </>
       )}

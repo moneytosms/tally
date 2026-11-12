@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Select } from "~/client/components/ui";
+import { Card, Select } from "~/client/components/ui";
 import { t } from "~/client/i18n";
 import { DARK_THEMES, getTheme, LIGHT_THEMES, setTheme, type Theme } from "~/client/lib/theme";
 
@@ -33,10 +33,7 @@ export function ThemePicker() {
   const [theme, setCurrent] = useState<Theme>(getTheme);
 
   return (
-    <div
-      className="rounded-[7px] border px-3.5 py-3.5"
-      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
-    >
+    <Card>
       <div className="flex items-center gap-3">
         {/* A native <select> cannot render a swatch per option, so the preview
             sits beside it and follows the selection. */}
@@ -70,6 +67,6 @@ export function ThemePicker() {
       <p className="mt-2 text-[13px]" style={{ color: "var(--ink-3)" }}>
         {t("profile.themeHint")}
       </p>
-    </div>
+    </Card>
   );
 }

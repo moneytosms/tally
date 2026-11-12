@@ -19,7 +19,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { crashed:
   render() {
     if (!this.state.crashed) return this.props.children;
     return (
-      <div className="flex h-full items-center px-3.5">
+      <div className="flex h-full items-center px-4">
         <EmptyState
           title={t("error.crashed")}
           body={t("error.crashedBody")}
