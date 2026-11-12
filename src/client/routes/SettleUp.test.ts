@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import {
   activeTransfer,
   effectiveMethod,
+  memberLine,
   netSum,
+  reroutedReason,
   settleAmount,
   sortPositions,
   sortTransfers,
@@ -110,5 +112,54 @@ describe("sortTransfers", () => {
       { fromMemberId: "m_asha", toMemberId: "m_ravi" },
     ];
     expect(sortTransfers(rows, "m_meera").map((r) => r.fromMemberId)).toEqual(["m_meera", "m_ravi", "m_asha"]);
+  });
+});
+
+describe("reroutedReason", () => {
+  it("is empty for a transfer that is itself a direct debt", () => {
+    // A owes C ₹500.00 directly; nothing else touches A or C.
+    const pairs = [{ fromMemberId: "A", toMemberId: "C", amount: 500_00 }];
+    expect(reroutedReason({ fromMemberId: "A", toMemberId: "C" }, pairs)).toEqual({ payerOwes: [], payeeOwed: [] });
+  });
+
+  it("lists the payer's debts and the payee's credits when routed through B", () => {
+    // A owes B ₹500.00 and B owes C ₹500.00; the plan lets A pay C ₹500.00 directly.
+    const pairs = [
+      { fromMemberId: "A", toMemberId: "B", amount: 500_00 },
+      { fromMemberId: "B", toMemberId: "C", amount: 500_00 },
+    ];
+    expect(reroutedReason({ fromMemberId: "A", toMemberId: "C" }, pairs)).toEqual({
+      payerOwes: [pairs[0]],
+      payeeOwed: [pairs[1]],
+    });
+  });
+});
+
+describe("memberLine", () => {
+  it("says what is owed to a member who is in credit", () => {
+    // Asha paid ₹1,200.00 and her share is ₹700.00, so she is owed ₹500.00.
+    const line = memberLine({ name: "Asha", paid: 1200_00, share: 700_00, settledOut: 0, settledIn: 0, net: 500_00 });
+    expect(line).toBe("Asha paid ₹1,200.00, share of expenses ₹700.00, so Asha is owed ₹500.00.");
+  });
+
+  it("says what is owed by a member in debt, including settlements sent", () => {
+    // Ravi paid ₹200.00, share ₹650.00, sent ₹100.00 back; still owes ₹450.00.
+    const line = memberLine({
+      name: "Ravi",
+      paid: 200_00,
+      share: 650_00,
+      settledOut: 100_00,
+      settledIn: 0,
+      net: -450_00,
+    });
+    expect(line).toBe("Ravi paid ₹200.00, share of expenses ₹650.00, settlements sent ₹100.00, so Ravi owes ₹450.00.");
+  });
+
+  it("says a settled member is settled, with no sign", () => {
+    // Meera paid ₹300.00 and her share is ₹300.00: net ₹0.00.
+    const line = memberLine({ name: "Meera", paid: 300_00, share: 300_00, settledOut: 0, settledIn: 50_00, net: 0 });
+    expect(line).toBe(
+      "Meera paid ₹300.00, share of expenses ₹300.00, settlements received ₹50.00, so Meera is settled.",
+    );
   });
 });

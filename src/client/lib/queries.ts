@@ -117,7 +117,7 @@ export type LedgerBalances = {
     name: string;
   }>;
   transfers: Array<{ fromMemberId: string; toMemberId: string; amount: Paise; trail: TrailRow[] }>;
-  pairs: Array<{ fromMemberId: string; toMemberId: string; amount: Paise }>;
+  pairs: Array<{ fromMemberId: string; toMemberId: string; amount: Paise; trail: TrailRow[] }>;
   settlements: Array<{
     id: string;
     fromMemberId: string;

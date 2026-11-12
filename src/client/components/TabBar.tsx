@@ -24,7 +24,7 @@ export function TabBar({ addButton }: { addButton?: ReactNode }) {
   return (
     <nav
       aria-label={t("nav.main")}
-      className="pad-safe-bottom order-last flex shrink-0 border-t select-none md:order-first md:w-[232px] md:flex-col md:border-t-0 md:border-r md:pt-5 md:pr-3 md:pb-4 md:pl-[calc(12px+env(safe-area-inset-left))]"
+      className="no-print pad-safe-bottom order-last flex shrink-0 border-t select-none md:order-first md:w-[232px] md:flex-col md:border-t-0 md:border-r md:pt-5 md:pr-3 md:pb-4 md:pl-[calc(12px+env(safe-area-inset-left))]"
       style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
     >
       <div className="hidden md:mb-6 md:block">

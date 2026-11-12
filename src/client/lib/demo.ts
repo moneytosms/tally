@@ -548,7 +548,10 @@ function handle(path: string, init?: RequestInit): unknown {
         ...tr,
         trail: trailFor(expenses, settlements, tr.fromMemberId, tr.toMemberId),
       })),
-      pairs: grossPairs(expenses, settlements),
+      pairs: grossPairs(expenses, settlements).map((p) => ({
+        ...p,
+        trail: trailFor(expenses, settlements, p.fromMemberId, p.toMemberId),
+      })),
       settlements: [...settlements]
         .sort((a, b) => b.declaredAt - a.declaredAt)
         .map(({ id, fromMemberId, toMemberId, amount, method, note, declaredAt }) => ({

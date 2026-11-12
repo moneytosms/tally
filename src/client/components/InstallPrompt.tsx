@@ -59,7 +59,7 @@ export function InstallPrompt() {
     <div
       role="status"
       aria-live="polite"
-      className="flex items-center gap-3 px-4 py-2 text-[14px]"
+      className="no-print flex items-center gap-3 px-4 py-2 text-[14px]"
       style={{ background: "var(--moss-wash)", color: "var(--moss)" }}
     >
       <span className="flex-1">
