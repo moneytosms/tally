@@ -42,13 +42,13 @@ Decisions live in [`docs/adr/`](docs/adr/). The buildable spec is [`docs/SPEC.md
 
 > Not the sum of that person's own net positions: those include what a third Member owes them, which is neither the viewer's money nor the viewer's to settle.
 
-**Transfer plan** - the derived, minimal set of payments that would clear a Ledger. Never stored, recomputed on every change. Each suggested transfer must be explainable via its **trail**.
+**Transfer plan** - the derived set of payments that would clear a Ledger: a small set, at most one fewer transfer than there are Members, not guaranteed to be the fewest possible. Never stored, recomputed on every change. Each suggested transfer must be explainable via its **trail**.
 
 **Trail** - the chain of expenses justifying a suggested transfer. What the "why?" affordance shows.
 
 **Bulk settle** - one action clearing a person's cross-ledger net balance, writing Settlements into each contributing Ledger.
 
-**Simplify** - collapsing net positions into the fewest transfers. Always on, always a view, never mutates stored data.
+**Simplify** - collapsing net positions into a small set of transfers, not guaranteed to be the fewest possible. Always on, always a view, never mutates stored data.
 
 ---
 

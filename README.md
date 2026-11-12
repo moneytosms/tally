@@ -20,8 +20,9 @@
 </p>
 
 Self-hosted expense splitting for friend groups, as a PWA. It tracks who owes
-what, shows the fewest transfers that clear a ledger, and hands you a UPI link
-to pay. **It never touches your money.**
+what, shows a small set of transfers that clear a ledger (at most one fewer than
+the number of members; not guaranteed to be the fewest possible), and hands you a
+UPI link to pay. **It never touches your money.**
 
 The sheet above is real output: the Goa trip demo ledger, computed by the app.
 Five expenses total ₹34,100.00. Asha paid most of it, so four people each pay
@@ -40,8 +41,9 @@ recorded and undoable.
 
 **Balances.** A net position per person per ledger, plus a cross-ledger view
 that answers "what do I owe Ravi, overall?". Always derived, never stored. The
-suggested transfers are the minimal set that clears a ledger, and each one can
-explain itself.
+suggested transfers are a small set that clears a ledger (at most one fewer
+than the number of members; not guaranteed to be the fewest possible), and each
+one can explain itself.
 
 **Settling.** Declare a payment, optionally hand off to a UPI app. Partial
 settles are first-class. Bulk settle clears someone across every shared ledger

@@ -2,6 +2,7 @@
 // "clone members on ledger creation"). The seed ledger L1 holds Ada, Bob and the
 // guest Dee, and the session is Ada's.
 import { beforeEach, describe, expect, it } from "vitest";
+import expenses from "~/server/routes/expenses";
 import ledgers from "~/server/routes/ledgers";
 import { type Harness, mount, NOW, req, setup } from "~/server/routes/_test-harness";
 import { SESSION_COOKIE, createSession } from "~/server/auth/session";
@@ -329,5 +330,31 @@ describe("POST /ledgers/:ledgerId/members/:guestMemberId/merge", () => {
   it("400s on an unknown target", async () => {
     const res = await merge("m_guest", "does-not-exist");
     expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /ledgers/:ledgerId/archive", () => {
+  it("refuses while any net position is non-zero, so an archived ledger is always at zero", async () => {
+    const withExpenses = mount(h, expenses, ledgers);
+    await withExpenses.request(
+      req(h, "/api/ledgers/L1/expenses", {
+        method: "POST",
+        json: {
+          description: "x",
+          paidAtEpochMs: NOW,
+          categoryId: null,
+          notes: null,
+          mode: "equal",
+          total: 10_000, // ₹100.00, so Ada owes Bob ₹50.00
+          payerMemberId: "m_bob",
+          participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+        },
+      }),
+    );
+
+    const res = await app.request(req(h, "/api/ledgers/L1/archive", { method: "POST" }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "not_settled" });
+    expect((await h.db.findLedger("L1"))!.archivedAt).toBeNull();
   });
 });
