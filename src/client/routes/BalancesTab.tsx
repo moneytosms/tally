@@ -26,12 +26,29 @@ import {
   useLedgers,
   useMe,
   useMembers,
+  type BulkSettleResult,
   type CrossLedgerBalance,
   type LedgerSummary,
 } from "~/client/lib/queries";
 import { api } from "~/client/lib/api";
 import { formatPaise } from "~/shared/money";
 import { t } from "~/client/i18n";
+
+/** Paise the friend still owes the viewer once bulk settle records `recorded`. `net` is the
+ *  server sign (positive = viewer owes them). Zero means the row and the sheet agree. */
+export function bulkRemainder(net: number, recorded: number): number {
+  return recorded - net;
+}
+
+/** The note says "{name} owes you {remainder}", which is only true for a positive remainder. */
+export function bulkNoteShown(remainder: number): boolean {
+  return remainder > 0;
+}
+
+/** Skipped legs that were NOT recorded. A `duplicate` is already recorded, so it is not counted. */
+export function bulkNotRecorded(skipped: Array<{ reason?: string }>): number {
+  return skipped.filter((s) => s.reason !== "duplicate").length;
+}
 
 /** One leg of a bulk settle: what I owe one person in one ledger. */
 type Contribution = {
@@ -181,6 +198,7 @@ function BulkSettle({
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState("");
   const total = legs.reduce((a, c) => a + c.amount, 0);
+  const remainder = bulkRemainder(friend.net, total);
 
   // One server-side batched write across every contributing ledger, so a bulk settle
   // cannot half-apply (SPEC §11). Guests come back in `skipped` - they have no VPA
@@ -189,20 +207,19 @@ function BulkSettle({
     setBusy(true);
     setStatus("");
     try {
-      // The client type in queries.ts has no `total`; the server returns one, and it is what was recorded.
-      const res = await api<{ total: number; settlements: unknown[]; skipped: unknown[] }>("/api/settlements/bulk", {
+      const res = await api<BulkSettleResult>("/api/settlements/bulk", {
         method: "POST",
         body: JSON.stringify({ toUserId: friend.userId, method: friend.vpa ? "upi" : "manual", note: null }),
       });
       const done = res.settlements.length;
+      const skipped = bulkNotRecorded(res.skipped);
       // Nothing written is not a success. It used to report "recorded" anyway and
       // close the sheet, which is exactly how a settle-up came to be "done" while
       // the balance it was meant to clear sat there unchanged.
       if (done === 0) {
-        setStatus(t("balances.recordedNone"));
+        setStatus(t(skipped === 0 ? "balances.alreadyRecorded" : "balances.recordedNone"));
         return;
       }
-      const skipped = res.skipped.length;
       // Only a full success may name the amount: with guest legs skipped, the
       // total would overstate what was actually recorded.
       pushToast(
@@ -211,6 +228,7 @@ function BulkSettle({
           : t("balances.recordedSome", { done, total: done + skipped }),
         "success",
       );
+      if (skipped > 0) pushToast(t("balances.skippedNotRecorded", { count: skipped }), "error");
       onDone();
     } catch {
       setStatus(t("settle.failed"));
@@ -227,6 +245,15 @@ function BulkSettle({
     <>
       <div className="mb-3">
         <Amount paise={total} label={t("balances.bulkTotal", { name: friend.displayName })} tone="neutral" hero />
+        {bulkNoteShown(remainder) && (
+          <p className="mt-2 text-[13px]" style={{ color: "var(--ink-2)" }}>
+            {t("balances.bulkNote", {
+              recorded: formatPaise(total),
+              name: friend.displayName,
+              remainder: formatPaise(remainder),
+            })}
+          </p>
+        )}
       </div>
 
       <div className="mb-3">

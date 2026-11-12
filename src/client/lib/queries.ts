@@ -134,6 +134,7 @@ export type CrossLedgerBalance = {
   userId: string;
   displayName: string;
   vpa: string | null;
+  /** Server sign: positive = the viewer owes them, negative = they owe the viewer. */
   net: Paise;
 };
 
@@ -291,6 +292,8 @@ export function createQueryClient() {
       onError: (error, _vars, _ctx, mutation) => {
         if (mutation.options.meta?.skipToast) return;
         if (error instanceof ApiError && error.code === "offline") return pushToast(t("offline.title"), "error");
+        if (error instanceof ApiError && error.code === "over_settlement")
+          return pushToast(t("settle.overSettled"), "error");
         pushToast(error instanceof ApiError && error.message ? error.message : t("error.mutationFailed"), "error");
       },
     }),
@@ -612,6 +615,14 @@ export function useCreateExpense(ledgerId: string) {
     },
   });
 }
+
+/** POST /api/settlements/bulk. `settlements` holds only rows written by this call (empty when an
+ *  identical bulk settle was recorded in the last 60s). `skipped` legs were not recorded. */
+export type BulkSettleResult = {
+  total: Paise;
+  settlements: unknown[];
+  skipped: Array<{ reason?: "guest" | "no_user" | "duplicate" }>;
+};
 
 export function useCreateSettlement(ledgerId: string) {
   const qc = useQueryClient();

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import balancesRouter from "~/server/routes/balances";
 import expensesRouter from "~/server/routes/expenses";
 import settlementsRouter from "~/server/routes/settlements";
-import { type Harness, mount, req, setup } from "~/server/routes/_test-harness";
+import { type Harness, mount, NOW, req, setup } from "~/server/routes/_test-harness";
 
 let h: Harness;
 let app: ReturnType<typeof mount>;
@@ -472,5 +472,45 @@ describe("GET /balances", () => {
 
   it("401s without a session", async () => {
     expect((await app.request(new Request("http://tally.test/api/balances"))).status).toBe(401);
+  });
+});
+
+describe("GET /balances: departed members and archived ledgers", () => {
+  type Cross = Array<{ userId: string; displayName: string; vpa: string | null; net: number }>;
+  const cross = async () => (await (await app.request(req(h, "/api/balances"))).json()) as Cross;
+
+  it("counts a departed member's leg with the same amount the ledger's plan shows", async () => {
+    await expense("L2", {
+      total: 6_000,
+      payerMemberId: "n_cy",
+      participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }],
+    }); // ₹60.00 - Ada owes Cy ₹30.00
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = 'n_cy'").run(NOW);
+
+    const plan = (await ledgerBalances("L2")).transfers;
+    expect(plan).toEqual([expect.objectContaining({ fromMemberId: "n_ada", toMemberId: "n_cy", amount: 3_000 })]);
+    expect((await cross()).find((r) => r.userId === "u_cy")!.net).toBe(3_000);
+  });
+
+  it("hides a departed member's VPA from a viewer who shares no current ledger with them", async () => {
+    await expense("L1", {
+      total: 10_000,
+      payerMemberId: "m_bob",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    }); // ₹100.00 - Ada owes Bob ₹50.00
+    h.sql.prepare("UPDATE ledger_members SET left_at = ? WHERE id = 'm_bob'").run(NOW);
+
+    expect(await cross()).toEqual([{ userId: "u_bob", displayName: "Bob", vpa: null, net: 5_000 }]);
+  });
+
+  it("an archived ledger contributes nothing to the cross-ledger figure", async () => {
+    await expense("L2", {
+      total: 6_000,
+      payerMemberId: "n_cy",
+      participants: [{ memberId: "n_ada" }, { memberId: "n_cy" }],
+    }); // ₹60.00 - Ada owes Cy ₹30.00, deliberately left unsettled
+    h.sql.prepare("UPDATE ledgers SET archived_at = ? WHERE id = 'L2'").run(NOW);
+
+    expect(await cross()).toEqual([]);
   });
 });

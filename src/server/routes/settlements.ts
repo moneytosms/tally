@@ -22,7 +22,7 @@ import { createSettlementSchema } from "~/shared/schemas";
 
 const settlements = new Hono<Env>();
 
-type Stmt = ReturnType<Db["insertSettlement"]>;
+type Stmt = ReturnType<Db["insertSettlementOnce"]>;
 
 /** Bulk settle clears what the viewer owes across every shared ledger at once.
  *  `toUserId` narrows it to one friend - the UPI-link flow. */
@@ -47,14 +47,23 @@ settlements.post("/ledgers/:ledgerId/settlements", requireSession, requireMember
 
   if (body.fromMemberId === body.toMemberId) return c.json({ error: "a settlement needs two members" }, 400);
 
-  // requireMember vouches for the caller, not for the ids in the body.
-  const live = new Set((await db.listMembers(ledgerId)).map((m) => m.id));
+  // requireMember vouches for the caller, not for the ids in the body. Departed members
+  // stay settleable (the Settle tab shows their legs); soft-deleted ones do not appear here.
+  const live = new Set((await db.listMembersForActivity(ledgerId)).map((m) => m.id));
   if (!live.has(body.fromMemberId) || !live.has(body.toMemberId)) {
     return c.json({ error: "both members must be current members of this ledger" }, 400);
   }
 
-  // Any positive amount: a partial settle is first-class and need not match a
-  // suggested transfer.
+  // A partial settle is first-class, but never more than the payer owes or the payee
+  // is owed overall: overshooting flips who owes whom. Applies to every method.
+  const [expenses, existing] = await Promise.all([db.listExpenses(ledgerId), db.listSettlements(ledgerId)]);
+  const net = new Map(netPositions(expenses, existing).map((p) => [p.memberId, p.net]));
+  const bound = Math.min(Math.max(0, -(net.get(body.fromMemberId) ?? 0)), Math.max(0, net.get(body.toMemberId) ?? 0));
+  // shortcut: read-then-write, two simultaneous settles can both pass the bound; move the bound into the INSERT's WHERE if that ever happens in practice
+  if (body.amount > bound) {
+    return c.json({ error: "amount exceeds what is owed", code: "over_settlement" }, 400);
+  }
+
   const id = uuidv7();
   await db.insertSettlement({
     id,
@@ -109,7 +118,12 @@ settlements.post(
  * multi-ledger write that must not half-apply - one db.batch, or nothing.
  *
  * Guests have no VPA, so an obligation running to a guest cannot be part of a
- * UPI push. Those are returned in `skipped` rather than silently dropped.
+ * UPI push. Those are returned in `skipped` rather than silently dropped, and so
+ * is any leg whose member has no live user. Departed members with a user are
+ * settled like anyone else, matching the cross-ledger figure on GET /balances.
+ *
+ * Each write is insertSettlementOnce, so a double tap that plans from the same
+ * state writes nothing the second time. Only rows actually written are reported.
  *
  * Not ledger-scoped, so it carries requireSession itself.
  */
@@ -120,16 +134,23 @@ settlements.post("/settlements/bulk", requireSession, async (c) => {
   const { toUserId, method, note } = parsed.data;
 
   const now = Date.now();
+  const liveUsers = new Set((await db.listUsers()).map((u) => u.id));
   const writes: Stmt[] = [];
-  const created: Array<{ id: string; ledgerId: string; toMemberId: string; amount: Paise }> = [];
-  const skipped: Array<{ ledgerId: string; memberId: string; guestName: string | null; amount: Paise }> = [];
+  const planned: Array<{ id: string; ledgerId: string; toMemberId: string; amount: Paise }> = [];
+  const skipped: Array<{
+    ledgerId: string;
+    memberId: string;
+    guestName: string | null;
+    amount: Paise;
+    reason: "guest" | "no_user" | "duplicate";
+  }> = [];
 
   for (const { ledger, memberId } of await db.listLedgersForUser(c.var.user.id)) {
     // Read-only, and settled by definition - it has nothing to contribute and
     // must not be written to.
     if (ledger.archivedAt !== null) continue;
     const [members, expenses, existing] = await Promise.all([
-      db.listMembers(ledger.id),
+      db.listMembersForActivity(ledger.id),
       db.listExpenses(ledger.id),
       db.listSettlements(ledger.id),
     ]);
@@ -138,22 +159,24 @@ settlements.post("/settlements/bulk", requireSession, async (c) => {
     for (const tr of transferPlan(netPositions(expenses, existing))) {
       if (tr.fromMemberId !== memberId) continue;
       const payee = byId.get(tr.toMemberId);
-      if (!payee) continue;
-      // A guest has no VPA and no user, so this leg cannot be part of a UPI push
-      // and has to be settled by hand. Reported rather than dropped - but only on
-      // the settle-everything path, since a guest is nobody's leg when the caller
-      // named one friend to settle with.
-      if (!payee.userId) {
-        if (!toUserId)
-          skipped.push({ ledgerId: ledger.id, memberId: payee.id, guestName: payee.guestName, amount: tr.amount });
+      if (toUserId && payee?.userId !== toUserId) continue; // another friend's leg
+      // No live user behind this leg: a guest (no VPA), or a member row we cannot
+      // resolve. Reported rather than dropped.
+      if (!payee?.userId || !liveUsers.has(payee.userId)) {
+        skipped.push({
+          ledgerId: ledger.id,
+          memberId: tr.toMemberId,
+          guestName: payee?.guestName ?? null,
+          amount: tr.amount,
+          reason: payee?.userId === null ? "guest" : "no_user",
+        });
         continue;
       }
-      if (toUserId && payee.userId !== toUserId) continue;
 
       const id = uuidv7();
-      created.push({ id, ledgerId: ledger.id, toMemberId: payee.id, amount: tr.amount });
+      planned.push({ id, ledgerId: ledger.id, toMemberId: payee.id, amount: tr.amount });
       writes.push(
-        db.insertSettlement({
+        db.insertSettlementOnce({
           id,
           ledgerId: ledger.id,
           fromMemberId: memberId,
@@ -168,7 +191,22 @@ settlements.post("/settlements/bulk", requireSession, async (c) => {
     }
   }
 
-  if (writes.length > 0) await db.batch(writes as [Stmt, ...Stmt[]]);
+  // One statement per planned leg, same order: meta.changes is 0 for a leg that
+  // an identical recent settlement already covered. Such a leg is reported, not dropped.
+  const results =
+    writes.length > 0 ? ((await db.batch(writes as [Stmt, ...Stmt[]])) as Array<{ meta: { changes: number } }>) : [];
+  const created = planned.filter((_, i) => results[i]!.meta.changes > 0);
+  planned.forEach((p, i) => {
+    if (results[i]!.meta.changes === 0) {
+      skipped.push({
+        ledgerId: p.ledgerId,
+        memberId: p.toMemberId,
+        guestName: null,
+        amount: p.amount,
+        reason: "duplicate",
+      });
+    }
+  });
 
   return c.json({
     total: created.reduce((a, s) => a + s.amount, 0),

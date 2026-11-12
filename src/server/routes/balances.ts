@@ -89,13 +89,16 @@ balances.get("/balances", requireSession, async (c) => {
   const net = new Map<string, Paise>();
   const coMemberIds = new Set<string>();
   for (const { ledger, memberId } of await db.listLedgersForUser(viewerId)) {
+    // Archived ledgers are read-only and zero by invariant (SPEC §12), and bulk settle skips them too.
+    if (ledger.archivedAt !== null) continue;
+    // Same member set as the per-ledger route: a departed member's leg still counts.
     const [members, expenses, settlements] = await Promise.all([
-      db.listMembers(ledger.id),
+      db.listMembersForActivity(ledger.id),
       db.listExpenses(ledger.id),
       db.listSettlements(ledger.id),
     ]);
     const byId = new Map(members.map((m) => [m.id, m]));
-    for (const m of members) if (m.userId) coMemberIds.add(m.userId);
+    for (const m of members) if (m.userId && m.leftAt === null) coMemberIds.add(m.userId);
 
     for (const tr of transferPlan(netPositions(expenses, settlements))) {
       const mine = tr.fromMemberId === memberId ? 1 : tr.toMemberId === memberId ? -1 : 0;

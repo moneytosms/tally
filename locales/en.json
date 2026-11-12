@@ -315,6 +315,12 @@
     "recorded": "Recorded {amount} in settlements",
     "recordedSome": "Recorded in {done} of {total} ledgers.",
     "recordedNone": "Nothing was recorded - this balance can't be settled from here. Open the ledger it comes from.",
+    "alreadyRecorded": "Already recorded a moment ago. Nothing new was written.",
+    "bulkNote": "This records the {recorded} you owe {name}. {name} owes you {remainder} in other ledgers; that is not changed, so afterwards {name} will owe you {remainder}.",
+    "skippedNotRecorded": {
+      "one": "1 transfer was not recorded. Settle it inside its ledger.",
+      "other": "{count} transfers were not recorded. Settle them inside their ledger."
+    },
     "nothingToSettle": "Nothing to settle."
   },
   "report": {
@@ -355,6 +361,7 @@
     "note": "Note",
     "record": "Record settlement",
     "failed": "Could not record that settlement.",
+    "overSettled": "That is more than is owed right now. The amounts have been refreshed; check them and try again.",
     "methodLabel": "How was it paid?",
     "method": {
       "upi": "UPI",

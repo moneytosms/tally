@@ -135,6 +135,7 @@ describe("GET /ledgers/:ledgerId/activity", () => {
   });
 
   it("reports a settlement with both member names and the amount", async () => {
+    await createExpense("L1"); // Bob owes Ada ₹50.00
     await app.request(
       req(h, "/api/ledgers/L1/settlements", {
         method: "POST",
@@ -146,6 +147,7 @@ describe("GET /ledgers/:ledgerId/activity", () => {
   });
 
   it("distinguishes a forgiven settlement from a payment", async () => {
+    await createExpense("L1"); // Bob owes Ada ₹50.00
     await app.request(
       req(h, "/api/ledgers/L1/settlements", {
         method: "POST",

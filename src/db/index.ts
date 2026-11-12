@@ -499,6 +499,25 @@ export function createDb(d1: D1Database) {
         .orderBy(desc(t.settlements.declaredAt));
     },
     insertSettlement: (v: Insert<typeof t.settlements>) => db.insert(t.settlements).values(v),
+    /**
+     * Bulk settle's write. Writes nothing when an identical live settlement was
+     * declared in the last 60 s, so two bulk calls planned from the same state
+     * cannot both land. The result's `meta.changes` says whether this row was written.
+     */
+    // shortcut: 60 s identical-row window guards double submit, use an idempotency key if bulk settle ever needs exact-once
+    // drizzle emits an explicit column list from schema key order, so the SELECT must
+    // match it positionally: id, ledger_id, from_member_id, to_member_id, amount, currency,
+    // method, note, declared_by, declared_at, acknowledged_at, deleted_at.
+    // drizzle's d1 batch cannot take a bare db.run with params.
+    insertSettlementOnce: (v: Insert<typeof t.settlements>) =>
+      db.insert(t.settlements)
+        .select(raw`SELECT ${v.id}, ${v.ledgerId}, ${v.fromMemberId}, ${v.toMemberId}, ${v.amount}, 'INR', ${v.method}, ${v.note}, ${v.declaredBy}, ${v.declaredAt}, NULL, NULL
+        WHERE NOT EXISTS (
+          SELECT 1 FROM settlements
+          WHERE ledger_id = ${v.ledgerId} AND from_member_id = ${v.fromMemberId} AND to_member_id = ${v.toMemberId}
+            AND amount = ${v.amount} AND method = ${v.method} AND declared_by = ${v.declaredBy}
+            AND deleted_at IS NULL AND declared_at > ${v.declaredAt - 60_000}
+        )`),
     acknowledgeSettlement: (id: string, at: number) =>
       db
         .update(t.settlements)
