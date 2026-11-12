@@ -1,0 +1,110 @@
+{
+  "ledger": "Goa trip",
+  "members": [
+    "Sam",
+    "Asha",
+    "Ravi",
+    "Meera",
+    "Karthik"
+  ],
+  "expenses": [
+    {
+      "date": "2026-10-22",
+      "title": "Beach villa",
+      "amountPaise": 2400000,
+      "paidBy": "Asha",
+      "mode": "equal",
+      "shares": {
+        "Sam": 480000,
+        "Asha": 480000,
+        "Ravi": 480000,
+        "Meera": 480000,
+        "Karthik": 480000
+      }
+    },
+    {
+      "date": "2026-10-23",
+      "title": "Seafood dinner",
+      "amountPaise": 420000,
+      "paidBy": "Sam",
+      "mode": "equal",
+      "shares": {
+        "Sam": 84000,
+        "Asha": 84000,
+        "Ravi": 84000,
+        "Meera": 84000,
+        "Karthik": 84000
+      }
+    },
+    {
+      "date": "2026-10-22",
+      "title": "Airport cab",
+      "amountPaise": 150000,
+      "paidBy": "Meera",
+      "mode": "equal",
+      "shares": {
+        "Sam": 37500,
+        "Asha": 37500,
+        "Ravi": 37500,
+        "Meera": 37500
+      }
+    },
+    {
+      "date": "2026-10-24",
+      "title": "Scooter rental",
+      "amountPaise": 180000,
+      "paidBy": "Ravi",
+      "mode": "shares",
+      "shares": {
+        "Sam": 90000,
+        "Asha": 45000,
+        "Ravi": 45000
+      }
+    },
+    {
+      "date": "2026-10-24",
+      "title": "Beach shack drinks",
+      "amountPaise": 260000,
+      "paidBy": "Karthik",
+      "mode": "equal",
+      "shares": {
+        "Sam": 52000,
+        "Asha": 52000,
+        "Ravi": 52000,
+        "Meera": 52000,
+        "Karthik": 52000
+      }
+    }
+  ],
+  "settlements": [],
+  "total": 3410000,
+  "netPositions": {
+    "Asha": 1701500,
+    "Sam": -323500,
+    "Ravi": -518500,
+    "Meera": -503500,
+    "Karthik": -356000
+  },
+  "transfers": [
+    {
+      "from": "Ravi",
+      "to": "Asha",
+      "amountPaise": 518500
+    },
+    {
+      "from": "Meera",
+      "to": "Asha",
+      "amountPaise": 503500
+    },
+    {
+      "from": "Karthik",
+      "to": "Asha",
+      "amountPaise": 356000
+    },
+    {
+      "from": "Sam",
+      "to": "Asha",
+      "amountPaise": 323500
+    }
+  ]
+}

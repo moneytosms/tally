@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="t d">
+<title id="t">tally architecture</title>
+<desc id="d">A PWA talks to one Cloudflare Worker on a single origin. The Worker serves static assets and the Hono API, backed by D1 through Drizzle, with Durable Object alarms for scheduled work.</desc>
+<rect width="1200" height="300" rx="24" fill="#191a15"/>
+<rect x=".5" y=".5" width="1199" height="299" rx="23.5" fill="none" stroke="#3a3b30"/>
+<g stroke="#8fa885" stroke-width="2.5" fill="none" stroke-linecap="round"><path d="M250 150 H340"/><path d="M700 150 H760 V90 H830"/><path d="M700 150 H760 V210 H830"/></g>
+<g font-family="ui-serif,Georgia,'Times New Roman',serif" font-size="22" fill="#e8e6da" text-anchor="middle">
+<rect x="60" y="110" width="190" height="80" rx="10" fill="#22231c" stroke="#3a3b30"/><text x="155" y="146">React PWA</text><text x="155" y="171" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="14" fill="#a9a898">Vite · TanStack Query</text>
+<rect x="340" y="50" width="360" height="200" rx="10" fill="none" stroke="#8fa885" stroke-width="2"/><text x="520" y="86" font-weight="700">one Worker, one origin</text>
+<rect x="368" y="110" width="150" height="56" rx="8" fill="#22231c" stroke="#3a3b30"/><text x="443" y="145" font-size="19">static assets</text>
+<rect x="530" y="110" width="150" height="56" rx="8" fill="#22231c" stroke="#3a3b30"/><text x="605" y="145" font-size="19">/api (Hono)</text>
+<text x="520" y="216" font-family="system-ui,-apple-system,'Segoe UI',sans-serif" font-size="15" fill="#a9a898">Zod shared · SimpleWebAuthn</text>
+<rect x="830" y="60" width="230" height="60" rx="10" fill="#22231c" stroke="#3a3b30"/><text x="945" y="97">D1 · Drizzle</text>
+<rect x="810" y="180" width="270" height="60" rx="10" fill="#22231c" stroke="#c9836a"/><text x="945" y="217" font-size="20">Durable Object alarms</text>
+</g></svg>
