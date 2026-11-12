@@ -5,16 +5,17 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router";
 import { t } from "~/client/i18n";
 import { focusRing } from "./ui/focus";
+import { Icon } from "./ui/Icon";
 
-// Glyphs, not an icon dependency. See prototypes/design-system.html.
+// Icons come from the shared set (ui/Icon).
 // `active` maps a pathname to the tab it belongs to: a ledger screen is a Ledgers
 // screen, and anything under /you (admin) is still the You tab.
 const tabs = [
-  { to: "/", glyph: "▤", key: "ledgers", active: (p: string) => p === "/" || p.startsWith("/ledgers/") },
-  { to: "/balances", glyph: "⇄", key: "balances", active: (p: string) => p === "/balances" },
-  { to: "/insights", glyph: "◴", key: "insights", active: (p: string) => p === "/insights" },
-  { to: "/you", glyph: "◌", key: "you", active: (p: string) => p === "/you" || p.startsWith("/you/") },
-];
+  { to: "/", key: "ledgers", active: (p: string) => p === "/" || p.startsWith("/ledgers/") },
+  { to: "/balances", key: "balances", active: (p: string) => p === "/balances" },
+  { to: "/insights", key: "insights", active: (p: string) => p === "/insights" },
+  { to: "/you", key: "you", active: (p: string) => p === "/you" || p.startsWith("/you/") },
+] as const;
 
 /** `addButton` is shown only in the rail (md+); the Shell decides whether it exists. */
 export function TabBar({ addButton }: { addButton?: ReactNode }) {
@@ -41,12 +42,7 @@ export function TabBar({ addButton }: { addButton?: ReactNode }) {
             }`}
             style={{ color: isActive ? "var(--moss-2)" : "var(--ink-3)" }}
           >
-            <span
-              aria-hidden="true"
-              className="mb-0.5 text-[20px] leading-none font-normal md:mb-0 md:w-5 md:text-[15px]"
-            >
-              {tab.glyph}
-            </span>
+            <Icon name={tab.key} className="mb-1 md:mb-0" />
             <span>{t(`tabs.${tab.key}`)}</span>
             {isActive && <span className="sr-only">{t("nav.current")}</span>}
           </Link>

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, CSSProperties } from "react";
+import type { ButtonHTMLAttributes } from "react";
 import { focusRing } from "./focus";
 
 export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
@@ -11,10 +11,13 @@ export type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
   isLoading?: boolean;
 };
 
-const styles: Record<NonNullable<ButtonProps["variant"]>, CSSProperties> = {
-  primary: { background: "var(--moss)", color: "var(--paper)", borderColor: "var(--moss)" },
-  ghost: { background: "transparent", color: "var(--ink)", borderColor: "var(--line-2)" },
-  danger: { background: "var(--clay-wash)", color: "var(--clay)", borderColor: "var(--clay)" },
+// Classes, not inline styles, so hover can reach the background. A caller's
+// `style` still wins for one-off overrides.
+const variants: Record<NonNullable<ButtonProps["variant"]>, string> = {
+  primary:
+    "border-[var(--moss)] bg-[var(--moss)] text-[var(--paper)] enabled:hover:border-[var(--moss-2)] enabled:hover:bg-[var(--moss-2)]",
+  ghost: "border-[var(--line-2)] bg-transparent text-[var(--ink)] enabled:hover:bg-[var(--paper-sunk)]",
+  danger: "border-[var(--clay)] bg-[var(--clay-wash)] text-[var(--clay)] enabled:hover:brightness-95",
 };
 
 function Spinner() {
@@ -45,8 +48,7 @@ export function Button({
       // 44px minimum tap target - dense visuals do not mean dense touch targets.
       className={`inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-[7px] border ${
         size === "sm" ? "px-3 text-[14px] font-medium" : "px-4 text-[15px] font-semibold"
-      } ${block ? "w-full" : ""} disabled:opacity-50 ${focusRing} ${className}`}
-      style={{ ...styles[variant], ...props.style }}
+      } ${variants[variant]} ${block ? "w-full" : ""} transition-[background-color,border-color,transform,filter] duration-150 ease-out enabled:active:scale-[0.98] disabled:opacity-50 ${focusRing} ${className}`}
     >
       {isLoading && <Spinner />}
       {children}

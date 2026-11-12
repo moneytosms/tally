@@ -1,0 +1,291 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T11:54:37.248420+00:00",
+  "title": "Design System: tally",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "#f7f4ec",
+        "tonalRamp": ["#4d4d47", "#7a7973", "#a8a69f", "#d5d3cb", "#f9f6ef", "#fbf8f2", "#fdfaf4", "#fefcf6"]
+      },
+      "paper-2": {
+        "role": "neutral",
+        "displayName": "Raised Paper",
+        "canonical": "#fffdf7",
+        "tonalRamp": ["#4f4f4a", "#7e7d78", "#adaca6", "#dcdad4", "#fffdf7", "#fffdf7", "#fffdf7", "#fffdf7"]
+      },
+      "paper-sunk": {
+        "role": "neutral",
+        "displayName": "Sunken Paper",
+        "canonical": "#efeade",
+        "tonalRamp": ["#4b4a44", "#77756d", "#a29f96", "#cecabf", "#f3efe4", "#f7f4ea", "#fbf8f0", "#fdfbf4"]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Line",
+        "canonical": "#e0d9c8",
+        "tonalRamp": ["#47463e", "#706d63", "#999488", "#c1bcac", "#e8e2d4", "#f0ebe0", "#f6f3ea", "#fbf9f1"]
+      },
+      "line-2": {
+        "role": "neutral",
+        "displayName": "Strong Line",
+        "canonical": "#cfc6b1",
+        "tonalRamp": ["#434138", "#686558", "#8e8879", "#b3ab99", "#dbd4c2", "#e7e2d4", "#f2eee3", "#f9f6ef"]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "#23241d",
+        "tonalRamp": ["#181913", "#1b1c16", "#1e1f18", "#21221b", "#5a5a54", "#91908a", "#c1c0ba", "#e5e3dd"]
+      },
+      "ink-2": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#5c5f52",
+        "tonalRamp": ["#262820", "#34362e", "#43453b", "#515448", "#85867b", "#aeaea4", "#d1d1c9", "#ebeae3"]
+      },
+      "ink-3": {
+        "role": "neutral",
+        "displayName": "Faint Ink",
+        "canonical": "#68695d",
+        "tonalRamp": ["#292a23", "#3a3b33", "#4b4c42", "#5b5c51", "#8e8e84", "#b4b3aa", "#d5d4cc", "#edebe5"]
+      },
+      "moss": {
+        "role": "primary",
+        "displayName": "Moss",
+        "canonical": "#5c7355",
+        "tonalRamp": ["#262c21", "#343f2f", "#43523d", "#51654b", "#85967e", "#aeb8a6", "#d1d6ca", "#ebece4"]
+      },
+      "moss-2": {
+        "role": "primary",
+        "displayName": "Deep Moss",
+        "canonical": "#485c43",
+        "tonalRamp": ["#21271d", "#2b3527", "#364331", "#40513b", "#768470", "#a4ac9d", "#ccd0c5", "#e9eae1"]
+      },
+      "moss-wash": {
+        "role": "primary",
+        "displayName": "Moss Wash",
+        "canonical": "#e6ece0",
+        "tonalRamp": ["#484b44", "#72766e", "#9ca197", "#c6ccc1", "#ecf0e6", "#f2f4ec", "#f8f8f1", "#fcfbf4"]
+      },
+      "clay": {
+        "role": "secondary",
+        "displayName": "Clay",
+        "canonical": "#94563c",
+        "tonalRamp": ["#34251b", "#4e3224", "#673f2d", "#814c35", "#af806b", "#caaa9a", "#e1cec3", "#f2e9e1"]
+      },
+      "clay-wash": {
+        "role": "secondary",
+        "displayName": "Clay Wash",
+        "canonical": "#f2e4dd",
+        "tonalRamp": ["#4c4943", "#78726c", "#a49c95", "#d1c5be", "#f5eae4", "#f8f0ea", "#fbf6f0", "#fdfaf4"]
+      },
+      "ochre": {
+        "role": "tertiary",
+        "displayName": "Ochre",
+        "canonical": "#b08344",
+        "tonalRamp": ["#3b301d", "#5a4627", "#795c32", "#99723c", "#c4a271", "#d8c09e", "#e9dbc5", "#f6eee2"]
+      }
+    },
+    "typographyMeta": {
+      "hero-amount": {
+        "displayName": "Hero amount",
+        "purpose": "The viewer's net position; one per screen."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page titles."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Sheet and dialog titles."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Row titles."
+      },
+      "amount": {
+        "displayName": "Amount",
+        "purpose": "Every amount in a list, tabular."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels, metadata, section headings."
+      }
+    },
+    "shadows": [
+      {
+        "name": "fab-lift",
+        "value": "0 4px 14px rgb(60 72 54 / 28%)",
+        "purpose": "Floating add button only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "sheet",
+        "value": "180ms ease-out",
+        "purpose": "Sheet slide-up (mobile) / dialog fade-scale 0.97 (md+)."
+      },
+      {
+        "name": "row-in",
+        "value": "220ms ease-out",
+        "purpose": "New list row: fade + 4px drop."
+      },
+      {
+        "name": "page-in",
+        "value": "160ms ease-out",
+        "purpose": "Route fade."
+      },
+      {
+        "name": "toast-in",
+        "value": "180ms ease-out",
+        "purpose": "Toast rise 6px."
+      },
+      {
+        "name": "press",
+        "value": "150ms ease-out, scale 0.98 (buttons) / 0.985 (rows)",
+        "purpose": "Tap feedback before navigation."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "md",
+        "value": "768px"
+      }
+    ],
+    "themes": ["paper", "dark", "sakura", "ocean", "midnight", "ember"]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Main action per screen: save, settle, sign in.",
+      "html": "<button class=\"ds-btn-primary\">Settle up</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:0 16px;border-radius:7px;border:1px solid var(--moss);background:var(--moss);color:var(--paper);font:600 15px ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-primary:hover{background:var(--moss-2);border-color:var(--moss-2)}.ds-btn-primary:focus-visible{outline:2px solid var(--moss);outline-offset:2px}.ds-btn-primary:disabled{opacity:.5}"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Secondary actions.",
+      "html": "<button class=\"ds-btn-ghost\">New ledger</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:7px;border:1px solid var(--line-2);background:transparent;color:var(--ink);font:600 15px ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-ghost:hover{background:var(--paper-sunk)}.ds-btn-ghost:focus-visible{outline:2px solid var(--moss);outline-offset:2px}"
+    },
+    {
+      "name": "Danger Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive confirm, action-specific label.",
+      "html": "<button class=\"ds-btn-danger\">Delete expense</button>",
+      "css": ".ds-btn-danger{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:7px;border:1px solid var(--clay);background:var(--clay-wash);color:var(--clay);font:600 15px ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-danger:focus-visible{outline:2px solid var(--moss);outline-offset:2px}"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "Sunken field, label always above.",
+      "html": "<label class=\"ds-field\"><span>Description</span><input class=\"ds-input\" placeholder=\"Dinner at Thalassa\"></label>",
+      "css": ".ds-field{display:block}.ds-field span{display:block;margin-bottom:6px;font:13px ui-sans-serif,system-ui,sans-serif;color:var(--ink-3)}.ds-input{width:100%;min-height:44px;padding:0 12px;border-radius:6px;border:1px solid var(--line-2);background:var(--paper-sunk);color:var(--ink);font:16px ui-sans-serif,system-ui,sans-serif}.ds-input:focus-visible{outline:2px solid var(--moss);outline-offset:2px}"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "nav",
+      "refersTo": "segmented",
+      "description": "One-of-N: ledger tabs, split mode.",
+      "html": "<div class=\"ds-seg\"><button aria-pressed=\"true\">Equal</button><button>Exact</button><button>Shares</button><button>Percent</button></div>",
+      "css": ".ds-seg{display:flex;padding:2px;border-radius:7px;border:1px solid var(--line);background:var(--paper-sunk)}.ds-seg button{flex:1;min-height:44px;border:0;border-radius:5px;background:transparent;color:var(--ink-2);font:14px ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-seg button[aria-pressed=true]{background:var(--paper);color:var(--ink);font-weight:600}.ds-seg button:focus-visible{outline:2px solid var(--moss);outline-offset:2px}"
+    },
+    {
+      "name": "Category Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Icon over label, selected = moss wash.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"true\"><span>🍽️</span>Food</button><button class=\"ds-chip\"><span>🚕</span>Transport</button></div>",
+      "css": ".ds-chips{display:flex;gap:4px}.ds-chip{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:72px;padding:8px;border-radius:8px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink-2);font:13px ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-chip span{font-size:20px;line-height:1}.ds-chip[aria-pressed=true]{background:var(--moss-wash);border-color:var(--moss);color:var(--moss-2);font-weight:600}.ds-chip:focus-visible{outline:2px solid var(--moss);outline-offset:2px}"
+    },
+    {
+      "name": "Ledger Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Raised row with swatch, meta and position.",
+      "html": "<a class=\"ds-card\" href=\"#\"><div class=\"ds-card-t\"><i></i>Goa trip</div><div class=\"ds-card-m\"><span>5 members · standing</span><span class=\"ds-amt\"><small>You owe</small> −₹3,235.00</span></div></a>",
+      "css": ".ds-card{display:block;padding:12px 14px;border-radius:7px;border:1px solid var(--line);background:var(--paper-2);color:var(--ink);text-decoration:none;font-family:ui-sans-serif,system-ui,sans-serif}.ds-card:focus-visible{outline:2px solid var(--moss);outline-offset:2px}.ds-card-t{display:flex;align-items:center;gap:8px;font:500 15px ui-sans-serif,system-ui,sans-serif;min-height:32px}.ds-card-t i{width:10px;height:10px;border-radius:3px;background:#3f7ea6}.ds-card-m{display:flex;justify-content:space-between;font-size:13px;color:var(--ink-3)}.ds-amt{color:var(--clay);font-size:16px;font-variant-numeric:tabular-nums}.ds-amt small{color:var(--ink-2);font-size:13px}"
+    },
+    {
+      "name": "Hero Amount",
+      "kind": "custom",
+      "refersTo": "hero-amount",
+      "description": "Net position: direction words over serif number.",
+      "html": "<div class=\"ds-hero\"><span>You are owed</span><strong>+₹15,821.00</strong></div>",
+      "css": ".ds-hero{display:flex;flex-direction:column;gap:4px}.ds-hero span{font:14px ui-sans-serif,system-ui,sans-serif;color:var(--ink-2)}.ds-hero strong{font:500 34px/1 ui-serif,Georgia,serif;letter-spacing:-.015em;font-variant-numeric:tabular-nums;color:var(--moss)}"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Paper Tally",
+    "overview": "tally is a tally sheet kept on good paper: warm stock, dark ink, a few earth pigments, and every entry written so anyone at the table can check it. The working reference from the spec is \"Notion's restraint, Linear's density, on paper, in earth tones.\" Calm and dense, not loud. The interface says very little, and every number on it can be traced back to the entries behind it.\n\nThe ground carries the material. A warm off-white paper (dark mode: warm ink-black) sits under two soft moss/ochre radial washes and a fractal-noise grain at 5.5% (10% in dark), drawn from one inline SVG with no image assets. Surfaces sit on that ground as flat raised cards or sunken fields, with no shadows. Moss is the structural colour of the app. It is not an accent sprinkled on top.\n\nValues above are the default \"paper\" theme, keyed by their CSS custom property names (`--paper-2`, `--ink-3`, ...). Five more themes (dark, sakura, ocean, midnight, ember) redefine the same token names in `src/client/styles/tokens.css`. Every component reads tokens only, so a theme is just a new set of values.",
+    "keyCharacteristics": [
+      "Paper ground with grain and washes; flat raised cards; sunken fields.",
+      "Moss carries structure (primary buttons, active nav, FAB, selection). Moss and clay are the owed/owe pair, and they differ in lightness as well as hue.",
+      "System serif for screen titles and hero amounts; system sans with tabular numerals everywhere else. No webfonts.",
+      "44px minimum tap target on every control, whatever the visual density.",
+      "Icons are authored inline SVG: 20px box, 1.6 stroke, `currentColor`."
+    ],
+    "rules": [
+      {
+        "name": "The Sign-And-Word Rule",
+        "body": "Moss and clay never carry meaning alone. Every position shows its sign (+ − ±) and its direction in words. Colour only backs up what the text already says.",
+        "section": "colors"
+      },
+      {
+        "name": "The No False Signal Rule",
+        "body": "Moss and clay are reserved for balances and state. Decorative elements (avatars, ledger accents, chart series) do not use them in ways that could be read as owed or owe. Avatars are neutral; ledger accents use their own fixed swatches.",
+        "section": "colors"
+      },
+      {
+        "name": "The Faint Floor Rule",
+        "body": "No text sits below `ink-3`, and no text is faded with opacity. To make a state look quieter, change the border or the icon, not the legibility of the words.",
+        "section": "colors"
+      },
+      {
+        "name": "The Amount Component Rule",
+        "body": "Money only ever reaches the screen through `<Amount>`. It renders the sign, the label and the direction words, and it shows no number at all when offline.",
+        "section": "typography"
+      },
+      {
+        "name": "The 16px Field Rule",
+        "body": "Inputs and selects are 16px so iOS doesn't zoom when one is focused. Don't shrink them to fit a toolbar; size the wrapper around them instead.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Shadow Rule",
+        "body": "Only something floating over scrolling content gets a shadow. Cards, buttons and dialogs never do.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Browser Surface Rule",
+        "body": "Text selection is moss-wash, the caret is moss, and scrollbars are thin line-2 thumbs.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** route every amount through `<Amount>` with a label; positions get a sign and direction words.",
+      "**Do** keep all text at `ink-3` or darker; check new token values at 4.5:1 against `paper`, `paper-2` and `paper-sunk` in all six themes.",
+      "**Do** draw icons as inline SVG (20px box, 1.6 stroke, round caps, `currentColor`).",
+      "**Do** keep every control at least 44×44px, even in dense rows.",
+      "**Do** use the segmented track for any one-of-N choice with four or fewer options.",
+      "**Do** read colours from tokens only; a theme must be able to redefine everything."
+    ],
+    "donts": [
+      "**Don't** add shadows to cards, buttons or dialogs. The FAB is the only exception.",
+      "**Don't** use coloured left/right border stripes on cards or rows; use a swatch or a badge.",
+      "**Don't** fade a state with `opacity` on text. Change the border style or the icon instead.",
+      "**Don't** tint decorative elements moss or clay; those colours mean owed and owe.",
+      "**Don't** use Unicode glyphs or emoji as interface icons. Emoji are user content only (ledger and category icons).",
+      "**Don't** load webfonts; the serif/sans pair is system-only by design.",
+      "**Don't** set inputs or selects below 16px."
+    ]
+  }
+}

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { focusRing } from "./focus";
+import { Icon } from "./Icon";
 import { t } from "~/client/i18n";
 
 /** Standard screen header. `back` is a route path; the back control is a real link. */
@@ -9,8 +10,11 @@ export function PageHeader({
   subtitle,
   back,
   action,
+  railTitle = false,
 }: {
   title: string;
+  /** The title repeats the rail's brand at md+, so it is visually hidden there but stays the page's h1. */
+  railTitle?: boolean;
   subtitle?: string;
   back?: string;
   action?: ReactNode;
@@ -21,16 +25,16 @@ export function PageHeader({
         <Link
           to={back}
           aria-label={t("action.back")}
-          className={`grid min-h-11 min-w-11 flex-none place-items-center rounded-[6px] text-[20px] ${focusRing}`}
+          className={`-ml-2 grid min-h-11 min-w-11 flex-none place-items-center rounded-[6px] transition-colors hover:bg-[var(--paper-sunk)] ${focusRing}`}
           style={{ color: "var(--ink-2)" }}
         >
-          <span aria-hidden="true">←</span>
+          <Icon name="back" size={22} />
         </Link>
       )}
       <div className="min-w-0 flex-1">
-        <h1 className="serif truncate text-[22px] leading-tight">{title}</h1>
+        <h1 className={`serif truncate text-[22px] leading-tight ${railTitle ? "md:sr-only" : ""}`}>{title}</h1>
         {subtitle && (
-          <p className="truncate text-[13px]" style={{ color: "var(--ink-3)" }}>
+          <p className="line-clamp-2 text-[13px] leading-snug" style={{ color: "var(--ink-3)" }}>
             {subtitle}
           </p>
         )}

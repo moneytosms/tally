@@ -54,7 +54,9 @@ export function Amount({ paise, label, tone = "position", subject, hero = false,
   const smallText = hero ? "text-[14px]" : "text-[13px]";
 
   return (
-    <span className={`inline-flex ${hero ? "flex-col items-start gap-1" : "items-baseline gap-1.5"} ${className}`}>
+    <span
+      className={`inline-flex ${hero ? "flex-col items-start gap-1" : "flex-wrap items-baseline gap-x-1.5"} ${className}`}
+    >
       <span
         className={`${smallText} leading-tight ${directionText ? "sr-only" : ""}`}
         style={{ color: "var(--ink-3)" }}
@@ -67,18 +69,33 @@ export function Amount({ paise, label, tone = "position", subject, hero = false,
         </span>
       )}
       <span
-        className={hero ? "serif tnum text-[34px] font-medium leading-none tracking-tight" : "tnum text-[16px]"}
+        className={`whitespace-nowrap ${hero ? "serif tnum text-[38px] leading-none font-medium tracking-[-0.02em]" : "tnum text-[16px]"}`}
         style={{ color: online ? color : "var(--ink-3)" }}
       >
         {online ? (
           <>
-            <span aria-hidden="true">{sign}</span>
-            {formatPaise(Math.abs(paise))}
+            <span aria-hidden="true" className={hero ? "mr-0.5 font-normal" : ""}>
+              {sign}
+            </span>
+            {hero ? <HeroFigure text={formatPaise(Math.abs(paise))} /> : formatPaise(Math.abs(paise))}
           </>
         ) : (
           t("offline.noAmount")
         )}
       </span>
     </span>
+  );
+}
+
+/** Hero typesetting: the rupees carry the figure, the paise step back to a
+ *  smaller size, like a ledger book's pence column. Same colour, same text. */
+function HeroFigure({ text }: { text: string }) {
+  const dot = text.lastIndexOf(".");
+  if (dot < 0) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, dot)}
+      <span className="text-[0.55em] tracking-normal">{text.slice(dot)}</span>
+    </>
   );
 }

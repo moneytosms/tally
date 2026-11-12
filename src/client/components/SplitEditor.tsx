@@ -187,7 +187,13 @@ export function SplitEditor({
           it belongs to. role=group, not a nested control, so the <label> has
           nothing to steal focus to. */}
       <Field label={t("expense.split")} error={error}>
-        <div role="group" aria-label={t("expense.split")} className="flex flex-wrap gap-1.5">
+        {/* Same segmented strip as <Tabs>: one choice of four, so one joined control. */}
+        <div
+          role="group"
+          aria-label={t("expense.split")}
+          className="flex rounded-[7px] border p-0.5"
+          style={{ background: "var(--paper-sunk)", borderColor: "var(--line)" }}
+        >
           {modes.map((m) => {
             const on = m === mode;
             return (
@@ -199,11 +205,10 @@ export function SplitEditor({
                   onRawChange(rawForMode(mode, m, raw));
                   onModeChange(m);
                 }}
-                className={`min-h-11 min-w-11 rounded-[6px] border px-3 text-[15px] ${focusRing}`}
+                className={`min-h-11 min-w-0 flex-1 rounded-[5px] px-1 text-[14px] ${on ? "font-semibold" : ""} ${focusRing}`}
                 style={{
-                  background: on ? "var(--moss-wash)" : "transparent",
-                  borderColor: on ? "var(--moss)" : "var(--line-2)",
-                  color: on ? "var(--moss-2)" : "var(--ink-2)",
+                  background: on ? "var(--paper)" : "transparent",
+                  color: on ? "var(--ink)" : "var(--ink-2)",
                 }}
               >
                 {t(`expense.splitMode.${m}`)}

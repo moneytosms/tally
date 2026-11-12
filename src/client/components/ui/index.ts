@@ -12,3 +12,4 @@ export { ScreenSkeleton, Skeleton } from "./Skeleton";
 export { Tabs } from "./Tabs";
 export { pushToast, ToastViewport } from "./Toast";
 export { focusRing } from "./focus";
+export { Icon, type IconName } from "./Icon";

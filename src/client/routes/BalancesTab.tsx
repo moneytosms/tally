@@ -7,7 +7,17 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { Amount, Avatar, Button, EmptyState, focusRing, PageHeader, pushToast, Sheet } from "~/client/components/ui";
+import {
+  Amount,
+  Avatar,
+  Button,
+  EmptyState,
+  focusRing,
+  Icon,
+  PageHeader,
+  pushToast,
+  Sheet,
+} from "~/client/components/ui";
 import { upiLink } from "~/client/routes/SettleUp";
 import {
   qk,
@@ -139,23 +149,22 @@ function LedgerPlan({ ledger, onLegs }: { ledger: LedgerSummary; onLegs: (id: st
     onLegs(ledger.id, JSON.parse(key) as Contribution[]);
   }, [key, ledger.id, onLegs]);
 
+  // The whole row is the way in: one target, not a row plus a button repeated per ledger.
   return (
-    <section
-      className="mb-2 flex items-center justify-between gap-2.5 rounded-[7px] border px-3.5 py-3"
-      style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
+    <Link
+      to={`/ledgers/${ledger.id}/settle`}
+      className={`row-press mb-2 flex items-center gap-2.5 rounded-[7px] border px-3.5 py-3 ${focusRing}`}
+      style={{ background: "var(--paper-2)", borderColor: "var(--line)", color: "var(--ink)" }}
     >
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <div className="truncate text-[15px] font-medium">{ledger.name}</div>
         <Amount paise={ledger.net} label={t("ledger.yourPosition")} />
       </div>
-      <Link
-        to={`/ledgers/${ledger.id}/settle`}
-        className={`inline-flex min-h-11 flex-none items-center rounded-[7px] border px-3 text-[14px] font-medium ${focusRing}`}
-        style={{ borderColor: "var(--line-2)", color: "var(--ink)" }}
-      >
+      <span className="flex flex-none items-center gap-1 text-[13px]" style={{ color: "var(--ink-2)" }}>
         {t("balances.seeHow")}
-      </Link>
-    </section>
+        <Icon name="forward" size={16} />
+      </span>
+    </Link>
   );
 }
 

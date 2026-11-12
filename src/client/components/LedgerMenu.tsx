@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Amount, Avatar, Button, ConfirmDialog, Field, Input, Rupees, Select } from "~/client/components/ui";
+import { Amount, Avatar, Button, ConfirmDialog, Field, Icon, Input, Rupees, Select } from "~/client/components/ui";
 import { Sheet } from "~/client/components/ui/Sheet";
 import { focusRing } from "~/client/components/ui/focus";
 import { guessMapping } from "~/client/lib/guessMapping";
@@ -885,10 +885,10 @@ export function LedgerMenu({ ledger }: { ledger: LedgerSummary }) {
           aria-expanded={open}
           aria-haspopup="menu"
           onClick={() => setOpen((o) => !o)}
-          className={`grid min-h-11 min-w-11 place-items-center rounded-[6px] text-[17px] ${focusRing}`}
-          style={{ color: "var(--ink-3)" }}
+          className={`grid min-h-11 min-w-11 place-items-center rounded-[6px] transition-colors hover:bg-[var(--paper-sunk)] ${focusRing}`}
+          style={{ color: "var(--ink-2)" }}
         >
-          ⋯
+          <Icon name="more" />
         </button>
         {open && (
           <>

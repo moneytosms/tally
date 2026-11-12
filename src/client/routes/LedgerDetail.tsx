@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router";
-import { Amount, Button, EmptyState, Field, Input, Select, Skeleton } from "~/client/components/ui";
+import { Amount, Button, EmptyState, Field, Icon, Input, Select, Skeleton } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import { ExpenseSheet } from "~/client/components/ExpenseSheet";
 import {
@@ -57,11 +57,11 @@ function ExpenseRow({
     <button
       type="button"
       onClick={() => onSelect(expense)}
-      className={`row-in mb-2 block w-full rounded-[7px] border px-3.5 py-3 text-left ${focusRing}`}
+      className={`row-in row-press mb-2 block w-full rounded-[7px] border px-3.5 py-3 text-left ${focusRing}`}
       style={{
         background: "var(--paper-2)",
+        // A refund is marked by its badge, not a side rule.
         borderColor: "var(--line)",
-        borderLeft: isRefund ? "2px solid var(--moss)" : undefined,
       }}
     >
       <div className="flex items-center justify-between gap-2.5">
@@ -129,28 +129,12 @@ export function LedgerDetail() {
 
   return (
     <>
-      {(all.data?.length ?? 0) > 1 && (
-        <div className="mb-2 flex min-h-11 justify-end">
-          <Select
-            aria-label={t("sort.label")}
-            value={sort}
-            onChange={(e) => setSort(e.target.value as ExpenseSort)}
-            className="w-auto min-h-11 py-0 text-[13px]"
-          >
-            <option value="newest">{t("sort.newest")}</option>
-            <option value="oldest">{t("sort.oldest")}</option>
-            <option value="amountHigh">{t("sort.amountHigh")}</option>
-            <option value="amountLow">{t("sort.amountLow")}</option>
-          </Select>
-        </div>
-      )}
-
       {/* Nothing to filter until there is a list worth filtering, unless a filter is
-          already on: then the controls are the only way to clear it. */}
+          already on: then the controls are the only way to clear it. One toolbar row:
+          search, filters, and sort on the right. */}
       {((all.data?.length ?? 0) > 0 || filtering) && (
         <div className="mb-3 grid gap-2">
-          {/* Collapsible search field - shows as icon when empty/unfocused, expands on tap */}
-          {searchExpanded ? (
+          {(searchExpanded || filters.q) && (
             <Field label={t("search.label")}>
               <Input
                 type="search"
@@ -166,46 +150,63 @@ export function LedgerDetail() {
                 }}
               />
             </Field>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setSearchExpanded(true)}
-              className={`inline-flex min-h-11 cursor-pointer items-center text-[17px] ${focusRing}`}
-              aria-label={t("search.label")}
-            >
-              🔍
-            </button>
           )}
 
-          {/* Collapsible filters section */}
           <div>
-            <button
-              type="button"
-              onClick={() => setFiltersExpanded(!filtersExpanded)}
-              aria-expanded={filtersExpanded}
-              className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[6px] border px-2.5 text-[13px] ${focusRing}`}
-              style={{
-                borderColor: hasFilterSet ? "var(--moss)" : "var(--line)",
-                color: hasFilterSet ? "var(--moss-2)" : "var(--ink-2)",
-                background: hasFilterSet ? "var(--moss-wash)" : "var(--paper-2)",
-              }}
-            >
-              {t("search.filters")}
-              {hasFilterSet && (
-                <span
-                  className="inline-block h-1.5 w-1.5 rounded-full shrink-0"
-                  style={{ background: "var(--moss)" }}
-                  aria-hidden="true"
-                />
+            <div className="flex items-center gap-2">
+              {!(searchExpanded || filters.q) && (
+                <button
+                  type="button"
+                  onClick={() => setSearchExpanded(true)}
+                  className={`grid min-h-11 min-w-11 place-items-center rounded-[6px] border ${focusRing}`}
+                  style={{ borderColor: "var(--line)", color: "var(--ink-2)", background: "var(--paper-2)" }}
+                  aria-label={t("search.label")}
+                >
+                  <Icon name="search" size={18} />
+                </button>
               )}
-              <span
-                aria-hidden="true"
-                className="text-[13px]"
-                style={{ transform: filtersExpanded ? "rotate(180deg)" : undefined }}
+              <button
+                type="button"
+                onClick={() => setFiltersExpanded(!filtersExpanded)}
+                aria-expanded={filtersExpanded}
+                className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-[6px] border px-3 text-[14px] ${focusRing}`}
+                style={{
+                  borderColor: hasFilterSet ? "var(--moss)" : "var(--line)",
+                  color: hasFilterSet ? "var(--moss-2)" : "var(--ink-2)",
+                  background: hasFilterSet ? "var(--moss-wash)" : "var(--paper-2)",
+                }}
               >
-                ▾
-              </span>
-            </button>
+                {t("search.filters")}
+                {hasFilterSet && (
+                  <span
+                    className="inline-block h-1.5 w-1.5 shrink-0 rounded-full"
+                    style={{ background: "var(--moss)" }}
+                    aria-hidden="true"
+                  />
+                )}
+                <span
+                  className="transition-transform"
+                  style={{ transform: filtersExpanded ? "rotate(180deg)" : undefined }}
+                >
+                  <Icon name="down" size={16} />
+                </span>
+              </button>
+              {(all.data?.length ?? 0) > 1 && (
+                // The wrapper sets the width; Select is always full width of its box.
+                <div className="ml-auto w-[11.5rem] min-w-0">
+                  <Select
+                    aria-label={t("sort.label")}
+                    value={sort}
+                    onChange={(e) => setSort(e.target.value as ExpenseSort)}
+                  >
+                    <option value="newest">{t("sort.newest")}</option>
+                    <option value="oldest">{t("sort.oldest")}</option>
+                    <option value="amountHigh">{t("sort.amountHigh")}</option>
+                    <option value="amountLow">{t("sort.amountLow")}</option>
+                  </Select>
+                </div>
+              )}
+            </div>
             {filtersExpanded && (
               <div className="mt-2 grid grid-cols-2 gap-2">
                 <Field label={t("search.category")}>

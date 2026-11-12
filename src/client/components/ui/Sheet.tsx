@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { focusRing } from "./focus";
+import { Icon } from "./Icon";
 import { t } from "~/client/i18n";
 
 // Matches the sheet-panel-out keyframe duration in tokens.css. The panel stays
@@ -97,10 +98,10 @@ export function Sheet({
             type="button"
             onClick={() => onOpenChange(false)}
             aria-label={t("action.close")}
-            className={`min-h-11 min-w-11 rounded-[6px] text-[18px] ${focusRing}`}
-            style={{ color: "var(--ink-3)" }}
+            className={`-mr-2 grid min-h-11 min-w-11 place-items-center rounded-[6px] transition-colors hover:bg-[var(--paper-sunk)] ${focusRing}`}
+            style={{ color: "var(--ink-2)" }}
           >
-            ✕
+            <Icon name="close" />
           </button>
         </div>
         <div className="pad-safe-bottom px-4 py-4">{children}</div>

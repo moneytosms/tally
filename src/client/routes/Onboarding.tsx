@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Field, Input, pushToast } from "~/client/components/ui";
+import { Button, Field, Input, focusRing, pushToast } from "~/client/components/ui";
 import { api } from "~/client/lib/api";
 import { enterDemo } from "~/client/lib/demo";
 import { qk, useMe } from "~/client/lib/queries";
@@ -20,6 +20,8 @@ type ClientCapabilities = { passkeyPlatformAuthenticator?: boolean };
 /** Which screen. "name" is the passkey-enrolment name step - the owner claiming
  *  the instance, or someone who chose a passkey over a password. */
 type View = "signin" | "signup" | "name" | "passkey" | "vpa";
+
+const linkClass = `min-h-11 text-[14px] underline decoration-[var(--line-2)] underline-offset-4 ${focusRing}`;
 
 /** In-app WebViews have no WebAuthn and fail SILENTLY. Detect before showing the
  *  passkey step and offer an explicit way out - this is mandatory, not an edge case.
@@ -365,40 +367,49 @@ export function Onboarding() {
               {t("onboarding.signInPasskey")}
             </Button>
 
-            <p className="mt-5 text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
-              {t("onboarding.contactAdmin")}
-            </p>
+            {/* Secondary routes are links, not four equal buttons: sign-in is the job here. */}
+            <div className="mt-8 border-t pt-5" style={{ borderColor: "var(--line)" }}>
+              <p className="text-[13px] leading-relaxed" style={{ color: "var(--ink-3)" }}>
+                {t("onboarding.contactAdmin")}
+              </p>
+              <div className="mt-1 flex flex-wrap gap-x-5">
+                <button type="button" className={linkClass} onClick={() => go("signup")}>
+                  {t("onboarding.needAccount")}
+                </button>
+                {!inviteToken && !owner && (
+                  <button
+                    type="button"
+                    className={linkClass}
+                    onClick={() => {
+                      setOwner(true);
+                      go("name");
+                    }}
+                  >
+                    {t("onboarding.iRunThis")}
+                  </button>
+                )}
+              </div>
+            </div>
 
-            <Button variant="ghost" size="sm" className="mt-3 w-full" onClick={() => go("signup")}>
-              {t("onboarding.needAccount")}
-            </Button>
-            <Button
-              variant="ghost"
-              className="mt-3 w-full"
-              onClick={() => {
-                enterDemo();
-                qc.clear();
-                navigate("/", { replace: true });
-              }}
+            <div
+              className="mt-6 rounded-[7px] border p-4"
+              style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
             >
-              {t("demo.try")}
-            </Button>
-            <p className="mt-1 text-center text-[13px]" style={{ color: "var(--ink-3)" }}>
-              {t("demo.tryBody")}
-            </p>
-            {!inviteToken && !owner && (
+              <p className="mb-3 text-[13px] leading-relaxed" style={{ color: "var(--ink-2)" }}>
+                {t("demo.tryBody")}
+              </p>
               <Button
                 variant="ghost"
-                size="sm"
-                className="mt-3 w-full"
+                block
                 onClick={() => {
-                  setOwner(true);
-                  go("name");
+                  enterDemo();
+                  qc.clear();
+                  navigate("/", { replace: true });
                 }}
               >
-                {t("onboarding.iRunThis")}
+                {t("demo.try")}
               </Button>
-            )}
+            </div>
           </form>
         )}
 
