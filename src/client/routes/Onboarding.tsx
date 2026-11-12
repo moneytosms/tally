@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useSearchParams } from "react-router";
 import { startAuthentication, startRegistration } from "@simplewebauthn/browser";
 import { useQueryClient } from "@tanstack/react-query";
-import { Button, Field, Input, focusRing, pushToast } from "~/client/components/ui";
+import { Button, Field, Input, Mark, focusRing, pushToast } from "~/client/components/ui";
 import { api } from "~/client/lib/api";
 import { enterDemo } from "~/client/lib/demo";
 import { qk, useMe } from "~/client/lib/queries";
@@ -305,7 +305,10 @@ export function Onboarding() {
   return (
     <div className="paper-ground h-full overflow-auto">
       <div className="relative z-10 mx-auto w-full max-w-[420px] px-5 py-10">
-        <h1 className="serif mb-1 text-[26px] tracking-[-0.01em]">{t("onboarding.title")}</h1>
+        <div className="mb-1 flex items-center gap-2.5">
+          <Mark size={28} />
+          <h1 className="serif text-[28px] tracking-[-0.01em]">{t("onboarding.title")}</h1>
+        </div>
         <p className="mb-7 text-[13px]" style={{ color: "var(--ink-3)" }}>
           {t(inviteToken ? "onboarding.invitedSubtitle" : "onboarding.subtitle")}
         </p>

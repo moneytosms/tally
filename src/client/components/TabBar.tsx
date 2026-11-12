@@ -6,6 +6,7 @@ import { Link, useLocation } from "react-router";
 import { t } from "~/client/i18n";
 import { focusRing } from "./ui/focus";
 import { Icon } from "./ui/Icon";
+import { Mark } from "./ui/Mark";
 
 // Icons come from the shared set (ui/Icon).
 // `active` maps a pathname to the tab it belongs to: a ledger screen is a Ledgers
@@ -27,7 +28,10 @@ export function TabBar({ addButton }: { addButton?: ReactNode }) {
       style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
     >
       <div className="hidden md:mb-6 md:block">
-        <div className="serif mb-4 px-2.5 text-[20px] leading-tight">{t("app.name")}</div>
+        <div className="serif mb-4 flex items-center gap-2 px-2.5 text-[20px] leading-tight">
+          <Mark />
+          {t("app.name")}
+        </div>
         {addButton}
       </div>
       {tabs.map((tab) => {

@@ -137,14 +137,25 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
       {/* ---------- detail ---------- */}
       <div className="mb-4 flex items-center justify-between gap-3">
         <Amount paise={expense.total} label={t("expense.total")} tone="neutral" hero />
-        {isRefund && (
-          <span
-            className="rounded-[5px] border px-1.5 py-0.5 text-[13px] font-medium"
-            style={{ borderColor: "var(--moss)", background: "var(--moss-wash)", color: "var(--moss-2)" }}
+        <div className="flex flex-none items-center gap-2">
+          {isRefund && (
+            <span
+              className="rounded-[5px] border px-1.5 py-0.5 text-[13px] font-medium"
+              style={{ borderColor: "var(--moss)", background: "var(--moss-wash)", color: "var(--moss-2)" }}
+            >
+              {t("expense.refund")}
+            </span>
+          )}
+          {/* Edit sits by the figure it changes, not under the comments. The row
+              opens this sheet, so the editor is a link from here. */}
+          <Link
+            to={`/ledgers/${ledgerId}/expenses/${expense.id}`}
+            className={`inline-flex min-h-11 items-center rounded-[7px] border px-4 text-[14px] font-semibold transition-[background-color,transform] duration-150 hover:bg-[var(--paper-sunk)] active:scale-[0.98] ${focusRing}`}
+            style={{ borderColor: "var(--line-2)", color: "var(--ink)" }}
           >
-            {t("expense.refund")}
-          </span>
-        )}
+            {t("expense.edit")}
+          </Link>
+        </div>
       </div>
 
       <div
@@ -345,20 +356,9 @@ export function ExpenseSheet({ ledgerId, expense, members, open, onOpenChange }:
         />
       )}
 
-      {/* ---------- edit ---------- */}
-      {/* The only way into the editor: the row itself opens this sheet, and a
-          link cannot live inside that row's <button>. */}
-      <Link
-        to={`/ledgers/${ledgerId}/expenses/${expense.id}`}
-        className={`mb-3 inline-flex min-h-11 items-center justify-center rounded-[7px] border px-4 text-[15px] font-semibold ${focusRing}`}
-        style={{ background: "var(--moss)", color: "var(--paper)", borderColor: "var(--moss)" }}
-      >
-        {t("expense.edit")}
-      </Link>
-
       {/* ---------- delete ---------- */}
       <Button variant="danger" onClick={() => setConfirmingDelete(true)} isLoading={deleteExpense.isPending}>
-        {t("action.delete")}
+        {t("confirm.deleteExpense.action")}
       </Button>
       <p role="status" aria-live="polite" className="mt-1.5 text-[13px]" style={{ color: "var(--clay)" }}>
         {deleteExpense.isError ? t("error.generic") : ""}

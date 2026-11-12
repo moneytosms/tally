@@ -13,3 +13,4 @@ export { Tabs } from "./Tabs";
 export { pushToast, ToastViewport } from "./Toast";
 export { focusRing } from "./focus";
 export { Icon, type IconName } from "./Icon";
+export { Mark } from "./Mark";
