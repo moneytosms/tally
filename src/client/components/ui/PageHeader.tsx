@@ -9,8 +9,11 @@ export function PageHeader({
   subtitle,
   back,
   action,
+  railTitle = false,
 }: {
   title: string;
+  /** The title repeats the rail's brand at md+, so it is visually hidden there but stays the page's h1. */
+  railTitle?: boolean;
   subtitle?: string;
   back?: string;
   action?: ReactNode;
@@ -28,7 +31,7 @@ export function PageHeader({
         </Link>
       )}
       <div className="min-w-0 flex-1">
-        <h1 className="serif truncate text-[22px] leading-tight">{title}</h1>
+        <h1 className={`serif truncate text-[22px] leading-tight ${railTitle ? "md:sr-only" : ""}`}>{title}</h1>
         {subtitle && (
           <p className="truncate text-[13px]" style={{ color: "var(--ink-3)" }}>
             {subtitle}

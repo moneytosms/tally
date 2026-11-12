@@ -15,13 +15,13 @@
 
   --ink: #23241d;
   --ink-2: #5c5f52;
-  --ink-3: #8b8d7e;
+  --ink-3: #68695d;
 
   /* earth */
   --moss: #5c7355; /* accent + positive */
   --moss-2: #485c43;
   --moss-wash: #e6ece0;
-  --clay: #a85f42; /* negative */
+  --clay: #94563c; /* negative */
   --clay-wash: #f2e4dd;
   --ochre: #b08344; /* third earth, charts */
 
@@ -49,12 +49,12 @@
 
   --ink: #23241d;
   --ink-2: #5c5f52;
-  --ink-3: #8b8d7e;
+  --ink-3: #68695d;
 
   --moss: #5c7355;
   --moss-2: #485c43;
   --moss-wash: #e6ece0;
-  --clay: #a85f42;
+  --clay: #94563c;
   --clay-wash: #f2e4dd;
   --ochre: #b08344;
 
@@ -77,7 +77,7 @@
 
     --ink: #e8e6da;
     --ink-2: #a3a595;
-    --ink-3: #6f7264;
+    --ink-3: #8a8c7e;
 
     --moss: #8fa885;
     --moss-2: #a7bd9d;
@@ -103,7 +103,7 @@
 
   --ink: #e8e6da;
   --ink-2: #a3a595;
-  --ink-3: #6f7264;
+  --ink-3: #8a8c7e;
 
   --moss: #8fa885;
   --moss-2: #a7bd9d;
@@ -129,7 +129,7 @@
 
   --ink: #2b1f26;
   --ink-2: #5e4a55;
-  --ink-3: #7b6571;
+  --ink-3: #77616d;
 
   --moss: #96284f;
   --moss-2: #7a1f40;
@@ -154,7 +154,7 @@
 
   --ink: #17222c;
   --ink-2: #465563;
-  --ink-3: #61707f;
+  --ink-3: #5a6978;
 
   --moss: #14566e;
   --moss-2: #0e4457;
@@ -185,7 +185,7 @@
   --moss: #a396e0;
   --moss-2: #b8adec;
   --moss-wash: #221d33;
-  --clay: #b96a89;
+  --clay: #bc7290;
   --clay-wash: #2a1c24;
   --ochre: #c2a06e;
 
@@ -208,7 +208,7 @@
 
   --ink: #f0e7dd;
   --ink-2: #b3a496;
-  --ink-3: #857769;
+  --ink-3: #8f8173;
 
   --moss: #e0a355;
   --moss-2: #eab873;

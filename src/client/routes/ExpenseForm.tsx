@@ -241,13 +241,15 @@ export default function ExpenseForm({
                   }}
                   className={`flex min-w-18 flex-col items-center gap-1 rounded-[8px] border px-2 py-2 whitespace-nowrap ${focusRing}`}
                   style={{
-                    background: on ? "var(--moss-wash)" : "transparent",
+                    background: on ? "var(--moss-wash)" : "var(--paper-2)",
                     borderColor: on ? "var(--moss)" : "var(--line)",
-                    opacity: on ? 1 : 0.7,
                   }}
                 >
                   <span className="text-[20px] leading-none">{c.icon}</span>
-                  <span className="text-center text-[13px]" style={{ color: on ? "var(--ink)" : "var(--ink-3)" }}>
+                  <span
+                    className={`text-center text-[13px] ${on ? "font-semibold" : ""}`}
+                    style={{ color: on ? "var(--moss-2)" : "var(--ink-2)" }}
+                  >
                     {c.name}
                   </span>
                 </button>

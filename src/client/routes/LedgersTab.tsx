@@ -91,14 +91,19 @@ function LedgerCard({ ledger }: { ledger: LedgerSummary }) {
       style={{
         background: "var(--paper-2)",
         borderColor: "var(--line)",
-        // The cover accent (issue #27) is a left rule, not a fill - it stays
-        // legible in every theme without fighting the card's own text colour.
-        borderLeft: ledger.color ? `3px solid ${LEDGER_COLOR_SWATCH[ledger.color]}` : undefined,
       }}
     >
       <Link to={`/ledgers/${ledger.id}`} className={`block rounded-[7px] py-3 pr-3.5 pl-3.5 ${focusRing}`}>
         {/* pr-12 keeps the name clear of the pin button in the corner; row 2 is full width. min-h-11 keeps the 44px star off row 2. */}
         <div className="flex min-h-11 items-center gap-1.5 pr-12">
+          {/* The cover accent (issue #27): a swatch, not a fill or a side rule - legible in every theme. */}
+          {ledger.color && (
+            <span
+              aria-hidden="true"
+              className="mr-0.5 h-2.5 w-2.5 shrink-0 rounded-[3px]"
+              style={{ background: LEDGER_COLOR_SWATCH[ledger.color] }}
+            />
+          )}
           {ledger.emoji && (
             <span className="shrink-0" aria-hidden="true">
               {ledger.emoji}
@@ -191,6 +196,7 @@ export function LedgersTab() {
     <>
       <PageHeader
         title={t("app.name")}
+        railTitle
         subtitle={me.data ? t("home.greeting", { name: me.data.displayName }) : undefined}
       />
 

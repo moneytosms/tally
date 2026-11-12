@@ -164,7 +164,7 @@ describe("<ExpenseForm> category chips", () => {
     expect(html).toContain("Food");
     expect(html).toContain("Travel");
     // No category picked yet: the "none" chip is the one marked pressed.
-    const noneChip = html.slice(html.indexOf(t("expense.categoryNone")) - 400, html.indexOf(t("expense.categoryNone")));
+    const noneChip = html.slice(html.indexOf(t("expense.categoryNone")) - 500, html.indexOf(t("expense.categoryNone")));
     expect(noneChip).toContain('aria-pressed="true"');
   });
 
@@ -211,7 +211,7 @@ describe("<ExpenseForm> category chips", () => {
       ),
     );
 
-    const foodChip = html.slice(html.indexOf("Food") - 400, html.indexOf("Food"));
+    const foodChip = html.slice(html.indexOf("Food") - 500, html.indexOf("Food"));
     expect(foodChip).toContain('aria-pressed="true"');
   });
 

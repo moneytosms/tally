@@ -6,15 +6,24 @@ import { Link, useLocation } from "react-router";
 import { t } from "~/client/i18n";
 import { focusRing } from "./ui/focus";
 
-// Glyphs, not an icon dependency. See prototypes/design-system.html.
+// Authored SVG, not an icon dependency and not Unicode glyphs (which render at
+// different widths per font). One 20px box, 1.6 stroke, currentColor.
 // `active` maps a pathname to the tab it belongs to: a ledger screen is a Ledgers
 // screen, and anything under /you (admin) is still the You tab.
+const icons = {
+  ledgers: (
+    <path d="M5 3.5h10a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 15V5A1.5 1.5 0 0 1 5 3.5ZM7 7.5h6M7 10h6M7 12.5h3.5" />
+  ),
+  balances: <path d="M3.5 7h12m0 0-3-3m3 3-3 3M16.5 13h-12m0 0 3-3m-3 3 3 3" />,
+  insights: <path d="M10 3.5a6.5 6.5 0 1 0 6.5 6.5H10V3.5ZM12.5 2.5v5h5a5 5 0 0 0-5-5Z" />,
+  you: <path d="M10 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM4 16.5c.8-2.9 3.2-4.5 6-4.5s5.2 1.6 6 4.5" />,
+};
 const tabs = [
-  { to: "/", glyph: "▤", key: "ledgers", active: (p: string) => p === "/" || p.startsWith("/ledgers/") },
-  { to: "/balances", glyph: "⇄", key: "balances", active: (p: string) => p === "/balances" },
-  { to: "/insights", glyph: "◴", key: "insights", active: (p: string) => p === "/insights" },
-  { to: "/you", glyph: "◌", key: "you", active: (p: string) => p === "/you" || p.startsWith("/you/") },
-];
+  { to: "/", key: "ledgers", active: (p: string) => p === "/" || p.startsWith("/ledgers/") },
+  { to: "/balances", key: "balances", active: (p: string) => p === "/balances" },
+  { to: "/insights", key: "insights", active: (p: string) => p === "/insights" },
+  { to: "/you", key: "you", active: (p: string) => p === "/you" || p.startsWith("/you/") },
+] as const;
 
 /** `addButton` is shown only in the rail (md+); the Shell decides whether it exists. */
 export function TabBar({ addButton }: { addButton?: ReactNode }) {
@@ -41,12 +50,18 @@ export function TabBar({ addButton }: { addButton?: ReactNode }) {
             }`}
             style={{ color: isActive ? "var(--moss-2)" : "var(--ink-3)" }}
           >
-            <span
+            <svg
               aria-hidden="true"
-              className="mb-0.5 text-[20px] leading-none font-normal md:mb-0 md:w-5 md:text-[15px]"
+              viewBox="0 0 20 20"
+              className="mb-1 h-5 w-5 shrink-0 md:mb-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
             >
-              {tab.glyph}
-            </span>
+              {icons[tab.key]}
+            </svg>
             <span>{t(`tabs.${tab.key}`)}</span>
             {isActive && <span className="sr-only">{t("nav.current")}</span>}
           </Link>

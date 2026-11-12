@@ -63,15 +63,18 @@ export function ParticipantPicker({
                 className={`flex w-[68px] flex-col items-center gap-1 rounded-[8px] border px-1 py-2 ${focusRing}`}
                 style={{
                   background: on ? "var(--moss-wash)" : "transparent",
-                  borderColor: on ? "var(--moss)" : "var(--line)",
-                  // Never colour alone: excluded avatars also fade and lose their
-                  // border weight, which survives greyscale and colour blindness.
-                  opacity: on ? 1 : 0.45,
+                  borderColor: on ? "var(--moss)" : "var(--line-2)",
+                  // Never colour alone: an excluded member gets a dashed border and a
+                  // faded avatar, which survive greyscale and colour blindness. The
+                  // name stays at full opacity so it still meets contrast.
+                  borderStyle: on ? "solid" : "dashed",
                 }}
               >
-                <Avatar name={m.name} size={34} />
+                <span style={{ opacity: on ? 1 : 0.4 }}>
+                  <Avatar name={m.name} size={34} />
+                </span>
                 <span
-                  className="w-full truncate text-center text-[13px]"
+                  className={`w-full truncate text-center text-[13px] ${on ? "font-medium" : ""}`}
                   style={{ color: on ? "var(--ink)" : "var(--ink-3)" }}
                 >
                   {m.name}

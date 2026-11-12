@@ -3,6 +3,7 @@
 // nothing at all. This is the one place either kind of message now lands.
 import { useSyncExternalStore } from "react";
 import { t } from "~/client/i18n";
+import { focusRing } from "./focus";
 
 type ToastKind = "error" | "success";
 type ToastEntry = { id: string; kind: ToastKind; message: string };
@@ -66,7 +67,7 @@ export function ToastViewport() {
             type="button"
             onClick={() => dismiss(toast.id)}
             aria-label={t("action.close")}
-            className="min-h-11 min-w-11 shrink-0 rounded-[5px] text-[13px] opacity-70 hover:opacity-100"
+            className={`min-h-11 min-w-11 shrink-0 rounded-[5px] text-[13px] opacity-70 hover:opacity-100 ${focusRing}`}
           >
             ✕
           </button>
