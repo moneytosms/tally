@@ -321,6 +321,32 @@ label,
   mix-blend-mode: var(--grain-blend);
 }
 
+/* Tappable rows and cards. A border lift on hover (pointer devices only) and a
+   slight press on tap, so a row answers the finger before the route changes. */
+.row-press {
+  transition:
+    border-color 150ms ease-out,
+    transform 150ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+@media (hover: hover) {
+  .row-press:hover {
+    border-color: var(--line-2) !important;
+  }
+}
+.row-press:active {
+  transform: scale(0.985);
+}
+
+/* Browser surfaces carry the palette too. */
+::selection {
+  background: var(--moss-wash);
+  color: var(--ink);
+}
+input,
+textarea {
+  caret-color: var(--moss);
+}
+
 /* Shared transition layer (issue #45). Kept to Tailwind's built-in
    transition/animate-* mechanism plus these few keyframes - no motion
    dependency. Every animation here is killed by the prefers-reduced-motion

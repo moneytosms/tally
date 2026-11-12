@@ -19,10 +19,10 @@ colors:
 typography:
   hero-amount:
     fontFamily: "ui-serif, Georgia, 'Times New Roman', serif"
-    fontSize: "34px"
+    fontSize: "38px"
     fontWeight: 500
     lineHeight: 1
-    letterSpacing: "-0.015em"
+    letterSpacing: "-0.02em"
     fontFeature: "'tnum'"
   headline:
     fontFamily: "ui-serif, Georgia, 'Times New Roman', serif"
@@ -132,6 +132,7 @@ The ground carries the material. A warm off-white paper (dark mode: warm ink-bla
 Values above are the default "paper" theme, keyed by their CSS custom property names (`--paper-2`, `--ink-3`, ...). Five more themes (dark, sakura, ocean, midnight, ember) redefine the same token names in `src/client/styles/tokens.css`. Every component reads tokens only, so a theme is just a new set of values.
 
 **Key Characteristics:**
+
 - Paper ground with grain and washes; flat raised cards; sunken fields.
 - Moss carries structure (primary buttons, active nav, FAB, selection). Moss and clay are the owed/owe pair, and they differ in lightness as well as hue.
 - System serif for screen titles and hero amounts; system sans with tabular numerals everywhere else. No webfonts.
@@ -143,18 +144,22 @@ Values above are the default "paper" theme, keyed by their CSS custom property n
 Warm paper neutrals, one structural green, and one earth red that means "owe".
 
 ### Primary
+
 - **Moss** (`moss`): the structural colour. Primary buttons, the FAB, the active nav item, selected chips and segments, focus rings, chart fills. It also means "owed to you" / positive position.
 - **Deep Moss** (`moss-2`): text on moss-wash, and the active nav label.
 - **Moss Wash** (`moss-wash`): background of selected chips, the active rail item, success toasts.
 
 ### Secondary
+
 - **Clay** (`clay`): negative positions ("You owe", "Asha owes"), errors, danger buttons. Darker than moss in every light theme, so the pair still reads in greyscale.
 - **Clay Wash** (`clay-wash`): error toast and danger button fill.
 
 ### Tertiary
+
 - **Ochre** (`ochre`): the third earth tone. Used for charts and the pinned-ledger star, never for meaning.
 
 ### Neutral
+
 - **Paper** (`paper`): the page ground and the text colour on moss buttons.
 - **Raised Paper** (`paper-2`): cards, list rows, unselected chips, the nav bar/rail.
 - **Sunken Paper** (`paper-sunk`): inputs, selects, the segmented-control track, skeletons, avatars.
@@ -164,6 +169,7 @@ Warm paper neutrals, one structural green, and one earth red that means "owe".
 - **Faint Ink** (`ink-3`): labels, metadata, timestamps. It is the lightest text allowed and still clears 4.5:1 on every paper surface in every theme.
 
 ### Named Rules
+
 **The Sign-And-Word Rule.** Moss and clay never carry meaning alone. Every position shows its sign (+ − ±) and its direction in words. Colour only backs up what the text already says.
 
 **The No False Signal Rule.** Moss and clay are reserved for balances and state. Decorative elements (avatars, ledger accents, chart series) do not use them in ways that could be read as owed or owe. Avatars are neutral; ledger accents use their own fixed swatches.
@@ -178,7 +184,8 @@ Warm paper neutrals, one structural green, and one earth red that means "owe".
 **Character:** The serif is the "paper" voice: screen titles, sheet titles and hero amounts, like a heading in a ledger book. The sans does the dense work, with tabular numerals so amount columns don't shift during optimistic updates. Both are system fonts, which costs no webfont weight.
 
 ### Hierarchy
-- **Hero amount** (serif, 500, 34px, line-height 1, tabular): the viewer's net position on home and in a ledger. One per screen.
+
+- **Hero amount** (serif, 500, 38px, line-height 1, -0.02em, tabular): the viewer's net position on home and in a ledger. One per screen. The paise step down to 0.55em, like the pence column in a ledger book.
 - **Headline** (serif, 400, 22px): page titles in `PageHeader`, and the onboarding title (26px).
 - **Title** (serif, 400, 19px): sheet and dialog titles. Empty-state titles use 17px.
 - **Body** (sans, 500, 15px): row titles (expense description, ledger name). Buttons use 15px semibold; small buttons 14px medium.
@@ -186,6 +193,7 @@ Warm paper neutrals, one structural green, and one earth red that means "owe".
 - **Label** (sans, 400, 13px): field labels, metadata rows, amount labels, section headings (13px semibold, `ink-2`).
 
 ### Named Rules
+
 **The Amount Component Rule.** Money only ever reaches the screen through `<Amount>`. It renders the sign, the label and the direction words, and it shows no number at all when offline.
 
 **The 16px Field Rule.** Inputs and selects are 16px so iOS doesn't zoom when one is focused. Don't shrink them to fit a toolbar; size the wrapper around them instead.
@@ -203,9 +211,13 @@ Rhythm: cards are 8px apart (`mb-2`); the card inset is 12px vertical by 14px ho
 Flat by default. Depth comes from tone: raised cards are lighter than the paper, fields are darker (sunken), and both have a 1px `line` border. The only shadow in the system is on the FAB, because it floats over scrolling content. Toasts carry a minimal `shadow-sm` for the same reason. Sheets and dialogs are separated from the page by a 38% black scrim, not by a shadow.
 
 ### Shadow Vocabulary
+
 - **FAB lift** (`box-shadow: 0 4px 14px rgb(60 72 54 / 28%)`): the floating add button only.
 
 ### Named Rules
+
+**The Browser Surface Rule.** Text selection is `moss-wash`, the caret is moss, and scrollbars are thin `line-2` thumbs. The parts the browser draws use the palette too.
+
 **The One Shadow Rule.** Only something floating over scrolling content gets a shadow. Cards, buttons and dialogs never do.
 
 ## Shapes
@@ -215,44 +227,59 @@ Gently squared corners at a single base radius (7px) for buttons, cards, tabs an
 ## Components
 
 ### Buttons
+
 - **Shape:** base radius (7px), 1px border, at least 44×44px.
-- **Primary:** moss fill, paper text, 15px semibold, 16px horizontal padding.
-- **Ghost:** transparent fill with a `line-2` border and ink text. Used for secondary actions.
+- **Primary:** moss fill, paper text, 15px semibold, 16px horizontal padding; hover shifts to `moss-2`.
+- **Ghost:** transparent fill with a `line-2` border and ink text; hover fills `paper-sunk`. Used for secondary actions.
 - **Danger:** clay-wash fill, clay border and text. Labels are action-specific ("Delete expense"), never "OK".
 - **Loading:** a spinner appears beside the label, and the button is `aria-busy`. **Disabled:** 50% opacity.
+- **Press:** every enabled button scales to 0.98 on press (150ms ease-out). Variant colours are classes, not inline styles, so hover reaches them.
 - **Focus:** one 2px moss outline, 2px offset, on every interactive element (`focusRing`).
 
 ### Segmented control (Tabs, split mode)
+
 - A sunken track (`paper-sunk`, 1px `line`, 2px inset) holding equal-width 44px segments. The active segment is paper-filled, ink, and semibold; inactive segments are `ink-2`. Used for the ledger tabs (as links) and for the split mode (as `aria-pressed` buttons).
 
 ### Chips
+
 - **Category chip:** icon over label, 8px radius, raised-paper fill, `ink-2` label. When selected: moss-wash fill, moss border, deep-moss semibold label. They sit in a horizontally scrolling row with no visible scrollbar.
 - **Participant chip:** avatar over name. Included: moss-wash fill with a solid moss border. Excluded: a dashed `line-2` border and a 40%-opacity avatar, with the name still at full legibility.
 
 ### Cards / Containers
+
 - **Corner Style:** 7px.
 - **Background:** raised paper with a 1px `line` border; no shadow.
 - **Internal Padding:** 12px × 14px for rows; hero cards are larger.
+- **Tappable rows** (`row-press`): the border lifts to `line-2` on hover (pointer devices only) and the row scales to 0.985 on press. A row that leads somewhere is one link, with a `forward` chevron and a short `ink-2` hint, not a row plus a repeated button.
 - **Ledger accent:** a 10px swatch (3px radius) before the ledger's name, in the ledger's fixed colour.
 
 ### Inputs / Fields
-- **Style:** sunken paper, 1px `line` border, 6px radius, 44px tall, 16px text. The label always sits above the field (13px, `ink-3`) and is never replaced by a placeholder. A rupee input has a fixed ₹ prefix inside it.
+
+- **Style:** sunken paper, 1px `line-2` border, 6px radius, 44px tall, 16px text. The label always sits above the field (13px, `ink-3`) and is never replaced by a placeholder. A rupee input has a fixed ₹ prefix inside it.
 - **Focus:** the shared moss outline.
 - **Error:** a 12px clay message under the field, `role="alert"`, inside the label so it's announced with the field.
 
 ### Navigation
+
 - **Bottom bar (mobile):** raised paper, top border, four equal items with a 20px SVG icon over a 12px label. The active item is `moss-2`; the rest are `ink-3`.
 - **Rail (768px+):** 232px wide with a serif brand, the primary "Add expense" button, then 15px rows. The active row has a moss-wash fill and is semibold.
 
+### Icons
+
+- One authored set in `ui/Icon.tsx`: ledgers, balances, insights, you, back, forward, down, close, plus, more, search, check. 20px grid, 1.6 stroke, round caps and joins, `currentColor`, always `aria-hidden`. Icon-only buttons are 44px and carry an `aria-label`, with a `paper-sunk` hover fill.
+
 ### Sheet
+
 - A bottom sheet on mobile (slides up in 180ms ease-out); a centred dialog at 768px+ (fade plus scale from 0.97). Paper ground with grain, a sticky header with the serif title and a 44px close button. Escape closes only the topmost overlay.
 
 ### Amount
+
 - The signature component: it holds the sign, the direction words and the colour together. As a hero, a serif 34px number sits under its direction words. Inline, the direction words sit beside a 16px tabular number. In neutral tone (totals and shares) it shows no direction words and uses ink.
 
 ## Do's and Don'ts
 
 ### Do:
+
 - **Do** route every amount through `<Amount>` with a label; positions get a sign and direction words.
 - **Do** keep all text at `ink-3` or darker; check new token values at 4.5:1 against `paper`, `paper-2` and `paper-sunk` in all six themes.
 - **Do** draw icons as inline SVG (20px box, 1.6 stroke, round caps, `currentColor`).
@@ -261,6 +288,7 @@ Gently squared corners at a single base radius (7px) for buttons, cards, tabs an
 - **Do** read colours from tokens only; a theme must be able to redefine everything.
 
 ### Don't:
+
 - **Don't** add shadows to cards, buttons or dialogs. The FAB is the only exception.
 - **Don't** use coloured left/right border stripes on cards or rows; use a swatch or a badge.
 - **Don't** fade a state with `opacity` on text. Change the border style or the icon instead.

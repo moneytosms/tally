@@ -10,7 +10,7 @@ export function Input({ className = "", ...props }: InputHTMLAttributes<HTMLInpu
       className={`min-h-11 w-full rounded-[6px] border px-3 text-[16px] ${focusRing} ${className}`}
       style={{
         background: "var(--paper-sunk)",
-        borderColor: "var(--line)",
+        borderColor: "var(--line-2)",
         color: "var(--ink)",
         ...props.style,
       }}

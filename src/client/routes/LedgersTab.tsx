@@ -87,7 +87,7 @@ function PinButton({ ledger }: { ledger: LedgerSummary }) {
 function LedgerCard({ ledger }: { ledger: LedgerSummary }) {
   return (
     <div
-      className="row-in relative mb-2 rounded-[7px] border"
+      className="row-in row-press relative mb-2 rounded-[7px] border"
       style={{
         background: "var(--paper-2)",
         borderColor: "var(--line)",

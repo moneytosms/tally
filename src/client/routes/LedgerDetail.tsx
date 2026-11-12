@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useParams } from "react-router";
-import { Amount, Button, EmptyState, Field, Input, Select, Skeleton } from "~/client/components/ui";
+import { Amount, Button, EmptyState, Field, Icon, Input, Select, Skeleton } from "~/client/components/ui";
 import { focusRing } from "~/client/components/ui/focus";
 import { ExpenseSheet } from "~/client/components/ExpenseSheet";
 import {
@@ -57,7 +57,7 @@ function ExpenseRow({
     <button
       type="button"
       onClick={() => onSelect(expense)}
-      className={`row-in mb-2 block w-full rounded-[7px] border px-3.5 py-3 text-left ${focusRing}`}
+      className={`row-in row-press mb-2 block w-full rounded-[7px] border px-3.5 py-3 text-left ${focusRing}`}
       style={{
         background: "var(--paper-2)",
         // A refund is marked by its badge, not a side rule.
@@ -162,18 +162,7 @@ export function LedgerDetail() {
                   style={{ borderColor: "var(--line)", color: "var(--ink-2)", background: "var(--paper-2)" }}
                   aria-label={t("search.label")}
                 >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 20 20"
-                    className="h-[18px] w-[18px]"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                  >
-                    <circle cx="8.5" cy="8.5" r="5" />
-                    <path d="m12.5 12.5 4 4" />
-                  </svg>
+                  <Icon name="search" size={18} />
                 </button>
               )}
               <button
@@ -195,19 +184,12 @@ export function LedgerDetail() {
                     aria-hidden="true"
                   />
                 )}
-                <svg
-                  aria-hidden="true"
-                  viewBox="0 0 12 12"
-                  className="h-3 w-3 transition-transform"
+                <span
+                  className="transition-transform"
                   style={{ transform: filtersExpanded ? "rotate(180deg)" : undefined }}
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                 >
-                  <path d="m3 4.5 3 3 3-3" />
-                </svg>
+                  <Icon name="down" size={16} />
+                </span>
               </button>
               {(all.data?.length ?? 0) > 1 && (
                 // The wrapper sets the width; Select is always full width of its box.

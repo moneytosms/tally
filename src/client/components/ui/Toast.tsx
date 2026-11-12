@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from "react";
 import { t } from "~/client/i18n";
 import { focusRing } from "./focus";
+import { Icon } from "./Icon";
 
 type ToastKind = "error" | "success";
 type ToastEntry = { id: string; kind: ToastKind; message: string };
@@ -69,7 +70,7 @@ export function ToastViewport() {
             aria-label={t("action.close")}
             className={`min-h-11 min-w-11 shrink-0 rounded-[5px] text-[13px] opacity-70 hover:opacity-100 ${focusRing}`}
           >
-            ✕
+            <Icon name="close" size={16} className="mx-auto" />
           </button>
         </div>
       ))}

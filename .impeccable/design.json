@@ -8,211 +8,85 @@
         "role": "neutral",
         "displayName": "Paper",
         "canonical": "#f7f4ec",
-        "tonalRamp": [
-          "#4d4d47",
-          "#7a7973",
-          "#a8a69f",
-          "#d5d3cb",
-          "#f9f6ef",
-          "#fbf8f2",
-          "#fdfaf4",
-          "#fefcf6"
-        ]
+        "tonalRamp": ["#4d4d47", "#7a7973", "#a8a69f", "#d5d3cb", "#f9f6ef", "#fbf8f2", "#fdfaf4", "#fefcf6"]
       },
       "paper-2": {
         "role": "neutral",
         "displayName": "Raised Paper",
         "canonical": "#fffdf7",
-        "tonalRamp": [
-          "#4f4f4a",
-          "#7e7d78",
-          "#adaca6",
-          "#dcdad4",
-          "#fffdf7",
-          "#fffdf7",
-          "#fffdf7",
-          "#fffdf7"
-        ]
+        "tonalRamp": ["#4f4f4a", "#7e7d78", "#adaca6", "#dcdad4", "#fffdf7", "#fffdf7", "#fffdf7", "#fffdf7"]
       },
       "paper-sunk": {
         "role": "neutral",
         "displayName": "Sunken Paper",
         "canonical": "#efeade",
-        "tonalRamp": [
-          "#4b4a44",
-          "#77756d",
-          "#a29f96",
-          "#cecabf",
-          "#f3efe4",
-          "#f7f4ea",
-          "#fbf8f0",
-          "#fdfbf4"
-        ]
+        "tonalRamp": ["#4b4a44", "#77756d", "#a29f96", "#cecabf", "#f3efe4", "#f7f4ea", "#fbf8f0", "#fdfbf4"]
       },
       "line": {
         "role": "neutral",
         "displayName": "Line",
         "canonical": "#e0d9c8",
-        "tonalRamp": [
-          "#47463e",
-          "#706d63",
-          "#999488",
-          "#c1bcac",
-          "#e8e2d4",
-          "#f0ebe0",
-          "#f6f3ea",
-          "#fbf9f1"
-        ]
+        "tonalRamp": ["#47463e", "#706d63", "#999488", "#c1bcac", "#e8e2d4", "#f0ebe0", "#f6f3ea", "#fbf9f1"]
       },
       "line-2": {
         "role": "neutral",
         "displayName": "Strong Line",
         "canonical": "#cfc6b1",
-        "tonalRamp": [
-          "#434138",
-          "#686558",
-          "#8e8879",
-          "#b3ab99",
-          "#dbd4c2",
-          "#e7e2d4",
-          "#f2eee3",
-          "#f9f6ef"
-        ]
+        "tonalRamp": ["#434138", "#686558", "#8e8879", "#b3ab99", "#dbd4c2", "#e7e2d4", "#f2eee3", "#f9f6ef"]
       },
       "ink": {
         "role": "neutral",
         "displayName": "Ink",
         "canonical": "#23241d",
-        "tonalRamp": [
-          "#181913",
-          "#1b1c16",
-          "#1e1f18",
-          "#21221b",
-          "#5a5a54",
-          "#91908a",
-          "#c1c0ba",
-          "#e5e3dd"
-        ]
+        "tonalRamp": ["#181913", "#1b1c16", "#1e1f18", "#21221b", "#5a5a54", "#91908a", "#c1c0ba", "#e5e3dd"]
       },
       "ink-2": {
         "role": "neutral",
         "displayName": "Muted Ink",
         "canonical": "#5c5f52",
-        "tonalRamp": [
-          "#262820",
-          "#34362e",
-          "#43453b",
-          "#515448",
-          "#85867b",
-          "#aeaea4",
-          "#d1d1c9",
-          "#ebeae3"
-        ]
+        "tonalRamp": ["#262820", "#34362e", "#43453b", "#515448", "#85867b", "#aeaea4", "#d1d1c9", "#ebeae3"]
       },
       "ink-3": {
         "role": "neutral",
         "displayName": "Faint Ink",
         "canonical": "#68695d",
-        "tonalRamp": [
-          "#292a23",
-          "#3a3b33",
-          "#4b4c42",
-          "#5b5c51",
-          "#8e8e84",
-          "#b4b3aa",
-          "#d5d4cc",
-          "#edebe5"
-        ]
+        "tonalRamp": ["#292a23", "#3a3b33", "#4b4c42", "#5b5c51", "#8e8e84", "#b4b3aa", "#d5d4cc", "#edebe5"]
       },
       "moss": {
         "role": "primary",
         "displayName": "Moss",
         "canonical": "#5c7355",
-        "tonalRamp": [
-          "#262c21",
-          "#343f2f",
-          "#43523d",
-          "#51654b",
-          "#85967e",
-          "#aeb8a6",
-          "#d1d6ca",
-          "#ebece4"
-        ]
+        "tonalRamp": ["#262c21", "#343f2f", "#43523d", "#51654b", "#85967e", "#aeb8a6", "#d1d6ca", "#ebece4"]
       },
       "moss-2": {
         "role": "primary",
         "displayName": "Deep Moss",
         "canonical": "#485c43",
-        "tonalRamp": [
-          "#21271d",
-          "#2b3527",
-          "#364331",
-          "#40513b",
-          "#768470",
-          "#a4ac9d",
-          "#ccd0c5",
-          "#e9eae1"
-        ]
+        "tonalRamp": ["#21271d", "#2b3527", "#364331", "#40513b", "#768470", "#a4ac9d", "#ccd0c5", "#e9eae1"]
       },
       "moss-wash": {
         "role": "primary",
         "displayName": "Moss Wash",
         "canonical": "#e6ece0",
-        "tonalRamp": [
-          "#484b44",
-          "#72766e",
-          "#9ca197",
-          "#c6ccc1",
-          "#ecf0e6",
-          "#f2f4ec",
-          "#f8f8f1",
-          "#fcfbf4"
-        ]
+        "tonalRamp": ["#484b44", "#72766e", "#9ca197", "#c6ccc1", "#ecf0e6", "#f2f4ec", "#f8f8f1", "#fcfbf4"]
       },
       "clay": {
         "role": "secondary",
         "displayName": "Clay",
         "canonical": "#94563c",
-        "tonalRamp": [
-          "#34251b",
-          "#4e3224",
-          "#673f2d",
-          "#814c35",
-          "#af806b",
-          "#caaa9a",
-          "#e1cec3",
-          "#f2e9e1"
-        ]
+        "tonalRamp": ["#34251b", "#4e3224", "#673f2d", "#814c35", "#af806b", "#caaa9a", "#e1cec3", "#f2e9e1"]
       },
       "clay-wash": {
         "role": "secondary",
         "displayName": "Clay Wash",
         "canonical": "#f2e4dd",
-        "tonalRamp": [
-          "#4c4943",
-          "#78726c",
-          "#a49c95",
-          "#d1c5be",
-          "#f5eae4",
-          "#f8f0ea",
-          "#fbf6f0",
-          "#fdfaf4"
-        ]
+        "tonalRamp": ["#4c4943", "#78726c", "#a49c95", "#d1c5be", "#f5eae4", "#f8f0ea", "#fbf6f0", "#fdfaf4"]
       },
       "ochre": {
         "role": "tertiary",
         "displayName": "Ochre",
         "canonical": "#b08344",
-        "tonalRamp": [
-          "#3b301d",
-          "#5a4627",
-          "#795c32",
-          "#99723c",
-          "#c4a271",
-          "#d8c09e",
-          "#e9dbc5",
-          "#f6eee2"
-        ]
+        "tonalRamp": ["#3b301d", "#5a4627", "#795c32", "#99723c", "#c4a271", "#d8c09e", "#e9dbc5", "#f6eee2"]
       }
     },
     "typographyMeta": {
@@ -268,6 +142,11 @@
         "name": "toast-in",
         "value": "180ms ease-out",
         "purpose": "Toast rise 6px."
+      },
+      {
+        "name": "press",
+        "value": "150ms ease-out, scale 0.98 (buttons) / 0.985 (rows)",
+        "purpose": "Tap feedback before navigation."
       }
     ],
     "breakpoints": [
@@ -276,14 +155,7 @@
         "value": "768px"
       }
     ],
-    "themes": [
-      "paper",
-      "dark",
-      "sakura",
-      "ocean",
-      "midnight",
-      "ember"
-    ]
+    "themes": ["paper", "dark", "sakura", "ocean", "midnight", "ember"]
   },
   "components": [
     {
@@ -300,7 +172,7 @@
       "refersTo": "button-ghost",
       "description": "Secondary actions.",
       "html": "<button class=\"ds-btn-ghost\">New ledger</button>",
-      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:7px;border:1px solid var(--line-2);background:transparent;color:var(--ink);font:600 15px ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-ghost:hover{background:var(--paper-2)}.ds-btn-ghost:focus-visible{outline:2px solid var(--moss);outline-offset:2px}"
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:7px;border:1px solid var(--line-2);background:transparent;color:var(--ink);font:600 15px ui-sans-serif,system-ui,sans-serif;cursor:pointer}.ds-btn-ghost:hover{background:var(--paper-sunk)}.ds-btn-ghost:focus-visible{outline:2px solid var(--moss);outline-offset:2px}"
     },
     {
       "name": "Danger Button",
@@ -316,7 +188,7 @@
       "refersTo": "input",
       "description": "Sunken field, label always above.",
       "html": "<label class=\"ds-field\"><span>Description</span><input class=\"ds-input\" placeholder=\"Dinner at Thalassa\"></label>",
-      "css": ".ds-field{display:block}.ds-field span{display:block;margin-bottom:6px;font:13px ui-sans-serif,system-ui,sans-serif;color:var(--ink-3)}.ds-input{width:100%;min-height:44px;padding:0 12px;border-radius:6px;border:1px solid var(--line);background:var(--paper-sunk);color:var(--ink);font:16px ui-sans-serif,system-ui,sans-serif}.ds-input:focus-visible{outline:2px solid var(--moss);outline-offset:2px}"
+      "css": ".ds-field{display:block}.ds-field span{display:block;margin-bottom:6px;font:13px ui-sans-serif,system-ui,sans-serif;color:var(--ink-3)}.ds-input{width:100%;min-height:44px;padding:0 12px;border-radius:6px;border:1px solid var(--line-2);background:var(--paper-sunk);color:var(--ink);font:16px ui-sans-serif,system-ui,sans-serif}.ds-input:focus-visible{outline:2px solid var(--moss);outline-offset:2px}"
     },
     {
       "name": "Segmented Control",
@@ -390,6 +262,11 @@
       {
         "name": "The One Shadow Rule",
         "body": "Only something floating over scrolling content gets a shadow. Cards, buttons and dialogs never do.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Browser Surface Rule",
+        "body": "Text selection is moss-wash, the caret is moss, and scrollbars are thin line-2 thumbs.",
         "section": "elevation"
       }
     ],
