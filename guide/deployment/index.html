@@ -1,0 +1,260 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-hkbrpulz> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Deploying tally, tally guide</title><meta name="description" content="tally documentation: Deploying tally."><link rel="canonical" href="https://moneytosms.github.io/tally/guide/deployment/"><link rel="icon" href="/tally/favicon.svg" type="image/svg+xml"><meta property="og:title" content="Deploying tally, tally guide"><meta property="og:description" content="tally documentation: Deploying tally."><meta property="og:type" content="website"><meta property="og:url" content="https://moneytosms.github.io/tally/guide/deployment/"><script>
+      // Apply a saved theme before first paint. No saved choice: follow the OS.
+      try {
+        const t = localStorage.getItem("site-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch {}
+      document.documentElement.classList.add("js");
+    </script><link rel="stylesheet" href="/tally/_astro/_..CSyclaTM.css"></head> <body data-astro-cid-hkbrpulz> <a class="skip-link" href="#main" data-astro-cid-hkbrpulz>Skip to content</a> <header class="site-header" data-astro-cid-hkbrpulz> <div class="site-header__inner" data-astro-cid-hkbrpulz> <a class="brand" href="/tally/" aria-label="tally home" data-astro-cid-hkbrpulz> <svg aria-hidden="true" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"> <path d="M6 5.5v13M10 5v13.5M14 5.5v13M18 5v13.5"></path> <path d="M3.5 15.5 20.5 8"></path> </svg> <span data-astro-cid-hkbrpulz>tally</span> </a> <nav aria-label="Primary" class="site-nav" data-astro-cid-hkbrpulz> <a class="nav-home" href="/tally/" data-astro-cid-hkbrpulz>Overview</a> <a href="/tally/guide/" aria-current="page" data-astro-cid-hkbrpulz>Guide</a> <a href="https://github.com/moneytosms/tally" rel="noopener" data-astro-cid-hkbrpulz>Source</a> <button class="theme-toggle" type="button" aria-label="Switch colour theme" data-theme-toggle data-astro-cid-hkbrpulz> <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-hkbrpulz><circle cx="12" cy="12" r="4" data-astro-cid-hkbrpulz></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" data-astro-cid-hkbrpulz></path></svg> <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-hkbrpulz><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" data-astro-cid-hkbrpulz></path></svg> </button> </nav> </div> </header> <main id="main" tabindex="-1" data-astro-cid-hkbrpulz>  <link rel="stylesheet" href="/tally/pagefind/pagefind-ui.css"> <div class="guide" data-astro-cid-egoltos3> <aside class="guide__nav" aria-label="Guide sections" data-astro-cid-egoltos3> <div id="search" class="guide__search" data-astro-cid-egoltos3></div> <noscript><p data-astro-cid-egoltos3>Search needs JavaScript. All documents are available below.</p></noscript> <details class="guide__menu" open data-astro-cid-egoltos3> <summary data-astro-cid-egoltos3>All documents</summary> <div class="group" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>Start here</p> <ul data-astro-cid-egoltos3> <li data-astro-cid-egoltos3><a href="/tally/guide/readme" data-astro-cid-egoltos3>readme</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/usage" data-astro-cid-egoltos3>Using tally</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/faq" data-astro-cid-egoltos3>Troubleshooting and FAQ</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/deployment" aria-current="page" data-astro-cid-egoltos3>Deploying tally</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/operations" data-astro-cid-egoltos3>Running a tally instance</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/architecture" data-astro-cid-egoltos3>Architecture</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/spec" data-astro-cid-egoltos3>tally - v1 spec</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/contributing" data-astro-cid-egoltos3>Contributing</a></li> </ul> </div><div class="group" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>Adr</p> <ul data-astro-cid-egoltos3> <li data-astro-cid-egoltos3><a href="/tally/guide/adr/0001-workers-d1-single-deployable" data-astro-cid-egoltos3>1. Cloudflare Workers + D1, one deployable</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0002-rp-id-is-permanent" data-astro-cid-egoltos3>2. The RP ID is permanent and load-bearing</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0003-integer-paise-inr-only" data-astro-cid-egoltos3>3. Integer paise, INR only</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0004-derived-balances-soft-delete" data-astro-cid-egoltos3>4. Balances are derived; deletion is soft</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0005-any-member-can-edit" data-astro-cid-egoltos3>5. Any member can edit anything; leaving requires a zero balance</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0006-password-auth-and-instance-invites" data-astro-cid-egoltos3>0006 - Passwords sit alongside passkeys, and invites can be instance-wide</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0007-per-ledger-invite-toggle" data-astro-cid-egoltos3>0007 - Ledger invites are opt-in per ledger</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0008-restricted-accounts-for-invite-joiners" data-astro-cid-egoltos3>0008 - Ledger-invite joiners are restricted accounts by default</a></li> </ul> </div> </details> </aside> <article class="prose" data-pagefind-body data-astro-cid-egoltos3> <h1 id="deploying-tally">Deploying tally</h1>
+<p>Exact runbook, first deploy to live instance. Day-2 operations live in
+<a href="/tally/guide/operations">OPERATIONS.md</a>.</p>
+<p>Placeholders are written <code>&#x3C;LIKE_THIS></code>. Substitute; never commit a filled-in
+secret.</p>
+<hr>
+<h2 id="0-before-you-start">0. Before you start</h2>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Node 20+ and pnpm 11</td>
+<td><code>node --version &#x26;&#x26; pnpm --version</code></td>
+</tr>
+<tr>
+<td>A Cloudflare account (free tier is enough)</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>openssl</code></td>
+<td><code>openssl version</code></td>
+</tr>
+</tbody>
+</table>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> install</span></span></code></pre>
+<h3 id="the-one-irreversible-decision">The one irreversible decision</h3>
+<p><code>src/shared/rp-id.ts</code> freezes the WebAuthn RP ID:</p>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="ts"><code><span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F47067">export</span><span style="--shiki-light:#D73A49;--shiki-dark:#F47067"> const</span><span style="--shiki-light:#005CC5;--shiki-dark:#6CB6FF"> RP_ID</span><span style="--shiki-light:#D73A49;--shiki-dark:#F47067"> =</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> "tally.moneytosms.workers.dev"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">;</span></span>
+<span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F47067">export</span><span style="--shiki-light:#D73A49;--shiki-dark:#F47067"> const</span><span style="--shiki-light:#005CC5;--shiki-dark:#6CB6FF"> ORIGIN</span><span style="--shiki-light:#D73A49;--shiki-dark:#F47067"> =</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> "https://tally.moneytosms.workers.dev"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">;</span></span></code></pre>
+<p>That host is <code>&#x3C;WORKER_NAME>.&#x3C;CF_SUBDOMAIN>.workers.dev</code>. It must match the
+<code>name</code> in <code>wrangler.jsonc</code> and your account’s workers.dev subdomain <strong>exactly</strong>.</p>
+<ul>
+<li>Deploying to <strong>this</strong> account (<code>moneytosms</code>) with Worker name <code>tally</code>: change nothing.</li>
+<li>Deploying anywhere else: edit <code>src/shared/rp-id.ts</code> and <code>wrangler.jsonc</code>’s
+<code>name</code> <strong>now</strong>, before anyone enrols a passkey.</li>
+</ul>
+<p>Changing it after enrolment destroys every passkey with no migration path
+(<a href="/tally/guide/adr/0002-rp-id-is-permanent">ADR 0002</a>). It is never derived from
+<code>location.hostname</code>. The Worker serves <code>/.well-known/webauthn</code> from deploy one,
+which is what lets a custom domain be added later without re-enrolling anyone.</p>
+<hr>
+<h2 id="1-authenticate">1. Authenticate</h2>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">npx</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> wrangler</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> login</span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">npx</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> wrangler</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> whoami</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">          # confirm the account id</span></span></code></pre>
+<p><code>scripts/setup-cloudflare.sh</code> walks steps 1–5 interactively and writes
+<code>.dev.vars</code> for you. The steps below are the same thing done by hand.</p>
+<hr>
+<h2 id="2-create-the-d1-database">2. Create the D1 database</h2>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">npx</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> wrangler</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> d1</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> create</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> tally</span></span></code></pre>
+<p>Copy the printed <code>database_id</code> into <code>wrangler.jsonc</code>:</p>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="jsonc"><code><span class="line"><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF">"d1_databases"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">: [</span></span>
+<span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">  { </span><span style="--shiki-light:#005CC5;--shiki-dark:#8DDB8C">"binding"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">: </span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF">"DB"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">, </span><span style="--shiki-light:#005CC5;--shiki-dark:#8DDB8C">"database_name"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">: </span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF">"tally"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">,</span></span>
+<span class="line"><span style="--shiki-light:#005CC5;--shiki-dark:#8DDB8C">    "database_id"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">: </span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF">"&#x3C;D1_DATABASE_ID>"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">, </span><span style="--shiki-light:#005CC5;--shiki-dark:#8DDB8C">"migrations_dir"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">: </span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF">"migrations"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7"> }</span></span>
+<span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">]</span></span></code></pre>
+<p>Not a secret. It is meant to be committed. Recover it later with
+<code>npx wrangler d1 list</code>.</p>
+<hr>
+<h2 id="3-generate-the-secrets">3. Generate the secrets</h2>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">npx</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> web-push</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> generate-vapid-keys</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">      # -> VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY</span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">openssl</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> rand</span><span style="--shiki-light:#005CC5;--shiki-dark:#6CB6FF"> -base64</span><span style="--shiki-light:#005CC5;--shiki-dark:#6CB6FF"> 32</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">               # -> BOOTSTRAP_SECRET</span></span></code></pre>
+<p>Write all three to <code>.dev.vars</code> (gitignored) so local dev matches production -
+<code>cp .dev.vars.example .dev.vars</code> and fill it in.</p>
+<h3 id="what-each-value-is">What each value is</h3>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Secret?</th>
+<th>Where it goes</th>
+<th>What breaks without it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&#x3C;D1_DATABASE_ID></code></td>
+<td>No</td>
+<td><code>wrangler.jsonc</code> → <code>d1_databases</code></td>
+<td>Deploy fails</td>
+</tr>
+<tr>
+<td><code>&#x3C;VAPID_PUBLIC_KEY></code></td>
+<td>No - browser needs it to subscribe</td>
+<td><code>wrangler.jsonc</code> → <code>vars</code></td>
+<td>Push silently stays off</td>
+</tr>
+<tr>
+<td><code>&#x3C;VAPID_PRIVATE_KEY></code></td>
+<td><strong>Yes</strong></td>
+<td><code>wrangler secret</code></td>
+<td>Push silently stays off</td>
+</tr>
+<tr>
+<td><code>&#x3C;BOOTSTRAP_SECRET></code></td>
+<td><strong>Yes</strong></td>
+<td><code>wrangler secret</code></td>
+<td>Nobody can claim the instance, and <strong>nobody can log in</strong></td>
+</tr>
+</tbody>
+</table>
+<p><code>BOOTSTRAP_SECRET</code> is not only the one-time claim code. It also signs the
+short-lived WebAuthn challenge cookie on <strong>every</strong> registration and login
+(<code>src/server/auth/webauthn.ts</code>). It must stay set permanently. Rotating it is
+safe for passkeys but invalidates any login in flight at that moment.</p>
+<p>Both VAPID keys are optional: with them unset, push degrades to off rather than
+throwing (SPEC §9). Everything else works.</p>
+<hr>
+<h2 id="4-put-the-non-secrets-in-wranglerjsonc">4. Put the non-secrets in <code>wrangler.jsonc</code></h2>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="jsonc"><code><span class="line"><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF">"vars"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">: {</span></span>
+<span class="line"><span style="--shiki-light:#005CC5;--shiki-dark:#8DDB8C">  "VAPID_PUBLIC_KEY"</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">: </span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF">"&#x3C;VAPID_PUBLIC_KEY>"</span></span>
+<span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7">}</span></span></code></pre>
+<p>Commit <code>wrangler.jsonc</code> with <code>database_id</code> and <code>VAPID_PUBLIC_KEY</code> filled in.
+This is the step most often missed - the public key must reach the browser, and
+<code>wrangler secret</code> will not deliver it.</p>
+<p>The <code>RECURRING</code> Durable Object binding and its <code>v1</code> migration tag are already in
+the file. Leave both alone.</p>
+<hr>
+<h2 id="5-deploy-the-worker">5. Deploy the Worker</h2>
+<p>Secrets can only attach to a Worker that already exists, so deploy first.</p>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> typecheck</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7"> &#x26;&#x26; </span><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> test</span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> deploy</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">                  # = pnpm build &#x26;&#x26; wrangler deploy</span></span></code></pre>
+<p><code>https://&#x3C;WORKER_NAME>.&#x3C;CF_SUBDOMAIN>.workers.dev</code> is now live and 500s on
+anything touching the database. That is expected - migrations come next.</p>
+<hr>
+<h2 id="6-push-the-secrets">6. Push the secrets</h2>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">npx</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> wrangler</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> secret</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> put</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> VAPID_PRIVATE_KEY</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">     # paste &#x3C;VAPID_PRIVATE_KEY></span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">npx</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> wrangler</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> secret</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> put</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> BOOTSTRAP_SECRET</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">      # paste &#x3C;BOOTSTRAP_SECRET></span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">npx</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> wrangler</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> secret</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> list</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">                      # both listed, values never shown</span></span></code></pre>
+<hr>
+<h2 id="7-apply-migrations-to-remote-d1">7. Apply migrations to remote D1</h2>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> db:migrate:remote</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">        # wrangler d1 migrations apply tally --remote</span></span></code></pre>
+<p><code>pnpm db:migrate</code> is the <strong>local</strong> D1 used by <code>pnpm dev</code>. It does not touch
+production. Migrations also run against the test harness on every <code>pnpm test</code>,
+so a migration that cannot apply fails the suite before it reaches here.</p>
+<p>Verify:</p>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">npx</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> wrangler</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> d1</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> execute</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> tally</span><span style="--shiki-light:#005CC5;--shiki-dark:#6CB6FF"> --remote</span><span style="--shiki-light:#005CC5;--shiki-dark:#F47067"> \</span></span>
+<span class="line"><span style="--shiki-light:#005CC5;--shiki-dark:#6CB6FF">  --command</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"</span></span></code></pre>
+<hr>
+<h2 id="8-claim-the-instance">8. Claim the instance</h2>
+<ol>
+<li>Open <code>https://&#x3C;WORKER_NAME>.&#x3C;CF_SUBDOMAIN>.workers.dev</code></li>
+<li>Enter <code>&#x3C;BOOTSTRAP_SECRET></code> once</li>
+<li>Create your passkey</li>
+</ol>
+<p>The claim is burned on use - a second attempt is rejected regardless of the
+secret. You are now the Owner: admin panel, guest management, passkey recovery.</p>
+<p>Then invite people. Every invite is single-use and expires in 48 hours.</p>
+<hr>
+<h2 id="9-verify-the-deploy">9. Verify the deploy</h2>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>How</th>
+<th>Expect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>RP ID matches host</td>
+<td><code>curl https://&#x3C;WORKER_NAME>.&#x3C;CF_SUBDOMAIN>.workers.dev/.well-known/webauthn</code></td>
+<td>the exact live origin</td>
+</tr>
+<tr>
+<td>Push configured</td>
+<td>Admin panel → Instance</td>
+<td><code>pushConfigured: true</code></td>
+</tr>
+<tr>
+<td>Passkey login</td>
+<td>Log out, log back in</td>
+<td>no re-enrol prompt</td>
+</tr>
+<tr>
+<td>Recurring alarm</td>
+<td>Create a daily series, check it fires</td>
+<td>occurrence appears once, never twice</td>
+</tr>
+<tr>
+<td>Export works</td>
+<td><strong>You → Export</strong></td>
+<td>CSV downloads, one row per split</td>
+</tr>
+<tr>
+<td>Install as PWA</td>
+<td>Add to Home Screen</td>
+<td>offline shell loads, balances do not</td>
+</tr>
+</tbody>
+</table>
+<p>iOS: web push only works from a Home Screen install. The app says so where
+notifications are enabled.</p>
+<hr>
+<h2 id="10-redeploying">10. Redeploying</h2>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> typecheck</span><span style="--shiki-light:#24292E;--shiki-dark:#ADBAC7"> &#x26;&#x26; </span><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> test</span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> deploy</span></span></code></pre>
+<p>Schema changed as well:</p>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> db:generate</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">              # read the generated SQL - see OPERATIONS.md</span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> test</span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> db:migrate:remote</span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> deploy</span></span></code></pre>
+<p>Secrets and <code>vars</code> survive a redeploy. Re-run <code>wrangler secret put</code> only to
+rotate a value.</p>
+<hr>
+<h2 id="secret-checklist">Secret checklist</h2>
+<p>Copy these to your password manager after provisioning. Only the two marked
+secret ever need protecting; the rest are recoverable from Cloudflare.</p>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>CF_ACCOUNT_ID       = &#x3C;CF_ACCOUNT_ID>        # npx wrangler whoami</span></span>
+<span class="line"><span>CF_SUBDOMAIN        = &#x3C;CF_SUBDOMAIN>         # the workers.dev prefix</span></span>
+<span class="line"><span>WORKER_NAME         = &#x3C;WORKER_NAME>          # frozen - part of the RP ID</span></span>
+<span class="line"><span>D1_DATABASE_ID      = &#x3C;D1_DATABASE_ID>       # npx wrangler d1 list</span></span>
+<span class="line"><span>VAPID_PUBLIC_KEY    = &#x3C;VAPID_PUBLIC_KEY>     # public by design</span></span>
+<span class="line"><span>VAPID_PRIVATE_KEY   = &#x3C;VAPID_PRIVATE_KEY>    # SECRET - unrecoverable, regenerating resets every push subscription</span></span>
+<span class="line"><span>BOOTSTRAP_SECRET    = &#x3C;BOOTSTRAP_SECRET>     # SECRET - also signs login challenge cookies</span></span>
+<span class="line"><span>CLOUDFLARE_API_TOKEN= &#x3C;CLOUDFLARE_API_TOKEN> # SECRET - only if you deploy from CI</span></span></code></pre>
+<p>Regenerating <code>VAPID_PRIVATE_KEY</code> invalidates every existing push subscription;
+everyone re-enables notifications. It does not affect passkeys or data.</p>
+<hr>
+<h2 id="optional-deploy-from-ci">Optional: deploy from CI</h2>
+<p>Only needed if you want pushes to <code>main</code> to deploy. Create a Cloudflare API
+token with <strong>Edit Cloudflare Workers</strong>, then:</p>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">gh</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> secret</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> set</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> CLOUDFLARE_API_TOKEN</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">     # paste &#x3C;CLOUDFLARE_API_TOKEN></span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">gh</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> secret</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> set</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> CLOUDFLARE_ACCOUNT_ID</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">    # paste &#x3C;CF_ACCOUNT_ID></span></span></code></pre>
+<p>No workflow ships in this repo. Local <code>pnpm deploy</code> is the supported path.</p>
+<hr>
+<h2 id="known-gaps-at-v1">Known gaps at v1</h2>
+<ul>
+<li><strong>No automated backups.</strong> R2 is deliberately unconfigured. CSV export and
+<code>wrangler d1 export</code> are the escape hatches - see
+<a href="/tally/guide/operations#backups">OPERATIONS.md → Backups</a>. Rehearse a restore once.</li>
+<li><strong>No staging environment.</strong> One instance, ~20 people. <code>pnpm dev</code> against local
+D1 is the rehearsal.</li>
+<li><strong>No CI.</strong> <code>pnpm typecheck &#x26;&#x26; pnpm test</code> before <code>pnpm deploy</code> is the gate, and
+it is manual.</li>
+</ul> <p class="prose__source" data-astro-cid-egoltos3>
+This page is <a href="https://github.com/moneytosms/tally/blob/main/docs/DEPLOYMENT.md" data-astro-cid-egoltos3>docs/DEPLOYMENT.md</a> in the repository, rendered as written.
+</p> </article> <nav class="guide__toc" aria-label="On this page" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>On this page</p> <ul data-astro-cid-egoltos3> <li class="d2" data-astro-cid-egoltos3><a href="#0-before-you-start" data-astro-cid-egoltos3>0. Before you start</a></li><li class="d3" data-astro-cid-egoltos3><a href="#the-one-irreversible-decision" data-astro-cid-egoltos3>The one irreversible decision</a></li><li class="d2" data-astro-cid-egoltos3><a href="#1-authenticate" data-astro-cid-egoltos3>1. Authenticate</a></li><li class="d2" data-astro-cid-egoltos3><a href="#2-create-the-d1-database" data-astro-cid-egoltos3>2. Create the D1 database</a></li><li class="d2" data-astro-cid-egoltos3><a href="#3-generate-the-secrets" data-astro-cid-egoltos3>3. Generate the secrets</a></li><li class="d3" data-astro-cid-egoltos3><a href="#what-each-value-is" data-astro-cid-egoltos3>What each value is</a></li><li class="d2" data-astro-cid-egoltos3><a href="#4-put-the-non-secrets-in-wranglerjsonc" data-astro-cid-egoltos3>4. Put the non-secrets in wrangler.jsonc</a></li><li class="d2" data-astro-cid-egoltos3><a href="#5-deploy-the-worker" data-astro-cid-egoltos3>5. Deploy the Worker</a></li><li class="d2" data-astro-cid-egoltos3><a href="#6-push-the-secrets" data-astro-cid-egoltos3>6. Push the secrets</a></li><li class="d2" data-astro-cid-egoltos3><a href="#7-apply-migrations-to-remote-d1" data-astro-cid-egoltos3>7. Apply migrations to remote D1</a></li><li class="d2" data-astro-cid-egoltos3><a href="#8-claim-the-instance" data-astro-cid-egoltos3>8. Claim the instance</a></li><li class="d2" data-astro-cid-egoltos3><a href="#9-verify-the-deploy" data-astro-cid-egoltos3>9. Verify the deploy</a></li><li class="d2" data-astro-cid-egoltos3><a href="#10-redeploying" data-astro-cid-egoltos3>10. Redeploying</a></li><li class="d2" data-astro-cid-egoltos3><a href="#secret-checklist" data-astro-cid-egoltos3>Secret checklist</a></li><li class="d2" data-astro-cid-egoltos3><a href="#optional-deploy-from-ci" data-astro-cid-egoltos3>Optional: deploy from CI</a></li><li class="d2" data-astro-cid-egoltos3><a href="#known-gaps-at-v1" data-astro-cid-egoltos3>Known gaps at v1</a></li> </ul> </nav> </div> <script>(function(){const base = "/tally";
+
+    // Pagefind's index only exists in a production build (npm run build).
+    const s = document.createElement("script");
+    s.src = `${base}/pagefind/pagefind-ui.js`;
+    s.onload = () => new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+    s.onerror = () => {
+      document.querySelector("#search").textContent = "Search is unavailable. Browse the documents below.";
+    };
+    document.head.append(s);
+    const menu = document.querySelector(".guide__menu");
+    if (matchMedia("(max-width: 959px)").matches) menu.open = false;
+  })();</script>  </main> <footer class="site-footer" data-astro-cid-hkbrpulz> <div class="site-footer__inner" data-astro-cid-hkbrpulz> <p data-astro-cid-hkbrpulz>Demo data is fictional. tally never moves money.</p> <p class="site-footer__links" data-astro-cid-hkbrpulz> <a href="/tally/guide/" data-astro-cid-hkbrpulz>Guide</a> <a href="https://github.com/moneytosms/tally" data-astro-cid-hkbrpulz>Source on GitHub</a> </p> </div> </footer><script type="module">var e=document.documentElement;document.querySelector(`[data-theme-toggle]`)?.addEventListener(`click`,()=>{let t=(e.dataset.theme?e.dataset.theme===`dark`:matchMedia(`(prefers-color-scheme: dark)`).matches)?`light`:`dark`;e.dataset.theme=t;try{localStorage.setItem(`site-theme`,t)}catch{}});</script> </body> </html>

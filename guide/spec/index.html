@@ -1,0 +1,437 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-hkbrpulz> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>tally - v1 spec, tally guide</title><meta name="description" content="tally documentation: tally - v1 spec."><link rel="canonical" href="https://moneytosms.github.io/tally/guide/spec/"><link rel="icon" href="/tally/favicon.svg" type="image/svg+xml"><meta property="og:title" content="tally - v1 spec, tally guide"><meta property="og:description" content="tally documentation: tally - v1 spec."><meta property="og:type" content="website"><meta property="og:url" content="https://moneytosms.github.io/tally/guide/spec/"><script>
+      // Apply a saved theme before first paint. No saved choice: follow the OS.
+      try {
+        const t = localStorage.getItem("site-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch {}
+      document.documentElement.classList.add("js");
+    </script><link rel="stylesheet" href="/tally/_astro/_..CSyclaTM.css"></head> <body data-astro-cid-hkbrpulz> <a class="skip-link" href="#main" data-astro-cid-hkbrpulz>Skip to content</a> <header class="site-header" data-astro-cid-hkbrpulz> <div class="site-header__inner" data-astro-cid-hkbrpulz> <a class="brand" href="/tally/" aria-label="tally home" data-astro-cid-hkbrpulz> <svg aria-hidden="true" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"> <path d="M6 5.5v13M10 5v13.5M14 5.5v13M18 5v13.5"></path> <path d="M3.5 15.5 20.5 8"></path> </svg> <span data-astro-cid-hkbrpulz>tally</span> </a> <nav aria-label="Primary" class="site-nav" data-astro-cid-hkbrpulz> <a class="nav-home" href="/tally/" data-astro-cid-hkbrpulz>Overview</a> <a href="/tally/guide/" aria-current="page" data-astro-cid-hkbrpulz>Guide</a> <a href="https://github.com/moneytosms/tally" rel="noopener" data-astro-cid-hkbrpulz>Source</a> <button class="theme-toggle" type="button" aria-label="Switch colour theme" data-theme-toggle data-astro-cid-hkbrpulz> <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-hkbrpulz><circle cx="12" cy="12" r="4" data-astro-cid-hkbrpulz></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" data-astro-cid-hkbrpulz></path></svg> <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-hkbrpulz><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" data-astro-cid-hkbrpulz></path></svg> </button> </nav> </div> </header> <main id="main" tabindex="-1" data-astro-cid-hkbrpulz>  <link rel="stylesheet" href="/tally/pagefind/pagefind-ui.css"> <div class="guide" data-astro-cid-egoltos3> <aside class="guide__nav" aria-label="Guide sections" data-astro-cid-egoltos3> <div id="search" class="guide__search" data-astro-cid-egoltos3></div> <noscript><p data-astro-cid-egoltos3>Search needs JavaScript. All documents are available below.</p></noscript> <details class="guide__menu" open data-astro-cid-egoltos3> <summary data-astro-cid-egoltos3>All documents</summary> <div class="group" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>Start here</p> <ul data-astro-cid-egoltos3> <li data-astro-cid-egoltos3><a href="/tally/guide/readme" data-astro-cid-egoltos3>readme</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/usage" data-astro-cid-egoltos3>Using tally</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/faq" data-astro-cid-egoltos3>Troubleshooting and FAQ</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/deployment" data-astro-cid-egoltos3>Deploying tally</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/operations" data-astro-cid-egoltos3>Running a tally instance</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/architecture" data-astro-cid-egoltos3>Architecture</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/spec" aria-current="page" data-astro-cid-egoltos3>tally - v1 spec</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/contributing" data-astro-cid-egoltos3>Contributing</a></li> </ul> </div><div class="group" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>Adr</p> <ul data-astro-cid-egoltos3> <li data-astro-cid-egoltos3><a href="/tally/guide/adr/0001-workers-d1-single-deployable" data-astro-cid-egoltos3>1. Cloudflare Workers + D1, one deployable</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0002-rp-id-is-permanent" data-astro-cid-egoltos3>2. The RP ID is permanent and load-bearing</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0003-integer-paise-inr-only" data-astro-cid-egoltos3>3. Integer paise, INR only</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0004-derived-balances-soft-delete" data-astro-cid-egoltos3>4. Balances are derived; deletion is soft</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0005-any-member-can-edit" data-astro-cid-egoltos3>5. Any member can edit anything; leaving requires a zero balance</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0006-password-auth-and-instance-invites" data-astro-cid-egoltos3>0006 - Passwords sit alongside passkeys, and invites can be instance-wide</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0007-per-ledger-invite-toggle" data-astro-cid-egoltos3>0007 - Ledger invites are opt-in per ledger</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0008-restricted-accounts-for-invite-joiners" data-astro-cid-egoltos3>0008 - Ledger-invite joiners are restricted accounts by default</a></li> </ul> </div> </details> </aside> <article class="prose" data-pagefind-body data-astro-cid-egoltos3> <h1 id="tally---v1-spec">tally - v1 spec</h1>
+<p>Self-hosted expense splitting for friend groups. PWA.</p>
+<p>Synthesised from <a href="https://github.com/moneytosms/tally/issues/1">the wayfinder map</a> and its eighteen closed decision tickets. Each section links the ticket holding the full reasoning; this document is the buildable summary, not a replacement for them.</p>
+<hr>
+<h2 id="1-what-tally-is">1. What tally is</h2>
+<p>A single self-hosted instance, run by one person, used by their friend groups to track shared expenses and settle up. It records who owes what. It never moves money.</p>
+<p><strong>Not</strong> a product, not multi-tenant, not for public signup.</p>
+<h3 id="fixed-constraints">Fixed constraints</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Deployment</td>
+<td>One instance per deploy, run by its owner. Forks self-host (MIT).</td>
+</tr>
+<tr>
+<td>Money</td>
+<td>Ledger only. <code>upi://</code> deep links on settle-up. No funds touch the server.</td>
+</tr>
+<tr>
+<td>Offline</td>
+<td>Online-only with optimistic UI. No write queue, no conflict resolution.</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>Invite link + passkey or password (ADR 0006). No SMTP.</td>
+</tr>
+<tr>
+<td>Currency</td>
+<td>INR only.</td>
+</tr>
+<tr>
+<td>Language</td>
+<td>English only, behind a <code>t()</code> layer so others can be added.</td>
+</tr>
+<tr>
+<td>Budget</td>
+<td>$0/mo.</td>
+</tr>
+<tr>
+<td>Scale</td>
+<td>~20 people, a few ledgers, thousands of expenses over years.</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="2-stack">2. Stack</h2>
+<p><a href="https://github.com/moneytosms/tally/issues/9">Stack decision</a> · <a href="https://github.com/moneytosms/tally/issues/3">Hosting research</a></p>
+<p>TypeScript end to end, one deployable.</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Host</td>
+<td>Cloudflare Workers</td>
+</tr>
+<tr>
+<td>Database</td>
+<td>D1 (SQLite)</td>
+</tr>
+<tr>
+<td>Query layer</td>
+<td>Drizzle + <code>drizzle-kit</code></td>
+</tr>
+<tr>
+<td>API</td>
+<td>Hono</td>
+</tr>
+<tr>
+<td>Auth</td>
+<td>SimpleWebAuthn</td>
+</tr>
+<tr>
+<td>Frontend</td>
+<td>React + Vite</td>
+</tr>
+<tr>
+<td>Rendering</td>
+<td>SPA + JSON API</td>
+</tr>
+<tr>
+<td>Routing</td>
+<td>React Router, SPA mode</td>
+</tr>
+<tr>
+<td>Server state</td>
+<td>TanStack Query</td>
+</tr>
+<tr>
+<td>Validation</td>
+<td>Zod, one schema shared client/server</td>
+</tr>
+<tr>
+<td>Charts</td>
+<td>Recharts, lazy-loaded</td>
+</tr>
+<tr>
+<td>PWA</td>
+<td><code>vite-plugin-pwa</code> (Workbox)</td>
+</tr>
+<tr>
+<td>Scheduling</td>
+<td>Durable Object Alarms</td>
+</tr>
+<tr>
+<td>Styling</td>
+<td>Tailwind + shadcn/ui (restyled)</td>
+</tr>
+</tbody>
+</table>
+<p>A single Worker serves static assets and <code>/api/*</code>. One origin, so no CORS - which is a security property, not just convenience.</p>
+<p><strong>SPA over SSR</strong> because the host’s 10 ms CPU ceiling per invocation is the binding constraint. SSR spends that budget on every navigation.</p>
+<hr>
+<h2 id="3-origin---decide-before-writing-auth-code">3. Origin - decide before writing auth code</h2>
+<p><a href="https://github.com/moneytosms/tally/issues/13">Origin and RP ID</a></p>
+<p>Ship on <code>tally.&#x3C;account>.workers.dev</code>. <strong>That host is the permanent WebAuthn RP ID.</strong></p>
+<ul>
+<li>The exact string is unknowable until the Cloudflare account exists. Once known it is <strong>frozen</strong> - a constant in one module, never derived from <code>location.hostname</code>.</li>
+<li>Serve <code>/.well-known/webauthn</code> from the first deploy, listing permitted origins. This is what lets a custom domain be adopted later <strong>with no re-enrolment</strong>.</li>
+<li><strong>The Cloudflare account is now permanent infrastructure.</strong> Deleting or renaming it destroys every passkey.</li>
+</ul>
+<hr>
+<h2 id="4-domain-model">4. Domain model</h2>
+<h3 id="ledger">Ledger</h3>
+<p><a href="https://github.com/moneytosms/tally/issues/7">Ledger lifecycle</a></p>
+<p>One concept. Trip, one-to-one, and long-standing group are the same entity, differentiated by two nullable columns:</p>
+<ul>
+<li><code>end_date</code> null → standing group; set → trip with burn-rate tracking</li>
+<li><code>budget</code> null → no budget tracking; set → budget + burn rate</li>
+</ul>
+<p><strong>Bounded outings become separate ledgers with cloned members</strong>, not nested ledgers and not event tags. A movie night split off from a standing college group is its own ledger with its own balances, settled and archived independently. Cross-ledger balances and bulk settle are what make this decomposition work.</p>
+<p><strong>One-to-one ledgers auto-create on first shared expense.</strong> Creation and first expense are one atomic operation; a second casual expense with the same person must find the existing ledger.</p>
+<h3 id="membership">Membership</h3>
+<ul>
+<li>Any member can invite. The instance owner can revoke anyone.</li>
+<li>Joining mid-ledger is allowed; joiners see full history and carry <strong>no retroactive liability</strong> (participants are explicit per expense).</li>
+<li>The creator is recorded and holds exactly one special power: deleting the ledger. Otherwise all members are equal.</li>
+<li><strong>Guests</strong>: owner-managed participants who never log in. They split like anyone, can be a payer, and are settled by the owner out of band. They are <strong>data, never principals</strong> - no code path may authenticate as a guest.</li>
+</ul>
+<h3 id="permissions">Permissions</h3>
+<p><strong>Any member can edit or delete any expense.</strong> The audit trail is the control, not the permission. This is safe only because edit history and undo exist.</p>
+<h3 id="leaving-and-closing">Leaving and closing</h3>
+<ul>
+<li><strong>Leaving is blocked while a balance is non-zero.</strong> Settle, or another member forgives it explicitly (recorded like any settle-up, never a silent write-off).</li>
+<li>This buys a system-wide invariant: <strong>every ledger’s balances sum to zero, and every member is a current member.</strong></li>
+<li><strong>Archive</strong> requires zero balances. Read-only, reopenable by any member, still searchable and still feeding analytics.</li>
+<li><strong>Soft-delete everywhere.</strong> Nothing is physically removed.</li>
+</ul>
+<hr>
+<h2 id="5-money">5. Money</h2>
+<p><a href="https://github.com/moneytosms/tally/issues/6">Split mechanics</a></p>
+<p><strong>Integer paise. No floating point in storage, API, or calculation.</strong> INR only.</p>
+<h3 id="split-modes">Split modes</h3>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Input</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Equal</td>
+<td>Participant set</td>
+</tr>
+<tr>
+<td>Exact</td>
+<td>Paise per participant, must sum to total</td>
+</tr>
+<tr>
+<td>Shares</td>
+<td>Integer weight per participant</td>
+</tr>
+<tr>
+<td>Percent</td>
+<td>Must sum to 100</td>
+</tr>
+</tbody>
+</table>
+<p>Shares and percentages <strong>resolve to paise at save time and the resolved amounts are stored</strong> - not recomputed from weights, or editing the participant set silently rewrites history. The mode and its inputs are kept alongside so the editor reopens as the user left it.</p>
+<h3 id="rules">Rules</h3>
+<ul>
+<li><strong>Single payer</strong> per expense. Two people paying one bill is two expenses.</li>
+<li>The payer <strong>need not be a participant</strong>. A guest <strong>can</strong> be the payer.</li>
+<li><strong>The payer absorbs the rounding remainder.</strong> If the payer isn’t a participant, it falls to the first participant in a stable ordering (order of addition, never display order).</li>
+<li><strong>Excluding someone is leaving them out</strong>, not a zero share. There are no zero-share participants.</li>
+<li><strong>Refunds are ordinary expenses with a negative total</strong>, split by the same rules and rendered distinctly.</li>
+</ul>
+<p>Twelve worked examples covering every rounding and edge case are on <a href="https://github.com/moneytosms/tally/issues/6">the ticket</a> and should become the implementation’s test cases.</p>
+<hr>
+<h2 id="6-balances-and-settling">6. Balances and settling</h2>
+<p><a href="https://github.com/moneytosms/tally/issues/8">Balances and debt simplification</a> · <a href="https://github.com/moneytosms/tally/issues/4">UPI research</a></p>
+<h3 id="balances">Balances</h3>
+<p><strong>One net position per member per ledger</strong>, <strong>derived, never stored</strong>. A cached balance that disagrees with expense history is worse than a slow query.</p>
+<p>Who-owes-whom is recoverable from expense history but is not the primary representation.</p>
+<h3 id="transfer-plan">Transfer plan</h3>
+<p><strong>Minimise transfers, always, as a derived view.</strong> Never persisted, recomputed on every change.</p>
+<p>The implementation is greedy: the largest creditor is matched against the largest debtor until every position is zero. It guarantees at most n-1 transfers for n members with a non-zero position, and that applying them zeroes every position. It does not guarantee the fewest possible transfers.</p>
+<p><strong>Every suggested transfer carries a “why?” affordance</strong> expanding to the expense trail. This is a requirement, not a nicety - it is the answer to the one complaint always-on simplification reliably produces.</p>
+<h3 id="settle-screen">Settle screen</h3>
+<p>Each ledger has a Settle tab. It shows, in order:</p>
+<ul>
+<li>For every member: paid, share of expenses, settlements sent and received, and the resulting net position. Every figure comes from the server.</li>
+<li>A check that net positions sum to zero, flagged if they do not.</li>
+<li>The transfer plan, each transfer with its expense trail.</li>
+<li>The direct pairwise debts before simplification, collapsed under a disclosure.</li>
+<li>The settlements recorded so far.</li>
+</ul>
+<p>The cross-ledger Balances tab does not repeat the plan. Each ledger there links to that ledger’s Settle tab. Bulk settle still reads the per-ledger legs, since it writes them.</p>
+<h3 id="settle-up">Settle-up</h3>
+<p>No payment callback exists, and P2P collect was abolished on 1 Oct 2025 - settle-up is always payer-push.</p>
+<ul>
+<li><strong>The payer declares. The payee is notified, not asked.</strong> The balance moves on declaration.</li>
+<li>Optional payee acknowledgement is a nullable timestamp - a tick, never a gate.</li>
+<li><strong>A settle-up must be recordable without opening a UPI app</strong> - cash, bank transfer, or a guest settled by the owner. The UPI link is convenience on top of a manual record. A missing UPI app is a silent, undetectable no-op, so the manual path must be visible, not hidden.</li>
+<li><strong>Partial settles are first-class.</strong> Pay ₹500 against a suggested ₹640 and ₹140 remains.</li>
+</ul>
+<h3 id="cross-ledger">Cross-ledger</h3>
+<ul>
+<li><strong>Cross-ledger net balance</strong> - one number per person across every shared ledger: the viewer’s own obligation to them, summed from each ledger’s transfer-plan leg between the two. Never the sum of that person’s net positions - that figure includes debts between two other members, and cannot be settled by the viewer.</li>
+<li><strong>Bulk settle</strong> - one UPI link for that total, writing settle-up records into each contributing ledger so every sum-to-zero invariant holds. Guests are skipped (no VPA).</li>
+</ul>
+<p>Bulk settle is a multi-ledger write that <strong>must not half-apply</strong> - see §11.</p>
+<hr>
+<h2 id="7-identity-and-auth">7. Identity and auth</h2>
+<p><a href="https://github.com/moneytosms/tally/issues/5">Passkey research</a> · <a href="https://github.com/moneytosms/tally/issues/12">Security model</a></p>
+<h3 id="passkeys-and-passwords">Passkeys and passwords</h3>
+<p>Passwords sit alongside passkeys (<a href="/tally/guide/adr/0006-password-auth-and-instance-invites">ADR 0006</a>). Passkey rules below still hold.</p>
+<ul>
+<li>SimpleWebAuthn. <strong>Multiple credentials per user from day one.</strong></li>
+<li><strong>Recovery is owner-initiated re-invite</strong>, and it must <strong>revoke</strong> the lost credential, not merely add one. Recovery codes were rejected: they reintroduce a bearer secret, and friends won’t save them but will believe they’re covered.</li>
+<li><strong>In-app browser WebViews have no WebAuthn and fail silently.</strong> Feature-detect before showing the passkey step and offer an explicit “open in your browser” fallback. This will happen on the first invite ever sent.</li>
+</ul>
+<h3 id="sessions">Sessions</h3>
+<p>Long-lived (30 days), sliding, <strong>server-side</strong> in D1 keyed by an opaque token, revocable per device. <code>HttpOnly; Secure; SameSite=Lax</code>, host-only. Logout deletes the row.</p>
+<h3 id="invites">Invites</h3>
+<p>Single-use, 48-hour expiry, revocable. <strong>≥128 bits from a CSPRNG, stored hashed</strong>, bound to one ledger, consumed atomically. Any member may create one.</p>
+<p>Invites are also the recovery path, so <strong>a leaked link is potentially account access</strong> - which is why reusable links were rejected.</p>
+<h3 id="authorisation">Authorisation</h3>
+<p>Collapses to one rule: <strong>is the caller a current member of this ledger?</strong></p>
+<ul>
+<li>One Hono middleware, with the ledger id always a path parameter so no handler can forget it.</li>
+<li><strong>Two exceptions</strong>: ledger deletion is creator-only; admin routes are owner-only.</li>
+<li><strong>UPI VPA is visible only to ledger co-members.</strong> Serialise profiles through one function taking the viewer as an argument; never spread a user row into a response.</li>
+</ul>
+<hr>
+<h2 id="8-features">8. Features</h2>
+<p><a href="https://github.com/moneytosms/tally/issues/2">Feature inventory</a></p>
+<h3 id="core">Core</h3>
+<p>Ledgers · expenses · splits · balances · settle-up · invites · member management</p>
+<h3 id="parity">Parity</h3>
+<p>Activity feed + comments · categories + notes · search + filter · CSV export · cross-ledger net balance · recurring expenses · push notifications · full edit history + undo</p>
+<h3 id="self-hosting-native">Self-hosting-native</h3>
+<p>Natural-language quick add · trip budget + burn rate · bulk settle across ledgers · lifetime personal analytics · clone members on ledger creation · owner admin panel · minimal backup + restore</p>
+<h3 id="profile">Profile</h3>
+<p>UPI VPA (co-members only) · display name · avatar (generated initials, no image storage) · per-ledger nickname</p>
+<h3 id="out-of-scope">Out of scope</h3>
+<p>Multi-currency · receipt images · OCR · real payment processing · trip kitty · payment rotation · read-only share links · in-app chat · profile reliability scores · offline-first write sync · public signup</p>
+<hr>
+<h2 id="9-scheduled-work">9. Scheduled work</h2>
+<p><a href="https://github.com/moneytosms/tally/issues/14">Scheduled work</a></p>
+<p><strong>Push has exactly two triggers, both single-recipient:</strong></p>
+<ol>
+<li>Someone settled with you</li>
+<li>A manual settle reminder (“nudge”)</li>
+</ol>
+<p><strong>Deliberately not notifying on split inclusion.</strong> That was the only high-fan-out path, and dropping it means <strong>tally never fans out to more than one recipient</strong> - which removes the CPU ceiling as a live risk.</p>
+<ul>
+<li><strong>Reminders are manual and rate-limited server-side.</strong> No scheduled sweep.</li>
+<li><strong>Recurring expenses generate via one alarm per series</strong>, with idempotent catch-up after downtime. Editing a series affects future occurrences only. Archived or deleted ledgers cancel the alarm.</li>
+<li><strong>Nightly backup to R2</strong>, last N retained. <strong>Restore is a documented command that must be rehearsed once</strong> - an unrehearsed restore path is not a backup.</li>
+</ul>
+<p><strong>Total scheduled work: one alarm per recurring series, plus one nightly backup alarm.</strong> No sweeps, no cron across users.</p>
+<p><strong>iOS:</strong> Web Push requires an installed PWA. Say so where notifications are enabled rather than failing silently.</p>
+<hr>
+<h2 id="10-interface">10. Interface</h2>
+<p><a href="https://github.com/moneytosms/tally/issues/11">UI shell</a> · <a href="https://github.com/moneytosms/tally/issues/15">Visual design system</a> · <a href="https://github.com/moneytosms/tally/issues/16">PWA</a> · <a href="https://github.com/moneytosms/tally/issues/17">Onboarding</a> · <a href="https://github.com/moneytosms/tally/issues/18">A11y &#x26; i18n</a></p>
+<h3 id="navigation">Navigation</h3>
+<p>Four bottom tabs plus a persistent FAB for add-expense.</p>
+<table>
+<thead>
+<tr>
+<th>Tab</th>
+<th>Holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Ledgers</td>
+<td>Ledger list, positions, burn-rate, recent activity. Default.</td>
+</tr>
+<tr>
+<td>Balances</td>
+<td>Cross-ledger net per friend, bulk settle.</td>
+</tr>
+<tr>
+<td>Insights</td>
+<td>Lifetime analytics, categories, most-spent-with.</td>
+</tr>
+<tr>
+<td>You</td>
+<td>Profile, VPA, devices, notifications, archived ledgers, export, admin panel.</td>
+</tr>
+</tbody>
+</table>
+<p>Balances is deliberately its own tab - “what do I owe Rahul overall” is a different question from “what happened on the Goa trip”. <strong>“You” is the pressure valve</strong> that keeps the other three tabs to one job each.</p>
+<p>Inside a ledger, the viewer’s position and budget card sits under the header on the Expenses tab only. Below the header are four tabs: Expenses (the default), Settle, Insights, Activity. There is no separate Settle button in the header; the Settle tab is the way in, and on an archived ledger it is read-only. Recurring expenses are reached from the ledger’s menu, not a tab. The + opens the add-expense form directly in a sheet, with no intermediate menu. Ledger creation is a New ledger button on the Ledgers screen.</p>
+<h3 id="wide-screens">Wide screens</h3>
+<p>At 768px and up:</p>
+<ul>
+<li>The bottom tab bar becomes a left navigation rail with the same four destinations. The + moves to the top of the rail, and the floating button is hidden.</li>
+<li>Content sits in a centred column, up to 720px wide.</li>
+<li>Sheets render as centred dialogs, up to 520px wide, not bottom sheets.</li>
+</ul>
+<h3 id="add-expense">Add expense</h3>
+<p><strong>Category chip row up front, structured form, always visible - never behind a toggle.</strong> The natural-language quick-add line shipped in v1 and was dropped (<a href="https://github.com/moneytosms/tally/issues/33">#33</a>): its grammar was never specified and in practice it got in the way more than it saved taps. Target: three taps from cold - open the FAB, tap a category chip, tap Save (amount and description are typed, not tapped, either way).</p>
+<h3 id="confirmations">Confirmations</h3>
+<p>Destructive actions (delete, archive, leave, remove a member, merge a guest) use one shared confirm dialog with an action-specific label, such as “Delete expense”, never a generic “OK”. Focus starts on the dialog, not on the destructive button, and Escape cancels. Escape closes only the topmost overlay, and the confirm dialog keeps keyboard focus inside it. Browser confirm boxes are not used. Reopening an archived ledger needs no confirmation.</p>
+<h3 id="visual-system">Visual system</h3>
+<p>Notion’s restraint, Linear’s density, on paper, in earth tones. Prototype: <code>prototypes/design-system.html</code>.</p>
+<ul>
+<li><strong>Paper</strong> - warm off-white with moss/ochre radial washes under fractal-noise grain at 5.5%, multiply-blended. One inline SVG, no image assets. Dark mode flips grain to <code>screen</code> over warm ink.</li>
+<li><strong>Green is the ground, not the accent</strong> - moss carries FAB, buttons, active nav, chart fills.</li>
+<li><strong>Semantic pair is moss / clay</strong>, muted and earthy, <strong>differing in lightness as well as hue</strong> so they survive colour blindness and greyscale. Sign always present; colour is never the only cue.</li>
+<li><strong>Serif</strong> (<code>ui-serif, Georgia</code>) for screen titles and hero amounts - most of the paper feeling, zero webfont weight. <strong>Tabular sans</strong> in lists.</li>
+<li>7px radius, squircle avatars, <strong>no shadows</strong> except the FAB, <strong>sunken</strong> fields.</li>
+<li>shadcn/ui for Radix primitives, entirely restyled.</li>
+</ul>
+<p>Full token table on <a href="https://github.com/moneytosms/tally/issues/15">the ticket</a>.</p>
+<h3 id="pwa">PWA</h3>
+<ul>
+<li>Precache shell and bundles. <strong>API responses are never cached</strong> - no stale balance can render.</li>
+<li><strong>Push display</strong> lives in <code>public/push-sw.js</code>, which the generated service worker imports. It shows each received push and, on click, navigates an open window to the ledger URL (or opens one). Same-origin paths only. It adds no fetch handler and no runtime caching. <strong>Untested on a real device</strong>: push delivery has not been verified on any phone.</li>
+<li><strong>Offline shows an explicit state and no numbers at all.</strong> A wrong number about money is worse than no number.</li>
+<li><strong>Writes offline fail immediately and visibly.</strong> No queue, no outbox, no retry.</li>
+<li><strong>Updates prompt; never auto-reload</strong> (it would destroy a half-filled expense form). The API must tolerate one version of skew, because people dismiss prompts.</li>
+<li><code>display: standalone</code> - load-bearing, it gates Web Push on iOS. Maskable icon required.</li>
+<li>Install offered <strong>after the first successful action</strong>, never on load. iOS install is manual and its instructions live where notifications are enabled.</li>
+</ul>
+<h3 id="onboarding">Onboarding</h3>
+<ul>
+<li><strong>Owner</strong>: a single-use bootstrap secret in the Worker environment, burned on use. Then guided: create a ledger → invite people → set VPA.</li>
+<li><strong>Friend</strong>: display name → passkey → UPI VPA, all up front. <strong>VPA is skippable</strong> and re-prompted at first settle-up.</li>
+<li><strong>Feature-detect WebView before the passkey step.</strong> Mandatory, not an edge case.</li>
+<li>Empty states carry the teaching.</li>
+</ul>
+<h3 id="accessibility">Accessibility</h3>
+<p><strong>WCAG 2.2 AA on core flows</strong> - add expense, settle up, balances, onboarding. Verified by axe in CI <strong>plus one manual keyboard and screen-reader pass per flow</strong>.</p>
+<ul>
+<li>Amounts are never a bare number - sign and label always. A net position also states its direction in words (“You owe”, “You are owed”, “Asha owes”). Totals and shares carry no direction words, because they are not anyone’s balance.</li>
+<li>The moss/clay pair must pass contrast against both backgrounds and differ in lightness.</li>
+<li>44×44px tap targets. Dense visuals do not mean dense touch targets.</li>
+<li><code>prefers-reduced-motion</code>, dynamic type survival, live regions for optimistic failures / offline / update prompt.</li>
+</ul>
+<h3 id="i18n">i18n</h3>
+<p><strong>English only</strong>, but every string goes through <code>t()</code> from the first line of frontend code - a plain helper over <code>locales/&#x3C;lang>.json</code> plus native <code>Intl.PluralRules</code>. No framework. Adding a language stays a one-file contribution.</p>
+<p><code>Intl.NumberFormat</code> with <code>en-IN</code> gives ₹1,24,300, which a default formatter gets wrong. Storage stays locale-independent.</p>
+<hr>
+<h2 id="11-known-hazards">11. Known hazards</h2>
+<p>Named deliberately. These are where the bugs will be.</p>
+<ol>
+<li>
+<p><strong>Soft-delete filtering.</strong> Every query must exclude deleted rows. Forgetting once produces wrong money. <strong>Enforce structurally</strong> - a default scope in the data-access layer, never left to callers.</p>
+</li>
+<li>
+<p><strong>D1 has no conventional cross-request transactions.</strong> Two operations must not half-apply:</p>
+<ul>
+<li>Auto-creating a 1:1 ledger with its first expense</li>
+<li>Bulk settle writing across several ledgers</li>
+</ul>
+<p>Both need batched statements or a Durable Object.</p>
+</li>
+<li>
+<p><strong>RP ID permanence.</strong> Frozen constant. Any dynamic derivation is a defect.</p>
+</li>
+<li>
+<p><strong>Backups share a vendor with the data.</strong> Protects against corruption and bad migrations, <strong>not</strong> against losing the Cloudflare account. Accepted knowingly; CSV export is the manual escape hatch.</p>
+</li>
+<li>
+<p><strong>Recurring catch-up must be idempotent.</strong> A retry must never double-create.</p>
+</li>
+<li>
+<p><strong>React bundle size</strong> fights “very fast”. Measure before adding anything large; Preact-compat is the escape hatch. Lazy-load Recharts.</p>
+</li>
+</ol>
+<hr>
+<h2 id="12-invariants-worth-testing">12. Invariants worth testing</h2>
+<ul>
+<li>Every ledger’s member net positions <strong>sum to zero</strong></li>
+<li>Every expense’s splits <strong>sum to its total</strong></li>
+<li>Exactly one of <code>user_id</code> / <code>guest_name</code> is set on a member</li>
+<li>A member with a non-zero balance cannot have <code>left_at</code> set</li>
+<li>A ledger with <code>archived_at</code> set has all balances at zero</li>
+</ul>
+<hr>
+<h2 id="13-still-undecided">13. Still undecided</h2>
+<p>Not blockers, but nobody has done this work:</p>
+<ul>
+<li><strong>The default category set.</strong> Categories feed every chart; the list was never picked.</li>
+</ul>
+<p>Deferred facts, not decisions:</p>
+<ul>
+<li>The <strong>RP ID string</strong> - after the Cloudflare account exists</li>
+<li>The <strong>bootstrap secret</strong> - generated at first deploy</li>
+<li><strong>Restore rehearsal</strong> - before backup counts as done</li>
+</ul> <p class="prose__source" data-astro-cid-egoltos3>
+This page is <a href="https://github.com/moneytosms/tally/blob/main/docs/SPEC.md" data-astro-cid-egoltos3>docs/SPEC.md</a> in the repository, rendered as written.
+</p> </article> <nav class="guide__toc" aria-label="On this page" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>On this page</p> <ul data-astro-cid-egoltos3> <li class="d2" data-astro-cid-egoltos3><a href="#1-what-tally-is" data-astro-cid-egoltos3>1. What tally is</a></li><li class="d3" data-astro-cid-egoltos3><a href="#fixed-constraints" data-astro-cid-egoltos3>Fixed constraints</a></li><li class="d2" data-astro-cid-egoltos3><a href="#2-stack" data-astro-cid-egoltos3>2. Stack</a></li><li class="d2" data-astro-cid-egoltos3><a href="#3-origin---decide-before-writing-auth-code" data-astro-cid-egoltos3>3. Origin - decide before writing auth code</a></li><li class="d2" data-astro-cid-egoltos3><a href="#4-domain-model" data-astro-cid-egoltos3>4. Domain model</a></li><li class="d3" data-astro-cid-egoltos3><a href="#ledger" data-astro-cid-egoltos3>Ledger</a></li><li class="d3" data-astro-cid-egoltos3><a href="#membership" data-astro-cid-egoltos3>Membership</a></li><li class="d3" data-astro-cid-egoltos3><a href="#permissions" data-astro-cid-egoltos3>Permissions</a></li><li class="d3" data-astro-cid-egoltos3><a href="#leaving-and-closing" data-astro-cid-egoltos3>Leaving and closing</a></li><li class="d2" data-astro-cid-egoltos3><a href="#5-money" data-astro-cid-egoltos3>5. Money</a></li><li class="d3" data-astro-cid-egoltos3><a href="#split-modes" data-astro-cid-egoltos3>Split modes</a></li><li class="d3" data-astro-cid-egoltos3><a href="#rules" data-astro-cid-egoltos3>Rules</a></li><li class="d2" data-astro-cid-egoltos3><a href="#6-balances-and-settling" data-astro-cid-egoltos3>6. Balances and settling</a></li><li class="d3" data-astro-cid-egoltos3><a href="#balances" data-astro-cid-egoltos3>Balances</a></li><li class="d3" data-astro-cid-egoltos3><a href="#transfer-plan" data-astro-cid-egoltos3>Transfer plan</a></li><li class="d3" data-astro-cid-egoltos3><a href="#settle-screen" data-astro-cid-egoltos3>Settle screen</a></li><li class="d3" data-astro-cid-egoltos3><a href="#settle-up" data-astro-cid-egoltos3>Settle-up</a></li><li class="d3" data-astro-cid-egoltos3><a href="#cross-ledger" data-astro-cid-egoltos3>Cross-ledger</a></li><li class="d2" data-astro-cid-egoltos3><a href="#7-identity-and-auth" data-astro-cid-egoltos3>7. Identity and auth</a></li><li class="d3" data-astro-cid-egoltos3><a href="#passkeys-and-passwords" data-astro-cid-egoltos3>Passkeys and passwords</a></li><li class="d3" data-astro-cid-egoltos3><a href="#sessions" data-astro-cid-egoltos3>Sessions</a></li><li class="d3" data-astro-cid-egoltos3><a href="#invites" data-astro-cid-egoltos3>Invites</a></li><li class="d3" data-astro-cid-egoltos3><a href="#authorisation" data-astro-cid-egoltos3>Authorisation</a></li><li class="d2" data-astro-cid-egoltos3><a href="#8-features" data-astro-cid-egoltos3>8. Features</a></li><li class="d3" data-astro-cid-egoltos3><a href="#core" data-astro-cid-egoltos3>Core</a></li><li class="d3" data-astro-cid-egoltos3><a href="#parity" data-astro-cid-egoltos3>Parity</a></li><li class="d3" data-astro-cid-egoltos3><a href="#self-hosting-native" data-astro-cid-egoltos3>Self-hosting-native</a></li><li class="d3" data-astro-cid-egoltos3><a href="#profile" data-astro-cid-egoltos3>Profile</a></li><li class="d3" data-astro-cid-egoltos3><a href="#out-of-scope" data-astro-cid-egoltos3>Out of scope</a></li><li class="d2" data-astro-cid-egoltos3><a href="#9-scheduled-work" data-astro-cid-egoltos3>9. Scheduled work</a></li><li class="d2" data-astro-cid-egoltos3><a href="#10-interface" data-astro-cid-egoltos3>10. Interface</a></li><li class="d3" data-astro-cid-egoltos3><a href="#navigation" data-astro-cid-egoltos3>Navigation</a></li><li class="d3" data-astro-cid-egoltos3><a href="#wide-screens" data-astro-cid-egoltos3>Wide screens</a></li><li class="d3" data-astro-cid-egoltos3><a href="#add-expense" data-astro-cid-egoltos3>Add expense</a></li><li class="d3" data-astro-cid-egoltos3><a href="#confirmations" data-astro-cid-egoltos3>Confirmations</a></li><li class="d3" data-astro-cid-egoltos3><a href="#visual-system" data-astro-cid-egoltos3>Visual system</a></li><li class="d3" data-astro-cid-egoltos3><a href="#pwa" data-astro-cid-egoltos3>PWA</a></li><li class="d3" data-astro-cid-egoltos3><a href="#onboarding" data-astro-cid-egoltos3>Onboarding</a></li><li class="d3" data-astro-cid-egoltos3><a href="#accessibility" data-astro-cid-egoltos3>Accessibility</a></li><li class="d3" data-astro-cid-egoltos3><a href="#i18n" data-astro-cid-egoltos3>i18n</a></li><li class="d2" data-astro-cid-egoltos3><a href="#11-known-hazards" data-astro-cid-egoltos3>11. Known hazards</a></li><li class="d2" data-astro-cid-egoltos3><a href="#12-invariants-worth-testing" data-astro-cid-egoltos3>12. Invariants worth testing</a></li><li class="d2" data-astro-cid-egoltos3><a href="#13-still-undecided" data-astro-cid-egoltos3>13. Still undecided</a></li> </ul> </nav> </div> <script>(function(){const base = "/tally";
+
+    // Pagefind's index only exists in a production build (npm run build).
+    const s = document.createElement("script");
+    s.src = `${base}/pagefind/pagefind-ui.js`;
+    s.onload = () => new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+    s.onerror = () => {
+      document.querySelector("#search").textContent = "Search is unavailable. Browse the documents below.";
+    };
+    document.head.append(s);
+    const menu = document.querySelector(".guide__menu");
+    if (matchMedia("(max-width: 959px)").matches) menu.open = false;
+  })();</script>  </main> <footer class="site-footer" data-astro-cid-hkbrpulz> <div class="site-footer__inner" data-astro-cid-hkbrpulz> <p data-astro-cid-hkbrpulz>Demo data is fictional. tally never moves money.</p> <p class="site-footer__links" data-astro-cid-hkbrpulz> <a href="/tally/guide/" data-astro-cid-hkbrpulz>Guide</a> <a href="https://github.com/moneytosms/tally" data-astro-cid-hkbrpulz>Source on GitHub</a> </p> </div> </footer><script type="module">var e=document.documentElement;document.querySelector(`[data-theme-toggle]`)?.addEventListener(`click`,()=>{let t=(e.dataset.theme?e.dataset.theme===`dark`:matchMedia(`(prefers-color-scheme: dark)`).matches)?`light`:`dark`;e.dataset.theme=t;try{localStorage.setItem(`site-theme`,t)}catch{}});</script> </body> </html>

@@ -1,0 +1,214 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-hkbrpulz> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Architecture, tally guide</title><meta name="description" content="tally documentation: Architecture."><link rel="canonical" href="https://moneytosms.github.io/tally/guide/architecture/"><link rel="icon" href="/tally/favicon.svg" type="image/svg+xml"><meta property="og:title" content="Architecture, tally guide"><meta property="og:description" content="tally documentation: Architecture."><meta property="og:type" content="website"><meta property="og:url" content="https://moneytosms.github.io/tally/guide/architecture/"><script>
+      // Apply a saved theme before first paint. No saved choice: follow the OS.
+      try {
+        const t = localStorage.getItem("site-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch {}
+      document.documentElement.classList.add("js");
+    </script><link rel="stylesheet" href="/tally/_astro/_..CSyclaTM.css"></head> <body data-astro-cid-hkbrpulz> <a class="skip-link" href="#main" data-astro-cid-hkbrpulz>Skip to content</a> <header class="site-header" data-astro-cid-hkbrpulz> <div class="site-header__inner" data-astro-cid-hkbrpulz> <a class="brand" href="/tally/" aria-label="tally home" data-astro-cid-hkbrpulz> <svg aria-hidden="true" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"> <path d="M6 5.5v13M10 5v13.5M14 5.5v13M18 5v13.5"></path> <path d="M3.5 15.5 20.5 8"></path> </svg> <span data-astro-cid-hkbrpulz>tally</span> </a> <nav aria-label="Primary" class="site-nav" data-astro-cid-hkbrpulz> <a class="nav-home" href="/tally/" data-astro-cid-hkbrpulz>Overview</a> <a href="/tally/guide/" aria-current="page" data-astro-cid-hkbrpulz>Guide</a> <a href="https://github.com/moneytosms/tally" rel="noopener" data-astro-cid-hkbrpulz>Source</a> <button class="theme-toggle" type="button" aria-label="Switch colour theme" data-theme-toggle data-astro-cid-hkbrpulz> <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-hkbrpulz><circle cx="12" cy="12" r="4" data-astro-cid-hkbrpulz></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" data-astro-cid-hkbrpulz></path></svg> <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-hkbrpulz><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" data-astro-cid-hkbrpulz></path></svg> </button> </nav> </div> </header> <main id="main" tabindex="-1" data-astro-cid-hkbrpulz>  <link rel="stylesheet" href="/tally/pagefind/pagefind-ui.css"> <div class="guide" data-astro-cid-egoltos3> <aside class="guide__nav" aria-label="Guide sections" data-astro-cid-egoltos3> <div id="search" class="guide__search" data-astro-cid-egoltos3></div> <noscript><p data-astro-cid-egoltos3>Search needs JavaScript. All documents are available below.</p></noscript> <details class="guide__menu" open data-astro-cid-egoltos3> <summary data-astro-cid-egoltos3>All documents</summary> <div class="group" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>Start here</p> <ul data-astro-cid-egoltos3> <li data-astro-cid-egoltos3><a href="/tally/guide/readme" data-astro-cid-egoltos3>readme</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/usage" data-astro-cid-egoltos3>Using tally</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/faq" data-astro-cid-egoltos3>Troubleshooting and FAQ</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/deployment" data-astro-cid-egoltos3>Deploying tally</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/operations" data-astro-cid-egoltos3>Running a tally instance</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/architecture" aria-current="page" data-astro-cid-egoltos3>Architecture</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/spec" data-astro-cid-egoltos3>tally - v1 spec</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/contributing" data-astro-cid-egoltos3>Contributing</a></li> </ul> </div><div class="group" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>Adr</p> <ul data-astro-cid-egoltos3> <li data-astro-cid-egoltos3><a href="/tally/guide/adr/0001-workers-d1-single-deployable" data-astro-cid-egoltos3>1. Cloudflare Workers + D1, one deployable</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0002-rp-id-is-permanent" data-astro-cid-egoltos3>2. The RP ID is permanent and load-bearing</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0003-integer-paise-inr-only" data-astro-cid-egoltos3>3. Integer paise, INR only</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0004-derived-balances-soft-delete" data-astro-cid-egoltos3>4. Balances are derived; deletion is soft</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0005-any-member-can-edit" data-astro-cid-egoltos3>5. Any member can edit anything; leaving requires a zero balance</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0006-password-auth-and-instance-invites" data-astro-cid-egoltos3>0006 - Passwords sit alongside passkeys, and invites can be instance-wide</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0007-per-ledger-invite-toggle" data-astro-cid-egoltos3>0007 - Ledger invites are opt-in per ledger</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0008-restricted-accounts-for-invite-joiners" data-astro-cid-egoltos3>0008 - Ledger-invite joiners are restricted accounts by default</a></li> </ul> </div> </details> </aside> <article class="prose" data-pagefind-body data-astro-cid-egoltos3> <h1 id="architecture">Architecture</h1>
+<p>How tally is actually put together, and why. For the domain vocabulary see
+<a href="https://github.com/moneytosms/tally/blob/main/CONTEXT.md"><code>CONTEXT.md</code></a>; for the decisions and their reasoning see
+<a href="https://github.com/moneytosms/tally/tree/main/docs/adr"><code>docs/adr/</code></a>; for the product spec see <a href="/tally/guide/spec"><code>docs/SPEC.md</code></a>.</p>
+<hr>
+<h2 id="one-deployable">One deployable</h2>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="plaintext"><code><span class="line"><span>                    ┌──────────────────────────────────────┐</span></span>
+<span class="line"><span>   browser  ──────► │  Cloudflare Worker (one origin)      │</span></span>
+<span class="line"><span>   (React SPA)      │                                      │</span></span>
+<span class="line"><span>                    │  /api/*        → Hono routers        │</span></span>
+<span class="line"><span>                    │  /*            → static assets       │</span></span>
+<span class="line"><span>                    │  RecurringAlarm → Durable Object     │</span></span>
+<span class="line"><span>                    └───────────┬──────────────────────────┘</span></span>
+<span class="line"><span>                                │</span></span>
+<span class="line"><span>                          ┌─────▼─────┐</span></span>
+<span class="line"><span>                          │  D1       │  SQLite at the edge</span></span>
+<span class="line"><span>                          └───────────┘</span></span></code></pre>
+<p>One Worker serves both the SPA and the API, so there is one origin and no CORS.
+That is not a convenience - the WebAuthn RP ID is derived from that single host
+and is frozen forever (<a href="/tally/guide/adr/0002-rp-id-is-permanent">ADR 0002</a>).</p>
+<h2 id="layers">Layers</h2>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Where</th>
+<th>Rule it enforces</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Schema</td>
+<td><code>src/db/schema.ts</code></td>
+<td>Constraints live in the DB where SQLite allows it</td>
+</tr>
+<tr>
+<td>Data access</td>
+<td><code>src/db/index.ts</code></td>
+<td><strong>Soft-delete filtering, structurally</strong></td>
+</tr>
+<tr>
+<td>Pure domain</td>
+<td><code>src/shared/</code></td>
+<td>Money, splits, recurrence, NL parsing - no I/O</td>
+</tr>
+<tr>
+<td>Derivation</td>
+<td><code>src/server/balances.ts</code></td>
+<td>Net positions and transfer plans, never stored</td>
+</tr>
+<tr>
+<td>Routes</td>
+<td><code>src/server/routes/</code></td>
+<td>Validation, authorisation, wire shapes</td>
+</tr>
+<tr>
+<td>Client</td>
+<td><code>src/client/</code></td>
+<td>Shows server balances; sums are display-only</td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-data-access-layer-is-the-security-boundary-for-deletion">The data-access layer is the security boundary for deletion</h3>
+<p><code>src/db/index.ts</code> deliberately does <strong>not</strong> export the drizzle instance. Every
+read goes through a named helper that already excludes soft-deleted rows, and
+“current member” helpers also exclude members who have left.</p>
+<p>This is the single most important structural decision in the codebase. Soft-delete
+filtering left to callers gets forgotten exactly once, and the result is wrong
+money that nobody notices (<a href="/tally/guide/adr/0004-derived-balances-soft-delete">ADR 0004</a>,
+SPEC §11 hazard 1).</p>
+<p>Writes are the exception: they return the drizzle statement rather than running
+it, so a caller can either <code>await</code> it directly or pass several to <code>db.batch([...])</code>.</p>
+<h3 id="batching-because-d1-has-no-transactions">Batching, because D1 has no transactions</h3>
+<p>D1 has no cross-request transaction. Three operations must not half-apply:</p>
+<ul>
+<li>an expense and its splits</li>
+<li>a bulk settle writing across several ledgers</li>
+<li>an undo restoring an expense and its splits</li>
+</ul>
+<p>All three use <code>db.batch([...])</code>. If you add a fourth multi-statement write,
+it goes in a batch too - a half-applied money write is the worst bug this
+system can have.</p>
+<h2 id="money">Money</h2>
+<p><strong>Integer paise everywhere.</strong> Storage, API, and every calculation. There is no
+float anywhere in this system, and <code>parseFloat</code> on a money value is a defect.</p>
+<p>Splits are <strong>resolved once, at save time</strong>, and stored. Nothing recomputes a
+stored split from its weights - the <code>mode</code> and each participant’s raw
+<code>inputValue</code> are kept alongside so the editor reopens exactly as the user left
+it, but the authoritative numbers are the resolved ones.</p>
+<p>The <strong>remainder</strong> - the odd paise when a total does not divide evenly - is
+absorbed by the payer, or by the first participant in stable order if the payer
+is not a participant. <strong>Stable order is order of addition, never display order.</strong>
+Re-sorting participants would silently change who absorbs the remainder.</p>
+<p><strong>Balances are derived</strong>, never stored or cached. Every net position is computed
+from expenses and settlements on read. This is why the client never patches a
+balance optimistically - it invalidates and refetches.</p>
+<p><code>GET /api/ledgers/:id/balances</code> adds a read-only breakdown to each position:
+<code>paid</code>, <code>share</code>, <code>settledOut</code>, <code>settledIn</code>, and the member’s <code>name</code>, where
+<code>paid - share + settledOut - settledIn === net</code>. It also returns the settlements
+and totals the Settle screen shows. These fields are additive. Net positions and
+the transfer plan are computed as before, and the breakdown is never an input to
+them.</p>
+<p>The transfer plan is a greedy match (SPEC §6): at most n-1 transfers, not
+guaranteed to be the fewest possible.</p>
+<h2 id="authentication">Authentication</h2>
+<p>Passkeys only, via SimpleWebAuthn. No passwords, no email.</p>
+<ul>
+<li>The <strong>RP ID is a frozen constant</strong> in <code>src/shared/rp-id.ts</code>. It is never
+derived from <code>location.hostname</code>. Changing it destroys every passkey on the
+instance with no migration path.</li>
+<li>The <strong>Owner</strong> claims the instance once with a bootstrap secret from the Worker
+environment, which is burned on use.</li>
+<li>Everyone else arrives through a single-use, 48-hour, hashed <strong>Invite</strong>. An
+invite is also the recovery path, which means a leaked invite is potentially
+account access - hence the admin panel can list and revoke live ones.</li>
+<li><strong>Guests are data, never principals.</strong> No code path authenticates as a guest.
+A guest has no <code>user_id</code> and cannot hold a VPA.</li>
+</ul>
+<p>VPAs are visible only to ledger co-members. That rule has exactly one
+enforcement point: <code>serialiseUser(user, sharesLedgerWithViewer)</code> in
+<code>src/server/routes/me.ts</code>. Never spread a user row into a response.</p>
+<h2 id="scheduled-work">Scheduled work</h2>
+<p>Exactly two things run on a timer, and neither fans out:</p>
+<ol>
+<li><strong>Recurring expenses</strong> - one Durable Object (<code>RecurringAlarm</code>) holds one
+alarm set to the earliest due series.</li>
+<li>Nothing else. There is no sweep, no cron across users.</li>
+</ol>
+<p>Push has <strong>exactly two triggers, both single-recipient</strong>: someone settled with
+you, and a manual reminder. Notification on split inclusion was deliberately
+dropped - it was the only high-fan-out path, and removing it means tally never
+notifies more than one person at a time, which keeps the 10 ms CPU ceiling off
+the risk list.</p>
+<h3 id="recurring-is-idempotent-by-construction">Recurring is idempotent by construction</h3>
+<p>SPEC §11 hazard 5: a retry must never double-create. Three layers, in
+decreasing order of trust:</p>
+<ol>
+<li>The occurrence sequence is a <strong>pure function</strong> of the cadence
+(<code>src/shared/recurrence.ts</code>), so a replay asks for the same instants.</li>
+<li><code>runCatchUp</code> reads back which instants exist and skips them.</li>
+<li>A <strong>unique index on <code>(series_id, occurrence_at)</code></strong> rejects anything that gets
+past step 2 - a crash between the insert and the cursor advance, or two
+alarms racing.</li>
+</ol>
+<p>The database is the authority. The check above it only keeps the happy path from
+throwing. The cursor is advanced <em>after</em> the inserts on purpose: advancing first
+would silently skip occurrences, whereas advancing last makes a replay a no-op.</p>
+<h2 id="push-encryption">Push encryption</h2>
+<p><code>src/server/push.ts</code> implements RFC 8291 (<code>aes128gcm</code>) and RFC 8292 (VAPID) on
+WebCrypto directly. There is no dependency for this: the <code>web-push</code> package is
+Node-only and does not run on Workers.</p>
+<p><code>src/server/push.test.ts</code> proves the crypto by decrypting what the server
+produces with the recipient’s private key, deriving the keys independently. If
+you change the encryption and that test still passes, the change is safe.</p>
+<h2 id="client">Client</h2>
+<p>React SPA, TanStack Query, React Router. No global state library - the server is
+the state.</p>
+<ul>
+<li><code>staleTime</code> is 0 everywhere. Every number is money someone acts on.</li>
+<li><strong>No API response is ever cached in the service worker.</strong> A stale balance is
+worse than no balance. The service worker precaches the shell and bundles and
+has no runtime-caching rule at all - an allowlist that cannot drift.
+The generated worker also imports <code>public/push-sw.js</code>, which handles <code>push</code>
+and <code>notificationclick</code> and adds no fetch handling. Push delivery on a real
+device is untested.</li>
+<li><strong>Offline shows an explicit state and no numbers.</strong> A wrong number about money
+is worse than no number.</li>
+<li><strong>Writes offline fail immediately and visibly.</strong> No queue, no outbox, no retry.</li>
+<li><strong>Updates prompt; never auto-reload</strong> - that would destroy a half-filled
+expense form. The API therefore tolerates one version of skew: response shapes
+stay additive, and a field is never removed or repurposed.</li>
+<li>Recharts is lazy-loaded. It is the largest thing in the bundle.</li>
+</ul>
+<p>Every user-facing string goes through <code>t()</code> from <code>src/client/i18n.ts</code> - a plain
+helper over <code>locales/en.json</code> plus native <code>Intl.PluralRules</code>. English only, but
+the layer ships from line one because retrofitting extraction is the expensive
+path.</p>
+<h2 id="testing">Testing</h2>
+<p><code>pnpm test</code> runs vitest. Route tests run against <strong>real SQLite</strong> (<code>node:sqlite</code>,
+in memory) behind the D1 interface, applying the <strong>actual migration files</strong> -
+so they exercise the real data-access layer, the real constraints, and the real
+middleware. See <code>src/server/routes/_test-harness.ts</code>.</p>
+<p>A new migration is picked up automatically. One that does not apply cleanly
+fails every route test, which is when you want to hear about it.</p>
+<p>What the tests assert, in priority order:</p>
+<ul>
+<li>the invariants in SPEC §12 (positions sum to zero, splits sum to their total,
+a member with a non-zero balance cannot leave, …)</li>
+<li>the split worked examples</li>
+<li>idempotency of recurring catch-up</li>
+<li>that soft-deleted rows are invisible to every read path</li>
+</ul>
+<p>Amounts in tests are integer paise, written with a comment giving the rupee value.</p> <p class="prose__source" data-astro-cid-egoltos3>
+This page is <a href="https://github.com/moneytosms/tally/blob/main/docs/ARCHITECTURE.md" data-astro-cid-egoltos3>docs/ARCHITECTURE.md</a> in the repository, rendered as written.
+</p> </article> <nav class="guide__toc" aria-label="On this page" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>On this page</p> <ul data-astro-cid-egoltos3> <li class="d2" data-astro-cid-egoltos3><a href="#one-deployable" data-astro-cid-egoltos3>One deployable</a></li><li class="d2" data-astro-cid-egoltos3><a href="#layers" data-astro-cid-egoltos3>Layers</a></li><li class="d3" data-astro-cid-egoltos3><a href="#the-data-access-layer-is-the-security-boundary-for-deletion" data-astro-cid-egoltos3>The data-access layer is the security boundary for deletion</a></li><li class="d3" data-astro-cid-egoltos3><a href="#batching-because-d1-has-no-transactions" data-astro-cid-egoltos3>Batching, because D1 has no transactions</a></li><li class="d2" data-astro-cid-egoltos3><a href="#money" data-astro-cid-egoltos3>Money</a></li><li class="d2" data-astro-cid-egoltos3><a href="#authentication" data-astro-cid-egoltos3>Authentication</a></li><li class="d2" data-astro-cid-egoltos3><a href="#scheduled-work" data-astro-cid-egoltos3>Scheduled work</a></li><li class="d3" data-astro-cid-egoltos3><a href="#recurring-is-idempotent-by-construction" data-astro-cid-egoltos3>Recurring is idempotent by construction</a></li><li class="d2" data-astro-cid-egoltos3><a href="#push-encryption" data-astro-cid-egoltos3>Push encryption</a></li><li class="d2" data-astro-cid-egoltos3><a href="#client" data-astro-cid-egoltos3>Client</a></li><li class="d2" data-astro-cid-egoltos3><a href="#testing" data-astro-cid-egoltos3>Testing</a></li> </ul> </nav> </div> <script>(function(){const base = "/tally";
+
+    // Pagefind's index only exists in a production build (npm run build).
+    const s = document.createElement("script");
+    s.src = `${base}/pagefind/pagefind-ui.js`;
+    s.onload = () => new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+    s.onerror = () => {
+      document.querySelector("#search").textContent = "Search is unavailable. Browse the documents below.";
+    };
+    document.head.append(s);
+    const menu = document.querySelector(".guide__menu");
+    if (matchMedia("(max-width: 959px)").matches) menu.open = false;
+  })();</script>  </main> <footer class="site-footer" data-astro-cid-hkbrpulz> <div class="site-footer__inner" data-astro-cid-hkbrpulz> <p data-astro-cid-hkbrpulz>Demo data is fictional. tally never moves money.</p> <p class="site-footer__links" data-astro-cid-hkbrpulz> <a href="/tally/guide/" data-astro-cid-hkbrpulz>Guide</a> <a href="https://github.com/moneytosms/tally" data-astro-cid-hkbrpulz>Source on GitHub</a> </p> </div> </footer><script type="module">var e=document.documentElement;document.querySelector(`[data-theme-toggle]`)?.addEventListener(`click`,()=>{let t=(e.dataset.theme?e.dataset.theme===`dark`:matchMedia(`(prefers-color-scheme: dark)`).matches)?`light`:`dark`;e.dataset.theme=t;try{localStorage.setItem(`site-theme`,t)}catch{}});</script> </body> </html>

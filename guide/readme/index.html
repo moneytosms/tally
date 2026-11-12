@@ -1,0 +1,122 @@
+<!DOCTYPE html><html lang="en" data-astro-cid-hkbrpulz> <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>readme, tally guide</title><meta name="description" content="tally documentation: readme."><link rel="canonical" href="https://moneytosms.github.io/tally/guide/readme/"><link rel="icon" href="/tally/favicon.svg" type="image/svg+xml"><meta property="og:title" content="readme, tally guide"><meta property="og:description" content="tally documentation: readme."><meta property="og:type" content="website"><meta property="og:url" content="https://moneytosms.github.io/tally/guide/readme/"><script>
+      // Apply a saved theme before first paint. No saved choice: follow the OS.
+      try {
+        const t = localStorage.getItem("site-theme");
+        if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
+      } catch {}
+      document.documentElement.classList.add("js");
+    </script><link rel="stylesheet" href="/tally/_astro/_..CSyclaTM.css"></head> <body data-astro-cid-hkbrpulz> <a class="skip-link" href="#main" data-astro-cid-hkbrpulz>Skip to content</a> <header class="site-header" data-astro-cid-hkbrpulz> <div class="site-header__inner" data-astro-cid-hkbrpulz> <a class="brand" href="/tally/" aria-label="tally home" data-astro-cid-hkbrpulz> <svg aria-hidden="true" viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"> <path d="M6 5.5v13M10 5v13.5M14 5.5v13M18 5v13.5"></path> <path d="M3.5 15.5 20.5 8"></path> </svg> <span data-astro-cid-hkbrpulz>tally</span> </a> <nav aria-label="Primary" class="site-nav" data-astro-cid-hkbrpulz> <a class="nav-home" href="/tally/" data-astro-cid-hkbrpulz>Overview</a> <a href="/tally/guide/" aria-current="page" data-astro-cid-hkbrpulz>Guide</a> <a href="https://github.com/moneytosms/tally" rel="noopener" data-astro-cid-hkbrpulz>Source</a> <button class="theme-toggle" type="button" aria-label="Switch colour theme" data-theme-toggle data-astro-cid-hkbrpulz> <svg class="i-sun" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" data-astro-cid-hkbrpulz><circle cx="12" cy="12" r="4" data-astro-cid-hkbrpulz></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" data-astro-cid-hkbrpulz></path></svg> <svg class="i-moon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" data-astro-cid-hkbrpulz><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" data-astro-cid-hkbrpulz></path></svg> </button> </nav> </div> </header> <main id="main" tabindex="-1" data-astro-cid-hkbrpulz>  <link rel="stylesheet" href="/tally/pagefind/pagefind-ui.css"> <div class="guide" data-astro-cid-egoltos3> <aside class="guide__nav" aria-label="Guide sections" data-astro-cid-egoltos3> <div id="search" class="guide__search" data-astro-cid-egoltos3></div> <noscript><p data-astro-cid-egoltos3>Search needs JavaScript. All documents are available below.</p></noscript> <details class="guide__menu" open data-astro-cid-egoltos3> <summary data-astro-cid-egoltos3>All documents</summary> <div class="group" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>Start here</p> <ul data-astro-cid-egoltos3> <li data-astro-cid-egoltos3><a href="/tally/guide/readme" aria-current="page" data-astro-cid-egoltos3>readme</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/usage" data-astro-cid-egoltos3>Using tally</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/faq" data-astro-cid-egoltos3>Troubleshooting and FAQ</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/deployment" data-astro-cid-egoltos3>Deploying tally</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/operations" data-astro-cid-egoltos3>Running a tally instance</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/architecture" data-astro-cid-egoltos3>Architecture</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/spec" data-astro-cid-egoltos3>tally - v1 spec</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/contributing" data-astro-cid-egoltos3>Contributing</a></li> </ul> </div><div class="group" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>Adr</p> <ul data-astro-cid-egoltos3> <li data-astro-cid-egoltos3><a href="/tally/guide/adr/0001-workers-d1-single-deployable" data-astro-cid-egoltos3>1. Cloudflare Workers + D1, one deployable</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0002-rp-id-is-permanent" data-astro-cid-egoltos3>2. The RP ID is permanent and load-bearing</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0003-integer-paise-inr-only" data-astro-cid-egoltos3>3. Integer paise, INR only</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0004-derived-balances-soft-delete" data-astro-cid-egoltos3>4. Balances are derived; deletion is soft</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0005-any-member-can-edit" data-astro-cid-egoltos3>5. Any member can edit anything; leaving requires a zero balance</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0006-password-auth-and-instance-invites" data-astro-cid-egoltos3>0006 - Passwords sit alongside passkeys, and invites can be instance-wide</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0007-per-ledger-invite-toggle" data-astro-cid-egoltos3>0007 - Ledger invites are opt-in per ledger</a></li><li data-astro-cid-egoltos3><a href="/tally/guide/adr/0008-restricted-accounts-for-invite-joiners" data-astro-cid-egoltos3>0008 - Ledger-invite joiners are restricted accounts by default</a></li> </ul> </div> </details> </aside> <article class="prose" data-pagefind-body data-astro-cid-egoltos3> <h1 align="center">tally</h1>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/moneytosms/tally/main/assets/readme/hero-dark.svg">
+    <img src="https://raw.githubusercontent.com/moneytosms/tally/main/assets/readme/hero-light.svg" width="100%" alt="A tally ledger sheet for a Goa trip: five expenses totalling ₹34,100.00, then one transfer, Ravi pays Asha ₹5,185.00 via UPI. Net positions sum to ₹0.00.">
+  </picture>
+</p>
+<p align="center">
+  <a href="https://moneytosms.github.io/tally/">Site</a> ·
+  <a href="https://moneytosms.github.io/tally/guide/">Guide</a> ·
+  <a href="/tally/guide/deployment">Self-host</a> ·
+  <a href="/tally/guide/spec">Spec</a>
+</p>
+<p align="center">
+  <a href="https://github.com/moneytosms/tally/actions/workflows/ci.yml"><img src="https://github.com/moneytosms/tally/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/moneytosms/tally/tree/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-5c7355" alt="License: MIT"></a>
+</p>
+<p>Self-hosted expense splitting for friend groups, as a PWA. It tracks who owes
+what, shows the fewest transfers that clear a ledger, and hands you a UPI link
+to pay. <strong>It never touches your money.</strong></p>
+<p>The sheet above is real output: the Goa trip demo ledger, computed by the app.
+Five expenses total ₹34,100.00. Asha paid most of it, so four people each pay
+Asha once. Net positions sum to ₹0.00, always.</p>
+<p>One instance, about 20 people, $0/month on Cloudflare’s free tier.</p>
+<h2 id="what-it-does">What it does</h2>
+<p><strong>Ledgers.</strong> One container concept. A trip, a flatshare and a one-to-one are all
+ledgers, differing only in whether they have an end date and a budget.</p>
+<p><strong>Expenses.</strong> Split equally, by exact amounts, by shares, or by percentage.
+Negative totals are refunds. Any member can edit any expense; every edit is
+recorded and undoable.</p>
+<p><strong>Balances.</strong> A net position per person per ledger, plus a cross-ledger view
+that answers “what do I owe Ravi, overall?”. Always derived, never stored. The
+suggested transfers are the minimal set that clears a ledger, and each one can
+explain itself.</p>
+<p><strong>Settling.</strong> Declare a payment, optionally hand off to a UPI app. Partial
+settles are first-class. Bulk settle clears someone across every shared ledger
+at once.</p>
+<p><strong>Import.</strong> Bring history in from a Splitwise CSV or a Splid XLS file.</p>
+<p>Also: guests who never log in, recurring expenses, categories and notes, search
+and filter, comments, lifetime analytics, CSV export, trip budgets with burn
+rate, and push notifications for the two things worth interrupting someone
+about. Push is built but not yet tested on a real device.</p>
+<p>Sign in with email and password or a passkey; both work on the same account.
+Joining needs an invite from whoever runs the instance (ADR 0006). There is no
+open signup.</p>
+<h2 id="how-it-works">How it works</h2>
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/moneytosms/tally/main/assets/readme/architecture-dark.svg">
+    <img src="https://raw.githubusercontent.com/moneytosms/tally/main/assets/readme/architecture-light.svg" width="100%" alt="React PWA talks to one Cloudflare Worker serving static assets and a Hono API, backed by D1 through Drizzle, with Durable Object alarms for scheduled work.">
+  </picture>
+</p>
+<p>One Worker serves both the static assets and <code>/api/*</code>. One origin, no CORS.
+Stack: Cloudflare Workers, D1, Drizzle, Hono, React on Vite, TanStack Query,
+Zod shared by client and server, Tailwind, SimpleWebAuthn, Durable Object
+Alarms. More in <a href="/tally/guide/architecture">docs/ARCHITECTURE.md</a>.</p>
+<p>Rules that are defects when broken:</p>
+<ul>
+<li><strong>Money is integer paise.</strong> No float in storage, API, or calculation.</li>
+<li><strong>Never render a bare amount.</strong> Sign and label always; colour is never the
+only cue for owed vs owe.</li>
+<li><strong>The RP ID is a frozen constant.</strong> Never derived from <code>location.hostname</code>.</li>
+<li><strong>Soft-delete filtering is structural</strong>, in the data-access layer.</li>
+<li><strong>Balances are derived</strong>, never stored or cached.</li>
+<li><strong>Store resolved splits</strong>, never recompute from weights.</li>
+<li><strong>Every user-facing string goes through <code>t()</code>.</strong></li>
+<li><strong>Never cache API responses in the service worker.</strong> A stale balance is worse
+than no balance.</li>
+<li><strong>Guests are data, never principals.</strong> No code path authenticates as a guest.</li>
+</ul>
+<h2 id="getting-started">Getting started</h2>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> install</span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> test</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">           # 500+ tests, real SQLite behind the D1 interface</span></span>
+<span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">pnpm</span><span style="--shiki-light:#032F62;--shiki-dark:#96D0FF"> dev</span><span style="--shiki-light:#6A737D;--shiki-dark:#768390">            # vite + wrangler dev</span></span></code></pre>
+<p>Using the app: see the <a href="https://moneytosms.github.io/tally/guide/">usage guide</a>
+or <a href="/tally/guide/usage">docs/USAGE.md</a>.</p>
+<h2 id="self-hosting">Self-hosting</h2>
+<p>MIT licensed, so forks are welcome. Follow
+<strong><a href="/tally/guide/deployment">docs/DEPLOYMENT.md</a></strong> for the first deploy and secret
+checklist. The provisioning wizard walks the whole thing:</p>
+<pre class="astro-code astro-code-themes github-light github-dark-dimmed" style="--shiki-light:#24292e;--shiki-dark:#adbac7;--shiki-light-bg:#fff;--shiki-dark-bg:#22272e; overflow-x: auto;" tabindex="0" data-language="bash"><code><span class="line"><span style="--shiki-light:#6F42C1;--shiki-dark:#F69D50">./scripts/setup-cloudflare.sh</span></span></code></pre>
+<blockquote>
+<p><strong>Warning: one step is irreversible.</strong> The Worker’s name becomes the
+permanent WebAuthn RP ID. Changing it later destroys every passkey on the
+instance with no migration path. See
+<a href="/tally/guide/adr/0002-rp-id-is-permanent">ADR 0002</a>.</p>
+</blockquote>
+<p>Running it afterwards (backups, limits, recovery): <a href="/tally/guide/operations">docs/OPERATIONS.md</a>.</p>
+<h2 id="limits">Limits</h2>
+<p>Deliberately not built: multi-currency, receipt images, OCR, real payment
+processing, trip kitty, payment rotation, read-only share links, in-app chat,
+reliability scores, offline write sync, public signup.</p>
+<p>Other docs: <a href="https://github.com/moneytosms/tally/blob/main/CONTEXT.md">CONTEXT.md</a> (domain language),
+<a href="/tally/guide/spec">docs/SPEC.md</a> (v1 spec), <a href="https://github.com/moneytosms/tally/tree/main/docs/adr">docs/adr/</a> (irreversible
+decisions), <a href="https://github.com/moneytosms/tally/tree/main/docs/research">docs/research/</a> (hosting, UPI deep links,
+passkeys).</p>
+<h2 id="contributing">Contributing</h2>
+<p>See <a href="/tally/guide/contributing">CONTRIBUTING.md</a>. Use the terms in
+<a href="https://github.com/moneytosms/tally/blob/main/CONTEXT.md">CONTEXT.md</a>, and check an ADR before contradicting it.</p>
+<h2 id="license">License</h2>
+<p>MIT, see <a href="https://github.com/moneytosms/tally/tree/main/LICENSE">LICENSE</a>.</p> <p class="prose__source" data-astro-cid-egoltos3>
+This page is <a href="https://github.com/moneytosms/tally/blob/main/README.md" data-astro-cid-egoltos3>README.md</a> in the repository, rendered as written.
+</p> </article> <nav class="guide__toc" aria-label="On this page" data-astro-cid-egoltos3> <p class="group__name" data-astro-cid-egoltos3>On this page</p> <ul data-astro-cid-egoltos3> <li class="d2" data-astro-cid-egoltos3><a href="#what-it-does" data-astro-cid-egoltos3>What it does</a></li><li class="d2" data-astro-cid-egoltos3><a href="#how-it-works" data-astro-cid-egoltos3>How it works</a></li><li class="d2" data-astro-cid-egoltos3><a href="#getting-started" data-astro-cid-egoltos3>Getting started</a></li><li class="d2" data-astro-cid-egoltos3><a href="#self-hosting" data-astro-cid-egoltos3>Self-hosting</a></li><li class="d2" data-astro-cid-egoltos3><a href="#limits" data-astro-cid-egoltos3>Limits</a></li><li class="d2" data-astro-cid-egoltos3><a href="#contributing" data-astro-cid-egoltos3>Contributing</a></li><li class="d2" data-astro-cid-egoltos3><a href="#license" data-astro-cid-egoltos3>License</a></li> </ul> </nav> </div> <script>(function(){const base = "/tally";
+
+    // Pagefind's index only exists in a production build (npm run build).
+    const s = document.createElement("script");
+    s.src = `${base}/pagefind/pagefind-ui.js`;
+    s.onload = () => new PagefindUI({ element: "#search", showSubResults: true, showImages: false });
+    s.onerror = () => {
+      document.querySelector("#search").textContent = "Search is unavailable. Browse the documents below.";
+    };
+    document.head.append(s);
+    const menu = document.querySelector(".guide__menu");
+    if (matchMedia("(max-width: 959px)").matches) menu.open = false;
+  })();</script>  </main> <footer class="site-footer" data-astro-cid-hkbrpulz> <div class="site-footer__inner" data-astro-cid-hkbrpulz> <p data-astro-cid-hkbrpulz>Demo data is fictional. tally never moves money.</p> <p class="site-footer__links" data-astro-cid-hkbrpulz> <a href="/tally/guide/" data-astro-cid-hkbrpulz>Guide</a> <a href="https://github.com/moneytosms/tally" data-astro-cid-hkbrpulz>Source on GitHub</a> </p> </div> </footer><script type="module">var e=document.documentElement;document.querySelector(`[data-theme-toggle]`)?.addEventListener(`click`,()=>{let t=(e.dataset.theme?e.dataset.theme===`dark`:matchMedia(`(prefers-color-scheme: dark)`).matches)?`light`:`dark`;e.dataset.theme=t;try{localStorage.setItem(`site-theme`,t)}catch{}});</script> </body> </html>
