@@ -1,8 +1,8 @@
 // A ledger's shell: header, position, and the sections as tabs. Each section is
 // a child route, so the header and position stay put while switching between them.
 import { Suspense } from "react";
-import { Outlet, useLocation, useMatch, useParams } from "react-router";
-import { Amount, EmptyState, PageHeader, ScreenSkeleton, Tabs } from "~/client/components/ui";
+import { Link, Outlet, useLocation, useMatch, useParams } from "react-router";
+import { Amount, EmptyState, focusRing, Icon, PageHeader, ScreenSkeleton, Tabs } from "~/client/components/ui";
 import { LedgerMenu } from "~/client/components/LedgerMenu";
 import { BurnRate, runFor } from "~/client/routes/LedgersTab";
 import { useLedger } from "~/client/lib/queries";
@@ -52,7 +52,24 @@ export function LedgerLayout() {
           className="mb-4 rounded-[7px] border px-3.5 py-4"
           style={{ background: "var(--paper-2)", borderColor: "var(--line)" }}
         >
-          <Amount paise={l.net} label={t("ledger.yourPosition")} hero />
+          <div className="flex items-end justify-between gap-3">
+            <Amount paise={l.net} label={t("ledger.yourPosition")} hero />
+            {/* The next step sits beside the number it resolves: one tap from the
+                position to how it settles. Filled when the viewer owes, quiet otherwise. */}
+            {l.net !== 0 && l.archivedAt === null && (
+              <Link
+                to={`/ledgers/${ledgerId}/settle`}
+                className={`inline-flex min-h-11 flex-none items-center gap-1 rounded-[7px] border pr-2.5 pl-3.5 text-[14px] font-semibold transition-[background-color,transform] duration-150 active:scale-[0.98] ${
+                  l.net < 0
+                    ? "border-[var(--moss)] bg-[var(--moss)] text-[var(--paper)] hover:bg-[var(--moss-2)]"
+                    : "border-[var(--line-2)] text-[var(--ink)] hover:bg-[var(--paper-sunk)]"
+                } ${focusRing}`}
+              >
+                {t("ledgerNav.settle")}
+                <Icon name="forward" size={16} />
+              </Link>
+            )}
+          </div>
           {/* A budget entered at creation used to be stored and never shown again. */}
           <BurnRate ledger={l} />
         </div>

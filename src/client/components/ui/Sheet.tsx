@@ -82,7 +82,7 @@ export function Sheet({
         // dvh, not vh: on mobile Chrome vh is the LARGEST viewport, so a 90vh
         // sheet can run under the URL bar and hide its own submit button.
         // md+: a centred dialog, not a bottom sheet (animation keyed in tokens.css).
-        className={`paper-ground relative max-h-[90dvh] overflow-auto rounded-t-[14px] border-t md:max-h-[85dvh] md:w-full md:max-w-[520px] md:rounded-[14px] md:border ${
+        className={`paper-ground relative max-h-[90dvh] overflow-auto rounded-t-[14px] outline-none border-t md:max-h-[85dvh] md:w-full md:max-w-[520px] md:rounded-[14px] md:border ${
           open ? "sheet-in" : "sheet-out"
         }`}
         style={{ background: "var(--paper)", borderColor: "var(--line)" }}

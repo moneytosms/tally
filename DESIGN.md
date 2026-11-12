@@ -268,6 +268,14 @@ Gently squared corners at a single base radius (7px) for buttons, cards, tabs an
 
 - One authored set in `ui/Icon.tsx`: ledgers, balances, insights, you, back, forward, down, close, plus, more, search, check. 20px grid, 1.6 stroke, round caps and joins, `currentColor`, always `aria-hidden`. Icon-only buttons are 44px and carry an `aria-label`, with a `paper-sunk` hover fill.
 
+### Mark
+
+- A drawn tally of five (four strokes and a strike) in moss, from `ui/Mark.tsx`. It sits before the wordmark in the rail, on the home header and on the welcome screen. It is the product's only emblem.
+
+### Action placement
+
+**The Next-Step Rule.** The action that resolves a number sits beside that number. The ledger position card carries "Settle" (filled when the viewer owes, ghost when owed). The expense sheet carries "Edit expense" next to the total. Destructive actions sit last in the sheet, with specific labels ("Delete expense"). Per-ledger rows that lead somewhere are whole-row links, not rows with repeated buttons. Banner actions are underlined text, not bordered buttons.
+
 ### Sheet
 
 - A bottom sheet on mobile (slides up in 180ms ease-out); a centred dialog at 768px+ (fade plus scale from 0.97). Paper ground with grain, a sticky header with the serif title and a 44px close button. Escape closes only the topmost overlay.

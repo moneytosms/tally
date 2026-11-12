@@ -57,14 +57,17 @@ function DemoBanner() {
   return (
     <div
       role="status"
-      className="flex items-center justify-between gap-2 px-4 py-2 text-[13px]"
-      style={{ background: "var(--paper-sunk)", color: "var(--ink-3)" }}
+      className="flex items-center justify-between gap-3 px-4 text-[13px] leading-snug"
+      style={{ background: "var(--paper-sunk)", color: "var(--ink-2)" }}
     >
-      <span>{t("demo.banner")}</span>
+      <span className="min-w-0 py-1.5">{t("demo.banner")}</span>
+      {/* A text action, not a bordered button: the banner is a note, not a toolbar.
+          Still a 44px target. */}
       <Button
         variant="ghost"
         size="sm"
-        className="shrink-0 whitespace-nowrap"
+        className="shrink-0 whitespace-nowrap underline decoration-[var(--line-2)] underline-offset-4"
+        style={{ borderColor: "transparent" }}
         onClick={() => {
           exitDemo();
           qc.clear();

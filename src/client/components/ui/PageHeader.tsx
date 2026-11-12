@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Link } from "react-router";
 import { focusRing } from "./focus";
 import { Icon } from "./Icon";
+import { Mark } from "./Mark";
 import { t } from "~/client/i18n";
 
 /** Standard screen header. `back` is a route path; the back control is a real link. */
@@ -11,10 +12,13 @@ export function PageHeader({
   back,
   action,
   railTitle = false,
+  mark = false,
 }: {
   title: string;
   /** The title repeats the rail's brand at md+, so it is visually hidden there but stays the page's h1. */
   railTitle?: boolean;
+  /** Show the product mark before the title (home only). */
+  mark?: boolean;
   subtitle?: string;
   back?: string;
   action?: ReactNode;
@@ -32,7 +36,10 @@ export function PageHeader({
         </Link>
       )}
       <div className="min-w-0 flex-1">
-        <h1 className={`serif truncate text-[22px] leading-tight ${railTitle ? "md:sr-only" : ""}`}>{title}</h1>
+        <div className={`flex items-center gap-2 ${railTitle ? "md:sr-only" : ""}`}>
+          {mark && <Mark />}
+          <h1 className={`serif truncate text-[22px] leading-tight`}>{title}</h1>
+        </div>
         {subtitle && (
           <p className="line-clamp-2 text-[13px] leading-snug" style={{ color: "var(--ink-3)" }}>
             {subtitle}
