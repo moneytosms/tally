@@ -15,7 +15,14 @@ beforeEach(async () => {
 
 type Insights = {
   totals: { spent: number; paid: number; expenseCount: number; ledgerCount: number };
-  byCategory: Array<{ categoryId: string | null; name: string; icon: string | null; spent: number; count: number }>;
+  byCategory: Array<{
+    categoryId: string | null;
+    name: string;
+    icon: string | null;
+    spent: number;
+    count: number;
+    items: Array<{ expenseId: string; ledgerName: string | null; description: string; paidAt: number; amount: number }>;
+  }>;
   byMonth: Array<{ month: string; spent: number }>;
   mostSpentWith: Array<{ userId: string; displayName: string; sharedExpenseCount: number; sharedTotal: number }>;
 };
@@ -85,6 +92,35 @@ describe("GET /insights", () => {
       count: 1,
     });
     expect(i.byCategory.find((c) => c.categoryId === "cat_food")).toMatchObject({ name: "Food & Drink", spent: 5_000 });
+  });
+
+  it("lists each category's expenses newest first, at the caller's share, summing to spent", async () => {
+    const jan = Date.UTC(2026, 0, 15);
+    const feb = Date.UTC(2026, 1, 15);
+    await expense("L1", {
+      description: "Older",
+      total: 10_000, // ₹100.00, Ada's share ₹50.00
+      paidAtEpochMs: jan,
+      payerMemberId: "m_bob",
+      categoryId: "cat_food",
+      participants: [{ memberId: "m_ada" }, { memberId: "m_bob" }],
+    });
+    await expense("L1", {
+      description: "Newer",
+      total: 3_000, // ₹30.00, Ada's share ₹30.00
+      paidAtEpochMs: feb,
+      payerMemberId: "m_ada",
+      categoryId: "cat_food",
+      participants: [{ memberId: "m_ada" }],
+    });
+
+    const food = (await insights()).byCategory.find((c) => c.categoryId === "cat_food")!;
+    expect(food.items.map((i) => [i.description, i.amount, i.paidAt])).toEqual([
+      ["Newer", 3_000, feb],
+      ["Older", 5_000, jan],
+    ]);
+    expect(food.items.every((i) => typeof i.ledgerName === "string")).toBe(true);
+    expect(food.items.reduce((a, i) => a + i.amount, 0)).toBe(food.spent);
   });
 
   it("fills a gap month with 0, ascending", async () => {
@@ -277,7 +313,14 @@ describe("GET /insights", () => {
 
 type LedgerInsights = {
   totals: { spent: number; expenseCount: number };
-  byCategory: Array<{ categoryId: string | null; name: string; icon: string | null; spent: number; count: number }>;
+  byCategory: Array<{
+    categoryId: string | null;
+    name: string;
+    icon: string | null;
+    spent: number;
+    count: number;
+    items: Array<{ expenseId: string; ledgerName: string | null; description: string; paidAt: number; amount: number }>;
+  }>;
   byMonth: Array<{ month: string; spent: number }>;
   byMember: Array<{ memberId: string; nickname: string; paid: number; share: number }>;
 };
@@ -297,6 +340,19 @@ describe("GET /ledgers/:ledgerId/insights", () => {
     const i = await ledgerInsights("L1");
     expect(i.totals.spent).toBe(10_000); // whole ledger, not Ada's (zero) share
     expect(i.totals.expenseCount).toBe(1);
+  });
+
+  it("lists a category's expenses at their full total, without a ledger name", async () => {
+    await expense("L1", {
+      description: "Cab",
+      total: 6_000, // ₹60.00
+      payerMemberId: "m_bob",
+      categoryId: "cat_transport",
+      participants: [{ memberId: "m_bob" }, { memberId: "m_guest" }],
+    });
+
+    const cat = (await ledgerInsights("L1")).byCategory.find((c) => c.categoryId === "cat_transport")!;
+    expect(cat.items).toMatchObject([{ description: "Cab", amount: 6_000, ledgerName: null }]);
   });
 
   it("reports byMember paid vs share separately, including a member with only a share", async () => {

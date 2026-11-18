@@ -684,6 +684,8 @@
       "other": "{count} shared expenses"
     },
     "noCategory": "Uncategorised",
+    "showCategory": "Show expenses in {name}",
+    "itemMeta": "{date} · {ledger}",
     "rangeAll": "All time",
     "range12m": "Last 12 months",
     "range30d": "Last 30 days",

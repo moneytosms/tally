@@ -65,6 +65,7 @@ function toWire(e: StoredExpense) {
     description: e.description,
     total: e.total,
     paidAt: e.paidAt,
+    createdAt: e.createdAt,
     payerMemberId: e.payerMemberId,
     categoryId: e.categoryId,
     notes: e.notes,

@@ -42,6 +42,27 @@ function fillMonths(from: string, to: string) {
   return out;
 }
 
+/** One expense behind a category total, so the client can list what is in it.
+ *  `ledgerName` is null on the ledger-scoped endpoint, where it would repeat. */
+type CategoryItem = {
+  expenseId: string;
+  ledgerId: string;
+  ledgerName: string | null;
+  description: string;
+  paidAt: number;
+  amount: number;
+};
+type CategoryAcc = { spent: number; count: number; items: CategoryItem[] };
+
+/** Rows arrive newest first from the data layer, so pushing keeps that order. */
+function addToCategory(acc: Map<string | null, CategoryAcc>, categoryId: string | null, item: CategoryItem) {
+  const cat = acc.get(categoryId) ?? { spent: 0, count: 0, items: [] };
+  cat.spent += item.amount;
+  cat.count += 1;
+  cat.items.push(item);
+  acc.set(categoryId, cat);
+}
+
 insights.get("/insights", requireSession, async (c) => {
   const db = c.var.db;
   const userId = c.var.user.id;
@@ -60,17 +81,22 @@ insights.get("/insights", requireSession, async (c) => {
 
   let spent = 0;
   const expenseIds = new Set<string>();
-  const byCategory = new Map<string | null, { spent: number; count: number }>();
+  const byCategory = new Map<string | null, CategoryAcc>();
   const byMonth = new Map<string, number>();
 
   for (const r of shares) {
     spent += r.share;
     expenseIds.add(r.expenseId);
 
-    const cat = byCategory.get(r.categoryId) ?? { spent: 0, count: 0 };
-    cat.spent += r.share;
-    cat.count += 1;
-    byCategory.set(r.categoryId, cat);
+    // The caller's share, so a category's items sum to its `spent`.
+    addToCategory(byCategory, r.categoryId, {
+      expenseId: r.expenseId,
+      ledgerId: r.ledgerId,
+      ledgerName: r.ledgerName,
+      description: r.description,
+      paidAt: r.paidAt,
+      amount: r.share,
+    });
 
     const mk = monthKey(r.paidAt);
     byMonth.set(mk, (byMonth.get(mk) ?? 0) + r.share);
@@ -88,6 +114,7 @@ insights.get("/insights", requireSession, async (c) => {
         icon: cat?.icon ?? null,
         spent: v.spent,
         count: v.count,
+        items: v.items,
       };
     })
     .sort((a, b) => b.spent - a.spent);
@@ -178,7 +205,7 @@ insights.get("/ledgers/:ledgerId/insights", requireSession, requireMember, async
   );
 
   let spent = 0;
-  const byCategory = new Map<string | null, { spent: number; count: number }>();
+  const byCategory = new Map<string | null, CategoryAcc>();
   const byMonth = new Map<string, number>();
   const paidByMember = new Map<string, number>();
   const shareByMember = new Map<string, number>();
@@ -186,10 +213,14 @@ insights.get("/ledgers/:ledgerId/insights", requireSession, requireMember, async
   for (const e of expenses) {
     spent += e.total;
 
-    const cat = byCategory.get(e.categoryId) ?? { spent: 0, count: 0 };
-    cat.spent += e.total;
-    cat.count += 1;
-    byCategory.set(e.categoryId, cat);
+    addToCategory(byCategory, e.categoryId, {
+      expenseId: e.id,
+      ledgerId: e.ledgerId,
+      ledgerName: null,
+      description: e.description,
+      paidAt: e.paidAt,
+      amount: e.total,
+    });
 
     const mk = monthKey(e.paidAt);
     byMonth.set(mk, (byMonth.get(mk) ?? 0) + e.total);
@@ -209,6 +240,7 @@ insights.get("/ledgers/:ledgerId/insights", requireSession, requireMember, async
         icon: cat?.icon ?? null,
         spent: v.spent,
         count: v.count,
+        items: v.items,
       };
     })
     .sort((a, b) => b.spent - a.spent);

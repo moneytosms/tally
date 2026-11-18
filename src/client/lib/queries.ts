@@ -89,6 +89,8 @@ export type Expense = {
   description: string;
   total: Paise;
   paidAt: number;
+  /** Entry time. Breaks same-day ties in the expense list. */
+  createdAt: number;
   payerMemberId: string;
   categoryId: string | null;
   notes: string | null;
@@ -159,16 +161,38 @@ export type Revision = {
   snapshot: Expense;
 };
 
+/** One expense behind a category total. `amount` is what the total counted:
+ *  the viewer's share on lifetime insights, the expense total on a ledger's. */
+export type CategoryItem = {
+  expenseId: string;
+  ledgerId: string;
+  /** Null on ledger insights, where every item is in the same ledger. */
+  ledgerName: string | null;
+  description: string;
+  paidAt: number;
+  amount: Paise;
+};
+
+export type CategorySpend = {
+  categoryId: string | null;
+  name: string;
+  icon: string | null;
+  spent: Paise;
+  count: number;
+  /** Newest first. Sums to `spent`. */
+  items: CategoryItem[];
+};
+
 export type Insights = {
   totals: { spent: Paise; paid: Paise; expenseCount: number; ledgerCount: number };
-  byCategory: Array<{ categoryId: string | null; name: string; icon: string | null; spent: Paise; count: number }>;
+  byCategory: CategorySpend[];
   byMonth: Array<{ month: string; spent: Paise }>;
   mostSpentWith: Array<{ userId: string; displayName: string; sharedExpenseCount: number; sharedTotal: Paise }>;
 };
 
 export type LedgerInsights = {
   totals: { spent: Paise; expenseCount: number };
-  byCategory: Array<{ categoryId: string | null; name: string; icon: string | null; spent: Paise; count: number }>;
+  byCategory: CategorySpend[];
   byMonth: Array<{ month: string; spent: Paise }>;
   byMember: Array<{ memberId: string; nickname: string; paid: Paise; share: Paise }>;
 };
@@ -596,6 +620,7 @@ export function useCreateExpense(ledgerId: string) {
         description: body.description,
         total: body.total,
         paidAt: body.paidAtEpochMs,
+        createdAt: Date.now(),
         payerMemberId: body.payerMemberId,
         categoryId: body.categoryId,
         notes: body.notes,

@@ -108,6 +108,7 @@ function renderEdit(
                 description: "Lunch",
                 total: 40000, // ₹400.00
                 paidAt: Date.UTC(2026, 0, 1),
+                createdAt: Date.UTC(2026, 0, 1),
                 payerMemberId: "m_ada",
                 categoryId: "c_food",
                 notes: null,
@@ -199,6 +200,7 @@ describe("<ExpenseForm> category chips", () => {
                   description: "Lunch",
                   total: 40000, // ₹400.00
                   paidAt: Date.UTC(2026, 0, 1),
+                  createdAt: Date.UTC(2026, 0, 1),
                   payerMemberId: "m_ada",
                   categoryId: "c_food",
                   notes: null,

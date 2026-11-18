@@ -290,7 +290,7 @@ export function createDb(d1: D1Database) {
         .select()
         .from(t.expenses)
         .where(and(eq(t.expenses.ledgerId, ledgerId), isNull(t.expenses.deletedAt)))
-        .orderBy(desc(t.expenses.paidAt));
+        .orderBy(desc(t.expenses.paidAt), desc(t.expenses.createdAt));
       return withSplits(rows);
     },
     async findExpense(ledgerId: string, expenseId: string) {
@@ -344,7 +344,7 @@ export function createDb(d1: D1Database) {
         .select()
         .from(t.expenses)
         .where(and(...clauses))
-        .orderBy(desc(t.expenses.paidAt));
+        .orderBy(desc(t.expenses.paidAt), desc(t.expenses.createdAt));
       return withSplits(rows);
     },
     /**
@@ -361,6 +361,7 @@ export function createDb(d1: D1Database) {
           description: t.expenses.description,
           categoryId: t.expenses.categoryId,
           paidAt: t.expenses.paidAt,
+          ledgerName: t.ledgers.name,
           total: t.expenses.total,
           share: t.expenseSplits.amount,
           payerMemberId: t.expenses.payerMemberId,
@@ -378,7 +379,7 @@ export function createDb(d1: D1Database) {
             isNull(t.ledgers.deletedAt),
           ),
         )
-        .orderBy(desc(t.expenses.paidAt));
+        .orderBy(desc(t.expenses.paidAt), desc(t.expenses.createdAt));
     },
     insertExpense: (v: Insert<typeof t.expenses>) => db.insert(t.expenses).values(v),
     insertSplits: (v: Insert<typeof t.expenseSplits>[]) => db.insert(t.expenseSplits).values(v),

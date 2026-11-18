@@ -29,6 +29,7 @@ import {
 } from "~/client/lib/queries";
 import { formatDate } from "~/client/lib/format";
 import { t } from "~/client/i18n";
+import { compareExpensesNewest } from "~/shared/expenseOrder";
 
 const memberName = (m: Member | undefined) => m?.nickname ?? t("member.unknown");
 
@@ -36,10 +37,10 @@ export type ExpenseSort = "newest" | "oldest" | "amountHigh" | "amountLow";
 export type ExpenseQuery = ExpenseFilters & { sort: ExpenseSort };
 
 const sortComparators: Record<ExpenseSort, (a: Expense, b: Expense) => number> = {
-  newest: (a, b) => b.paidAt - a.paidAt,
-  oldest: (a, b) => a.paidAt - b.paidAt,
-  amountHigh: (a, b) => b.total - a.total,
-  amountLow: (a, b) => a.total - b.total,
+  newest: compareExpensesNewest,
+  oldest: (a, b) => compareExpensesNewest(b, a),
+  amountHigh: (a, b) => b.total - a.total || compareExpensesNewest(a, b),
+  amountLow: (a, b) => a.total - b.total || compareExpensesNewest(a, b),
 };
 
 export function sortExpenses(expenses: Expense[], sort: ExpenseSort): Expense[] {

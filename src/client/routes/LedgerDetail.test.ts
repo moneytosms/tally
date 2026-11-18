@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { encodeExpenseParams, parseExpenseParams, sortExpenses } from "./LedgerDetail";
 import type { Expense } from "~/client/lib/queries";
 
-const mk = (id: string, paidAt: number, total: number): Expense => ({
+const mk = (id: string, paidAt: number, total: number, createdAt = paidAt): Expense => ({
   id,
   ledgerId: "L1",
   description: id,
   total,
   paidAt,
+  createdAt,
   payerMemberId: "m_ada",
   categoryId: null,
   notes: null,
@@ -38,6 +39,15 @@ describe("sortExpenses", () => {
 
   it("orders by amount low to high", () => {
     expect(sortExpenses(expenses, "amountLow").map((e) => e.id)).toEqual(["oldest", "mid", "newest"]);
+  });
+
+  // paidAt is a calendar day, so same-day expenses tie on it. Entry time decides.
+  it("breaks a same-day tie by entry time, latest entered first", () => {
+    const day = 5_000;
+    const sameDay = [mk("first", day, 100_00, 10), mk("third", day, 100_00, 30), mk("second", day, 100_00, 20)]; // ₹100 each
+    expect(sortExpenses(sameDay, "newest").map((e) => e.id)).toEqual(["third", "second", "first"]);
+    expect(sortExpenses(sameDay, "oldest").map((e) => e.id)).toEqual(["first", "second", "third"]);
+    expect(sortExpenses(sameDay, "amountHigh").map((e) => e.id)).toEqual(["third", "second", "first"]);
   });
 
   it("does not mutate the input array", () => {

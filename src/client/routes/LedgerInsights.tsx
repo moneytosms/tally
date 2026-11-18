@@ -3,6 +3,7 @@ import { useParams } from "react-router";
 import { Amount, Button, Card, EmptyState, ScreenSkeleton, SectionHeading } from "~/client/components/ui";
 import { CategoryChart, ChartFallback, MemberPieChart, MonthChart, type PieDatum } from "~/client/components/charts";
 import { useLedgerInsights, type LedgerInsights as LedgerInsightsData } from "~/client/lib/queries";
+import { CategoryList } from "~/client/components/CategoryList";
 import { t } from "~/client/i18n";
 
 function MemberPieSection({ title, data }: { title: string; data: PieDatum[] }) {
@@ -52,17 +53,7 @@ function Body({ data }: { data: LedgerInsightsData }) {
                 <CategoryChart data={data.byCategory} />
               </Suspense>
             )}
-            <ul className="mt-2">
-              {data.byCategory.map((c) => (
-                <li key={c.categoryId ?? "none"} className="flex items-center justify-between gap-2.5 py-1">
-                  <span className="min-w-0 flex-1 truncate text-[15px]">
-                    {c.icon && <span aria-hidden="true">{c.icon} </span>}
-                    {c.name}
-                  </span>
-                  <Amount paise={c.spent} label={t("insights.expenseCount", { count: c.count })} tone="neutral" />
-                </li>
-              ))}
-            </ul>
+            <CategoryList categories={data.byCategory} itemLabel={t("expense.total")} />
           </Card>
         </section>
       )}

@@ -15,6 +15,7 @@ import {
 } from "~/client/components/ui";
 import { CategoryChart, ChartFallback, MonthChart } from "~/client/components/charts";
 import { useInsights, type Insights } from "~/client/lib/queries";
+import { CategoryList } from "~/client/components/CategoryList";
 import { t } from "~/client/i18n";
 
 const DAY = 86_400_000;
@@ -63,17 +64,7 @@ function InsightsBody({ data }: { data: Insights }) {
               <CategoryChart data={data.byCategory} />
             </Suspense>
           )}
-          <ul className="mt-2">
-            {data.byCategory.map((c) => (
-              <li key={c.categoryId ?? "none"} className="flex items-center justify-between gap-2.5 py-1">
-                <span className="min-w-0 flex-1 truncate text-[15px]">
-                  {c.icon && <span aria-hidden="true">{c.icon} </span>}
-                  {c.name}
-                </span>
-                <Amount paise={c.spent} label={t("insights.expenseCount", { count: c.count })} tone="neutral" />
-              </li>
-            ))}
-          </ul>
+          <CategoryList categories={data.byCategory} itemLabel={t("expense.yourShare")} />
         </Card>
       </section>
 

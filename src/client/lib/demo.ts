@@ -8,6 +8,7 @@ import { t } from "~/client/i18n";
 import { uuidv7 } from "~/shared/id";
 import { resolveSplits, type Paise } from "~/shared/money";
 import { compareLedgers, lastActivityAt } from "~/shared/ledgerOrder";
+import { compareExpensesNewest } from "~/shared/expenseOrder";
 import {
   addGuestSchema,
   createCategorySchema,
@@ -21,7 +22,17 @@ import {
   type CreateExpense,
 } from "~/shared/schemas";
 import { ApiError } from "./api";
-import type { ActivityEvent, Category, Comment, Expense, LedgerSummary, Me, Member, Series } from "./queries";
+import type {
+  ActivityEvent,
+  Category,
+  CategoryItem,
+  Comment,
+  Expense,
+  LedgerSummary,
+  Me,
+  Member,
+  Series,
+} from "./queries";
 
 const FLAG = "tally.demo";
 const ME = "demo-me";
@@ -60,7 +71,6 @@ export function exitDemo() {
 type DLedger = Omit<LedgerSummary, "memberCount" | "net" | "spent" | "lastActivityAt"> & { createdAt: number };
 type DMember = Member & { ledgerId: string };
 type DExpense = Omit<Expense, "splits"> & {
-  createdAt: number;
   splits: Array<{ memberId: string; amount: Paise; inputValue: number | null }>;
 };
 type DSettlement = {
@@ -281,11 +291,19 @@ function summary(l: DLedger): LedgerSummary {
 
 const month = (ms: number) => new Date(ms).toISOString().slice(0, 7);
 
-function byCategory(rows: Array<{ categoryId: string | null; spent: Paise }>) {
-  const acc = new Map<string | null, { spent: Paise; count: number }>();
-  for (const r of rows) {
-    const a = acc.get(r.categoryId) ?? { spent: 0, count: 0 };
-    acc.set(r.categoryId, { spent: a.spent + r.spent, count: a.count + 1 });
+function byCategory(rows: Array<{ e: DExpense; spent: Paise; ledgerName: string | null }>) {
+  const acc = new Map<string | null, { spent: Paise; count: number; items: CategoryItem[] }>();
+  for (const { e, spent, ledgerName } of [...rows].sort((a, b) => compareExpensesNewest(a.e, b.e))) {
+    const a = acc.get(e.categoryId) ?? { spent: 0, count: 0, items: [] };
+    a.items.push({
+      expenseId: e.id,
+      ledgerId: e.ledgerId,
+      ledgerName,
+      description: e.description,
+      paidAt: e.paidAt,
+      amount: spent,
+    });
+    acc.set(e.categoryId, { spent: a.spent + spent, count: a.count + 1, items: a.items });
   }
   return [...acc]
     .map(([categoryId, a]) => {
@@ -480,7 +498,7 @@ function handle(path: string, init?: RequestInit): unknown {
           e.splits.some((s) => s.memberId === q.get("memberId")),
       )
       .filter((e) => (from === null || e.paidAt >= from) && (to === null || e.paidAt <= to))
-      .sort((a, b) => b.paidAt - a.paidAt);
+      .sort(compareExpensesNewest);
   }
   if (hit(/^POST \/ledgers\/([^/]+)\/expenses$/)) {
     const l = ledgerOf(g(1)).id;
@@ -648,7 +666,15 @@ function handle(path: string, init?: RequestInit): unknown {
         expenseCount: mine.length,
         ledgerCount: new Set(mine.map((r) => r.e.ledgerId)).size,
       },
-      byCategory: byCategory(mine.map((r) => ({ categoryId: r.e.categoryId, spent: r.spent }))),
+      byCategory: byCategory(
+        mine
+          .filter((r) => r.e.splits.some((sp) => sp.memberId === r.v.id))
+          .map((r) => ({
+            e: r.e,
+            spent: r.spent,
+            ledgerName: S.ledgers.find((x) => x.id === r.e.ledgerId)?.name ?? "",
+          })),
+      ),
       byMonth: byMonth(mine.map((r) => ({ at: r.e.paidAt, spent: r.spent }))),
       mostSpentWith: [...withUser]
         .map(([userId, a]) => ({
@@ -665,7 +691,7 @@ function handle(path: string, init?: RequestInit): unknown {
     const es = S.expenses.filter((e) => e.ledgerId === l);
     return {
       totals: { spent: es.reduce((a, e) => a + e.total, 0), expenseCount: es.length },
-      byCategory: byCategory(es.map((e) => ({ categoryId: e.categoryId, spent: e.total }))),
+      byCategory: byCategory(es.map((e) => ({ e, spent: e.total, ledgerName: null }))),
       byMonth: byMonth(es.map((e) => ({ at: e.paidAt, spent: e.total }))),
       byMember: live(l).map((mem) => ({
         memberId: mem.id,
