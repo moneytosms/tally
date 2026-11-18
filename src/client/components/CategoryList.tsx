@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { Link } from "react-router";
 import { Amount, Icon, Sheet, focusRing } from "~/client/components/ui";
 import type { CategorySpend } from "~/client/lib/queries";
 import { formatDate } from "~/client/lib/format";
 import { t } from "~/client/i18n";
+import { expenseHref } from "~/client/routes/LedgerDetail";
 
 /** Category totals on an insights screen. Tapping one opens the expenses behind it. */
 export function CategoryList({ categories, itemLabel }: { categories: CategorySpend[]; itemLabel: string }) {
@@ -44,20 +46,23 @@ export function CategoryList({ categories, itemLabel }: { categories: CategorySp
             </div>
             <ul>
               {open.items.map((i) => (
-                <li
-                  key={i.expenseId}
-                  className="flex items-center justify-between gap-2.5 border-t py-2.5"
-                  style={{ borderColor: "var(--line)" }}
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-[15px]">{i.description}</div>
-                    <div className="truncate text-[13px]" style={{ color: "var(--ink-3)" }}>
-                      {i.ledgerName
-                        ? t("insights.itemMeta", { date: formatDate(i.paidAt), ledger: i.ledgerName })
-                        : formatDate(i.paidAt)}
+                <li key={i.expenseId} className="border-t" style={{ borderColor: "var(--line)" }}>
+                  {/* Opens the expense in its ledger; Back returns here. */}
+                  <Link
+                    to={expenseHref(i.ledgerId, i.expenseId)}
+                    className={`-mx-1.5 flex items-center justify-between gap-2.5 rounded-[7px] px-1.5 py-2.5 ${focusRing}`}
+                  >
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[15px]">{i.description}</div>
+                      <div className="truncate text-[13px]" style={{ color: "var(--ink-3)" }}>
+                        {i.ledgerName
+                          ? t("insights.itemMeta", { date: formatDate(i.paidAt), ledger: i.ledgerName })
+                          : formatDate(i.paidAt)}
+                      </div>
                     </div>
-                  </div>
-                  <Amount paise={i.amount} label={itemLabel} tone="neutral" />
+                    <Amount paise={i.amount} label={itemLabel} tone="neutral" />
+                    <Icon name="chevronRight" size={16} className="flex-none" />
+                  </Link>
                 </li>
               ))}
             </ul>

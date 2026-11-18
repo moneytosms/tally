@@ -3,7 +3,6 @@
 import { describe, expect, it } from "vitest";
 import {
   activeTransfer,
-  effectiveMethod,
   memberLine,
   netSum,
   pairKey,
@@ -99,15 +98,6 @@ describe("activeTransfer", () => {
 
   it("is null when nothing is open", () => {
     expect(activeTransfer(transfers, null)).toBeNull();
-  });
-});
-
-describe("effectiveMethod", () => {
-  it("falls back to manual when the payee has no VPA", () => {
-    expect(effectiveMethod("upi", false)).toBe("manual");
-    expect(effectiveMethod("upi", true)).toBe("upi");
-    expect(effectiveMethod("forgiven", false)).toBe("forgiven");
-    expect(effectiveMethod("manual", true)).toBe("manual");
   });
 });
 

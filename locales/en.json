@@ -399,7 +399,7 @@
     "writeOffBody": "Nobody will be asked to pay it. This cannot be undone.",
     "writeOffConfirm": "Write off for good",
     "openUpi": "Open UPI app",
-    "noVpa": "{name} hasn't added a UPI VPA, so record it manually.",
+    "noVpa": "{name} hasn't added a UPI VPA, so there's no pay button. Pay from your UPI app, then record it here.",
     "errorAmount": "Enter an amount, like 500.00.",
     "errorTooMuch": "That's more than is owed.",
     "archivedNote": "This ledger is archived, so settlements can no longer be recorded.",

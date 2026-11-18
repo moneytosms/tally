@@ -107,11 +107,6 @@ export function activeTransfer<T extends TransferKey>(transfers: T[], key: Trans
   return transfers.find((tr) => tr.fromMemberId === key.fromMemberId && tr.toMemberId === key.toMemberId) ?? null;
 }
 
-/** UPI needs the payee's VPA; without one the method is manual, whatever was picked before. */
-export function effectiveMethod(method: SettleMethod, hasVpa: boolean): SettleMethod {
-  return method === "upi" && !hasVpa ? "manual" : method;
-}
-
 /** Why a suggested transfer exists when its own trail does not explain it: the
  *  direct debts around its payer and payee. The transfer's own pair is left out,
  *  since a direct debt is the trail, not a reroute. */
@@ -317,7 +312,9 @@ export default function SettleUp() {
   // Settled elsewhere: forget the key, so the same pair later doesn't reopen this sheet.
   if (activeKey && !active) setActiveKey(null);
   const payeeVpa = active ? vpaOf(active.toMemberId) : null;
-  const shown = effectiveMethod(method, Boolean(payeeVpa));
+  // How it was paid is a record, so UPI is always selectable. Only the
+  // "Open UPI app" shortcut needs the payee's VPA.
+  const shown = method;
   const parsed = active ? settleAmount(amountRaw, active.amount) : null;
   const paise = parsed && "paise" in parsed ? parsed.paise : null;
   const sheetTitle = active ? t("settle.pays", { from: name(active.fromMemberId), to: name(active.toMemberId) }) : "";
@@ -679,13 +676,12 @@ export default function SettleUp() {
                     name="settle-method"
                     className={focusRing}
                     checked={shown === m}
-                    disabled={m === "upi" && !payeeVpa}
                     onChange={() => changeMethod(m)}
                   />
                   <span>{t(`settle.method.${m}`)}</span>
                 </label>
               ))}
-              {!payeeVpa && (
+              {shown === "upi" && !payeeVpa && (
                 <p className="text-[13px] text-[var(--ink-3)]">
                   {t("settle.noVpa", { name: name(active.toMemberId) })}
                 </p>

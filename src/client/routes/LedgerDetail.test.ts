@@ -1,7 +1,7 @@
 // Sort is client-side over already-fetched expenses. paidAt and total both
 // need dedicated orderings - swapping the comparator sign is an easy mistake.
 import { describe, expect, it } from "vitest";
-import { encodeExpenseParams, parseExpenseParams, sortExpenses } from "./LedgerDetail";
+import { encodeExpenseParams, expenseHref, parseExpenseParams, sortExpenses } from "./LedgerDetail";
 import type { Expense } from "~/client/lib/queries";
 
 const mk = (id: string, paidAt: number, total: number, createdAt = paidAt): Expense => ({
@@ -102,5 +102,13 @@ describe("expense query in the URL", () => {
     const parsed = parseExpenseParams(new URLSearchParams("from=22-10-2026&to=2026-02-31"));
     expect(parsed.from).toBeUndefined();
     expect(parsed.to).toBeUndefined();
+  });
+});
+
+describe("opening an expense from a link", () => {
+  it("is not a filter, so the next filter change drops it", () => {
+    const params = new URLSearchParams(expenseHref("L1", "e1").split("?")[1]);
+    expect(params.get("expense")).toBe("e1");
+    expect(encodeExpenseParams(parseExpenseParams(params)).has("expense")).toBe(false);
   });
 });

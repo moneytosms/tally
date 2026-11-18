@@ -60,6 +60,13 @@ const fromDay = (value: string | null | undefined, end: boolean): number | undef
   return Number.isNaN(ms) || toDay(ms) !== value ? undefined : ms;
 };
 
+/** Opens one expense's sheet on arrival. Not a filter, so encodeExpenseParams drops it. */
+export const EXPENSE_PARAM = "expense";
+
+/** Link to a ledger's expense list with that expense's sheet open. */
+export const expenseHref = (ledgerId: string, expenseId: string) =>
+  `/ledgers/${ledgerId}?${EXPENSE_PARAM}=${encodeURIComponent(expenseId)}`;
+
 /** Search, filters and sort live in the URL so they survive opening an expense and the Back button. */
 export function parseExpenseParams(params: URLSearchParams): ExpenseQuery {
   const sort = params.get("sort") as ExpenseSort;
@@ -158,7 +165,20 @@ export function LedgerDetail() {
 
   const [sheetOpen, setSheetOpen] = useState(false);
   // Store the id, not the expense: the detail is read from the list each render, so a restore or edit shows.
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // `?expense=<id>` opens one directly, e.g. from an insights category.
+  const [selectedId, setSelectedId] = useState<string | null>(() => params.get(EXPENSE_PARAM));
+  const closeExpense = () => {
+    setSelectedId(null);
+    if (params.has(EXPENSE_PARAM))
+      setParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete(EXPENSE_PARAM);
+          return next;
+        },
+        { replace: true },
+      );
+  };
 
   // The unfiltered list is kept alongside the filtered one purely so the result
   // count can say "3 of 20" - the server is the only thing that filters.
@@ -336,7 +356,7 @@ export function LedgerDetail() {
           expense={selected}
           members={members.data ?? []}
           open
-          onOpenChange={(o) => !o && setSelectedId(null)}
+          onOpenChange={(o) => !o && closeExpense()}
         />
       )}
     </>
