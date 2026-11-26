@@ -22,7 +22,7 @@ No. It never touches your money. **Pay with UPI** opens your UPI app with the pa
 
 ## Why does the demo reset when I refresh?
 
-The demo runs in the browser tab against sample data held in memory. Nothing is saved and nothing leaves the tab. A refresh loads the sample data again. Balances in the demo are calculated by the same code the server uses.
+The demo runs in the browser tab against sample data held in memory. You can link straight to it: `/demo` on any instance (for example `https://tally.moneytosms.workers.dev/demo`) opens the sample ledgers without signing in. Nothing is saved and nothing leaves the tab. A refresh loads the sample data again. Balances in the demo are calculated by the same code the server uses.
 
 ## Are push notifications working?
 

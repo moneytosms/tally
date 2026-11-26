@@ -57,6 +57,13 @@ export function enterDemo() {
   }
 }
 
+/** Enter demo mode from anywhere (the /demo deep link, the welcome screen):
+ *  reseed, and drop any cached real-account queries so nothing leaks across. */
+export function startDemo(qc: { clear(): void }) {
+  enterDemo();
+  qc.clear();
+}
+
 export function exitDemo() {
   active = false;
   try {

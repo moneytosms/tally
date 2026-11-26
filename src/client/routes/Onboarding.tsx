@@ -4,7 +4,6 @@ import { startAuthentication, startRegistration } from "@simplewebauthn/browser"
 import { useQueryClient } from "@tanstack/react-query";
 import { Button, Field, Input, Mark, Notice, focusRing, pushToast } from "~/client/components/ui";
 import { api } from "~/client/lib/api";
-import { enterDemo } from "~/client/lib/demo";
 import { qk, useMe } from "~/client/lib/queries";
 import { classifyAuthError, isEmbeddedIosBrowser, plainFailure, type AuthFailure } from "~/client/lib/passkey";
 import { emailProblem, newPasswordProblem, passwordErrorKey, signInWithPassword, signUp } from "~/client/lib/authApi";
@@ -395,9 +394,7 @@ export function Onboarding() {
                   type="button"
                   className={linkClass}
                   onClick={() => {
-                    enterDemo();
-                    qc.clear();
-                    navigate("/", { replace: true });
+                    navigate("/demo", { replace: true });
                   }}
                 >
                   {t("demo.try")}

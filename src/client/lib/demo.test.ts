@@ -56,3 +56,14 @@ describe("demo api", () => {
     await expect(demoApi("/api/admin/users")).rejects.toMatchObject({ code: "demo" });
   });
 });
+
+describe("startDemo (the /demo deep link)", () => {
+  it("turns demo mode on and drops cached real-account queries", async () => {
+    const { exitDemo, isDemo, startDemo } = await import("./demo");
+    exitDemo();
+    let cleared = 0;
+    startDemo({ clear: () => void cleared++ });
+    expect(isDemo()).toBe(true);
+    expect(cleared).toBe(1);
+  });
+});
