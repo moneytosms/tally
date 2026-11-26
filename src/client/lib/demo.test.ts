@@ -1,11 +1,17 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { demoApi, enterDemo } from "./demo";
-import type { Expense, LedgerBalances, LedgerSummary, Member } from "./queries";
+import type { AdminUser, Expense, LedgerBalances, LedgerSummary, Me, Member } from "./queries";
 
 const sum = (b: LedgerBalances) => b.positions.reduce((a, p) => a + p.net, 0);
 
 describe("demo api", () => {
   beforeEach(() => enterDemo());
+
+  it("signs in as the Owner, so the admin panel has people to show", async () => {
+    expect((await demoApi<Me>("/api/me")).isOwner).toBe(true);
+    const users = await demoApi<AdminUser[]>("/api/admin/users");
+    expect(users.filter((u) => u.isOwner).map((u) => u.id)).toEqual(["demo-me"]);
+  });
 
   it("seeds ledgers whose derived balances sum to zero", async () => {
     const ledgers = await demoApi<LedgerSummary[]>("/api/ledgers");
@@ -53,7 +59,9 @@ describe("demo api", () => {
   });
 
   it("refuses what demo does not support", async () => {
-    await expect(demoApi("/api/admin/users")).rejects.toMatchObject({ code: "demo" });
+    await expect(demoApi("/api/admin/users/demo-asha/promote", { method: "POST" })).rejects.toMatchObject({
+      code: "demo",
+    });
   });
 });
 

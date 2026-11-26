@@ -22,8 +22,12 @@ import {
   type CreateExpense,
 } from "~/shared/schemas";
 import { ApiError } from "./api";
+import { RP_ID } from "~/shared/rp-id";
 import type {
   ActivityEvent,
+  AdminInstance,
+  AdminInvite,
+  AdminUser,
   Category,
   CategoryItem,
   Comment,
@@ -389,13 +393,49 @@ function handle(path: string, init?: RequestInit): unknown {
       id: ME,
       displayName: S.me.displayName,
       vpa: S.me.vpa,
-      isOwner: false,
+      isOwner: true,
       accountType: "full",
       email: null,
       hasPassword: true,
       credentials: [],
     } satisfies Me;
   }
+  /* admin: read-only, so the panel is visible; its actions fall through to "unavailable" */
+  if (key === "GET /admin/users") {
+    const now = Date.now();
+    return [...S.people].map(([id, p], i) => ({
+      id,
+      displayName: id === ME ? S.me.displayName : p.displayName,
+      isOwner: id === ME,
+      accountType: id === "demo-meera" ? "restricted" : "full",
+      createdAt: now - (90 - i * 10) * DAY,
+      email: null,
+      hasPassword: id !== "demo-meera",
+      credentials:
+        id === "demo-meera" ? [] : [{ id: `${id}-key`, createdAt: now - 60 * DAY, lastUsedAt: now - i * DAY }],
+    })) satisfies AdminUser[];
+  }
+  if (key === "GET /admin/invites") {
+    const now = Date.now();
+    return [
+      { id: "demo-inv-1", ledgerId: null, ledgerName: null, createdAt: now - DAY, expiresAt: now + 6 * DAY },
+      {
+        id: "demo-inv-2",
+        ledgerId: "demo-goa",
+        ledgerName: "Goa trip",
+        createdAt: now - 2 * DAY,
+        expiresAt: now + 5 * DAY,
+      },
+    ] satisfies AdminInvite[];
+  }
+  if (key === "GET /admin/instance")
+    return {
+      rpId: RP_ID,
+      userCount: S.people.size,
+      ledgerCount: S.ledgers.length,
+      pushConfigured: true,
+      recurringConfigured: true,
+    } satisfies AdminInstance;
   if (key === "PATCH /me") {
     const b = parse(updateProfileSchema, body);
     if (b.displayName !== undefined) S.me.displayName = b.displayName;
