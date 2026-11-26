@@ -13,7 +13,7 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, "");
     <nav class="foot__nav" aria-label="Footer">
       <a href={`${base}/guide/`}>Guide</a>
       <a href={`${base}/guide/deployment`}>Self-host</a>
-      <a href={`${base}/guide/spec`}>Spec</a>
+      <a href={`${cfg.repoUrl}/blob/${cfg.branch}/docs/SPEC.md`}>Spec</a>
       <a href={cfg.repoUrl}>Source</a>
       <a href={`${cfg.repoUrl}/blob/${cfg.branch}/LICENSE`}>MIT licence</a>
     </nav>

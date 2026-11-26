@@ -19,16 +19,18 @@ export default {
   footnote: "Demo data is fictional. tally never moves money.",
   // Markdown rendered in place under /guide (repo-relative globs, "!" excludes).
   // No copies: a doc fixed in the repo is fixed on the site at the next build.
-  guide: [
-    "README.md",
-    "CONTRIBUTING.md",
-    "docs/USAGE.md",
-    "docs/FAQ.md",
-    "docs/DEPLOYMENT.md",
-    "docs/OPERATIONS.md",
-    "docs/ARCHITECTURE.md",
-    "docs/SPEC.md",
-    "docs/adr/*.md",
+  guide: ["docs/README.md", "docs/using/*.md", "docs/FAQ.md", "docs/DEPLOYMENT.md", "docs/OPERATIONS.md"],
+  // Sidebar sections, in reading order, by guide slug. Contributor docs (spec,
+  // architecture, ADRs) stay on GitHub: the guide is for people using tally.
+  guideNav: [
+    { name: "Start here", ids: ["index"] },
+    {
+      name: "Using tally",
+      ids: ["using/getting-started", "using/ledgers", "using/expenses", "using/settling", "using/insights-and-export", "using/admin"],
+    },
+    { name: "Help", ids: ["faq"] },
+    { name: "Self-hosting", ids: ["deployment", "operations"] },
   ],
-  guideRoot: "README.md", // becomes /guide/readme; docs/README.md becomes /guide/
+  contributorDocs: `https://github.com/${owner}/${repoName}/tree/main/docs`,
+  guideRoot: "README.md", // not in the guide; repo links to it go to GitHub
 };

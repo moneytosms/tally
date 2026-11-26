@@ -97,7 +97,7 @@ pnpm dev            # vite + wrangler dev
 ```
 
 Using the app: see the [usage guide](https://moneytosms.github.io/tally/guide/)
-or [docs/USAGE.md](docs/USAGE.md).
+or [docs/README.md](docs/README.md).
 
 ## Self-hosting
 

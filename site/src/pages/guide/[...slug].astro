@@ -5,14 +5,10 @@ import { blob, cfg } from "../../lib/source";
 
 export async function getStaticPaths() {
   const docs = await getCollection("guide");
-  const paths = docs.map((entry) => ({
+  return docs.map((entry) => ({
     params: { slug: entry.id === "index" ? undefined : entry.id },
     props: { entry },
   }));
-  // No docs/README.md: /guide/ falls back to the root README so the nav never dead-ends.
-  const fallback = docs.find((e) => e.id === "readme") ?? docs[0];
-  if (fallback && !docs.some((e) => e.id === "index")) paths.push({ params: { slug: undefined }, props: { entry: fallback } });
-  return paths;
 }
 
 interface Props { entry: CollectionEntry<"guide"> }
@@ -26,19 +22,12 @@ const titleOf = (e: CollectionEntry<"guide">) =>
 const title = titleOf(entry);
 const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
 
-// Sidebar: "Start here" for top-level docs, then one group per folder
-// (adr/foo -> "Adr"). Reading order inside a group is by file name; prefix
-// files with numbers (0001-...) to control it.
-const groupOf = (id: string) => (id === "index" || id === "readme" || !id.includes("/") ? "Start here" : id.split("/")[0]);
-const label = (g: string) => g === "Start here" ? g : g.replace(/[-_]/g, " ").replace(/^./, (c) => c.toUpperCase());
-const names = [...new Set(all.map((e) => groupOf(e.id)))].sort((x, y) => (x === "Start here" ? -1 : y === "Start here" ? 1 : x.localeCompare(y)));
-// Reading order for top-level docs; unlisted ones sort after, by name.
-const order = ["index", "readme", "usage", "faq", "deployment", "operations", "architecture", "spec", "contributing"];
-const rank = (id: string) => (order.indexOf(id) + 1 || order.length + 1);
-const groups = names.map((g) => ({
-  name: label(g),
-  ids: all.filter((e) => groupOf(e.id) === g).sort((x, y) => rank(x.id) - rank(y.id) || x.id.localeCompare(y.id)).map((e) => e.id),
-}));
+// Sidebar sections and reading order come from site.config.mjs (guideNav).
+const groups = cfg.guideNav;
+const flat = groups.flatMap((g) => g.ids);
+const at = flat.indexOf(entry.id);
+const prev = flat[at - 1];
+const next = at === -1 ? undefined : flat[at + 1];
 const byId = new Map(all.map((e) => [e.id, e]));
 const href = (id: string) => `${base}/guide/${id === "index" ? "" : id}`;
 
@@ -52,7 +41,7 @@ const sourcePath = entry.filePath?.replace(/^\.\.\//, "") ?? "";
       <div id="search" class="guide__search"></div>
       <noscript><p>Search needs JavaScript. All documents are available below.</p></noscript>
       <details class="guide__menu" open>
-        <summary>All documents</summary>
+        <summary>All pages</summary>
         {groups.map((g) => (
           <div class="group">
             <p class="group__name">{g.name}</p>
@@ -63,13 +52,20 @@ const sourcePath = entry.filePath?.replace(/^\.\.\//, "") ?? "";
             </ul>
           </div>
         ))}
+        <p class="guide__contrib">Building or contributing? The spec, architecture and design decisions are <a href={cfg.contributorDocs}>on GitHub</a>.</p>
       </details>
     </aside>
 
     <article class="prose" data-pagefind-body>
       <Content />
+      {(prev || next) && (
+        <nav class="pager" aria-label="Previous and next page">
+          {prev && <a class="pager__prev" href={href(prev)}><span>Previous</span>{titleOf(byId.get(prev)!)}</a>}
+          {next && <a class="pager__next" href={href(next)}><span>Next</span>{titleOf(byId.get(next)!)}</a>}
+        </nav>
+      )}
       <p class="prose__source">
-        This page is <a href={blob(sourcePath)}>{sourcePath}</a> in the repository, rendered as written.
+        Something wrong or unclear? <a href={blob(sourcePath)}>Edit this page on GitHub</a>.
       </p>
     </article>
 
@@ -171,8 +167,25 @@ const sourcePath = entry.filePath?.replace(/^\.\.\//, "") ?? "";
   .prose :global(th) { font-weight: 700; background: var(--muted); }
   .prose :global(hr) { border: 0; border-top: 1px solid var(--border); margin: 2.5rem 0; }
   .prose :global(img) { border-radius: var(--radius); border: 1px solid var(--border); }
+  .guide__contrib { margin-top: 1.6rem; padding: 0.8rem 0.6rem 0; border-top: 1px solid var(--border); font-size: 0.82rem; color: var(--muted-foreground); line-height: 1.45; }
+  .guide__contrib a { color: var(--primary); }
+  .pager { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-top: 3.5rem; }
+  .pager a {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    color: var(--foreground);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .pager a:hover { border-color: var(--primary); }
+  .pager span { font-size: 0.8rem; font-weight: 400; color: var(--muted-foreground); }
+  .pager__next { grid-column: 2; text-align: right; }
   .prose__source {
-    margin-top: 3.5rem !important;
+    margin-top: 2rem !important;
     padding-top: 1.25rem;
     border-top: 1px solid var(--border);
     font-size: 0.88rem;
