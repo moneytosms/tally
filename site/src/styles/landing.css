@@ -1,23 +1,24 @@
 /* tally landing: clean Indian print ephemera. Letterpress on newsprint:
-   two spot inks (vermilion, indigo) plus black. Flat, hard edges, no blur. */
+   two spot inks plus black, in the app's paper palette
+   (indigo token = moss, vermilion token = terracotta) so the guide hand-off is seamless. Flat, hard edges, no blur. */
 
 :root {
   color-scheme: light dark;
-  --paper: #f3eee2;
-  --paper-2: #fbf8f0;
-  --paper-sunk: #e9e2d2;
-  --rule: #d6ccb6;
-  --ink: #191817;
-  --ink-2: #4e4a42;
-  --vermilion: #d9412a;
-  --vermilion-text: #b8321c;
-  --on-vermilion: #fbf8f0;
-  --indigo: #23306b;
-  --indigo-wash: #dce0f0;
-  --box-ink-bg: #191817;
-  --box-ink-fg: #f3eee2;
-  --box-indigo-bg: #23306b;
-  --box-indigo-fg: #f3eee2;
+  --paper: #f7f4ec;
+  --paper-2: #fffdf7;
+  --paper-sunk: #efeade;
+  --rule: #e0d9c8;
+  --ink: #23241d;
+  --ink-2: #5c5f52;
+  --vermilion: #b8502c;
+  --vermilion-text: #a3461f;
+  --on-vermilion: #fffdf7;
+  --indigo: #485c43;
+  --indigo-wash: #e6ece0;
+  --box-ink-bg: #23241d;
+  --box-ink-fg: #f7f4ec;
+  --box-indigo-bg: #485c43;
+  --box-indigo-fg: #f7f4ec;
   --grain: 0.07;
   --glint: 0.38;
 
@@ -30,21 +31,21 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --paper: #10142a;
-    --paper-2: #181e3a;
-    --paper-sunk: #0b0e1f;
-    --rule: #2c3460;
-    --ink: #f1eadb;
-    --ink-2: #b9b2a2;
-    --vermilion: #ff6b4e;
-    --vermilion-text: #ff8a70;
-    --on-vermilion: #10142a;
-    --indigo: #9daaf0;
-    --indigo-wash: #222b55;
-    --box-ink-bg: #0b0e1f;
-    --box-ink-fg: #f1eadb;
-    --box-indigo-bg: #222b55;
-    --box-indigo-fg: #dde2fa;
+    --paper: #191a15;
+    --paper-2: #20221b;
+    --paper-sunk: #131410;
+    --rule: #2e3128;
+    --ink: #e8e6da;
+    --ink-2: #a3a595;
+    --vermilion: #e0805f;
+    --vermilion-text: #e8957a;
+    --on-vermilion: #191a15;
+    --indigo: #8fa885;
+    --indigo-wash: #242a20;
+    --box-ink-bg: #131410;
+    --box-ink-fg: #e8e6da;
+    --box-indigo-bg: #242a20;
+    --box-indigo-fg: #dfe8d8;
     --grain: 0.1;
     --glint: 0.1;
   }
@@ -52,21 +53,21 @@
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --paper: #10142a;
-  --paper-2: #181e3a;
-  --paper-sunk: #0b0e1f;
-  --rule: #2c3460;
-  --ink: #f1eadb;
-  --ink-2: #b9b2a2;
-  --vermilion: #ff6b4e;
-  --vermilion-text: #ff8a70;
-  --on-vermilion: #10142a;
-  --indigo: #9daaf0;
-  --indigo-wash: #222b55;
-  --box-ink-bg: #0b0e1f;
-  --box-ink-fg: #f1eadb;
-  --box-indigo-bg: #222b55;
-  --box-indigo-fg: #dde2fa;
+  --paper: #191a15;
+  --paper-2: #20221b;
+  --paper-sunk: #131410;
+  --rule: #2e3128;
+  --ink: #e8e6da;
+  --ink-2: #a3a595;
+  --vermilion: #e0805f;
+  --vermilion-text: #e8957a;
+  --on-vermilion: #191a15;
+  --indigo: #8fa885;
+  --indigo-wash: #242a20;
+  --box-ink-bg: #131410;
+  --box-ink-fg: #e8e6da;
+  --box-indigo-bg: #242a20;
+  --box-indigo-fg: #dfe8d8;
   --grain: 0.1;
   --glint: 0.1;
 }
