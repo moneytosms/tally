@@ -5,8 +5,8 @@ const repoName = "tally";
 
 export default {
   name: "tally",
-  tagline: "Split expenses with friends on a shared ledger. Settle over UPI. Runs free on Cloudflare.",
-  description: "Self-hosted expense splitting PWA for friend groups. Integer-paise ledgers, suggested transfers with a why trail, UPI settle links. Never touches your money. MIT.",
+  tagline: "Expense splitting that shows its working. Exact to the paisa. Self-hosted, free on Cloudflare.",
+  description: "Self-hosted expense splitting PWA for friend groups. Integer-paise ledgers, suggested transfers that each explain themselves, full edit history. Never touches your money. MIT.",
   owner,
   repoName,
   branch: "main",

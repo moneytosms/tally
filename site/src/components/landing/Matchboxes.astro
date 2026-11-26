@@ -1,0 +1,47 @@
+---
+import Mark from "./Mark.astro";
+
+// One label per extra feature. Each claim is something the app does today.
+const boxes = [
+  { name: "Four split modes", back: "Equal, exact amounts, shares or percent. Stored as resolved paise." },
+  { name: "Refunds", back: "A negative total is a refund. It splits the same way, in reverse." },
+  { name: "Edit history and undo", back: "Anyone can edit an expense. Every edit is recorded and can be undone." },
+  { name: "Guests", back: "People without accounts. They split and pay like anyone, and never log in." },
+  { name: "Recurring", back: "Rent, WiFi, anything that repeats, added for you on schedule." },
+  { name: "Passkeys", back: "Sign in with a passkey or a password. Either works on the same account." },
+  { name: "Invites", back: "Single-use, 48-hour invites. There is no public signup." },
+  { name: "Insights and budget burn", back: "Spend by category and month, and a burn rate against a trip budget." },
+  { name: "Bulk settle", back: "Clear what you owe one person across every shared ledger in one go, with a UPI link ready." },
+  { name: "Exports", back: "CSV and XLSX export, plus a printable report." },
+  { name: "Install as app", back: "A PWA. Add it to your home screen and it opens like an app." },
+  { name: "Six themes", back: "Pick the look that suits your phone." },
+];
+const inks = ["vermilion", "indigo", "paper", "ink"];
+---
+
+<section class="sec" id="more" aria-labelledby="more-title">
+  <div class="wrap">
+    <div class="sec__head">
+      <p class="label"><span class="no">No. 06</span> And the rest</p>
+      <h2 id="more-title" class="h2">Small things, each in its own box.</h2>
+      <p class="lede">Tap or hover a label to read what's inside.</p>
+    </div>
+    <ul class="boxes">
+      {boxes.map((b, i) => (
+        <li class={`mb mb--${inks[(i + Math.floor(i / 4)) % inks.length]}`}>
+          <button type="button" class="mb__btn" aria-pressed="false">
+            <span class="mb__face mb__front">
+              <span class="mb__top"><span class="cond">No. {String(i + 1).padStart(2, "0")}</span><Mark size={20} /></span>
+              <span class="mb__name">{b.name}</span>
+              <span class="mb__bar cond" aria-hidden="true">tally · ledger</span>
+            </span>
+            <span class="mb__face mb__back">
+              <span class="cond">Inside</span>
+              <span class="mb__text">{b.back}</span>
+            </span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  </div>
+</section>

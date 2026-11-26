@@ -1,0 +1,43 @@
+---
+import { DEMO_HOST, DEMO_URL, qr } from "./data";
+---
+
+<section class="sec" id="upi" aria-labelledby="upi-title">
+  <div class="wrap split split--flip">
+    <div class="sec__copy">
+      <p class="label"><span class="no">No. 04</span> Settling up</p>
+      <h2 id="upi-title" class="h2">Settling up, on the record.</h2>
+      <p class="lede">
+        Pay in full or in part, record it by hand, or forgive what's left. If you pay by UPI, tally builds the <code>upi://</code> link for the exact amount and your UPI app does the rest. Then you mark it settled here.
+      </p>
+      <p class="lede">
+        tally never moves money. It is a ledger, not a bank: it records what you tell it happened, and every settlement can be traced.
+      </p>
+      <p class="fine">The code on the standee opens the demo. It is not a payment code.</p>
+    </div>
+
+    <figure class="standee" aria-label="A counter standee with a QR code that opens the tally demo">
+      <div class="standee__stage">
+        <div class="standee__body">
+          <p class="standee__cap"><span class="cond">Scan</span> to try the demo</p>
+          <div class="standee__plate">
+            <svg viewBox={`0 0 ${qr.size} ${qr.size}`} role="img" aria-labelledby="qr-t" shape-rendering="crispEdges">
+              <title id="qr-t">QR code that opens the tally demo at {DEMO_HOST}</title>
+              <rect width={qr.size} height={qr.size} fill="#fff"></rect>
+              <path d={qr.d} fill="#191817"></path>
+            </svg>
+          </div>
+          <p class="standee__url">{DEMO_HOST}</p>
+          <a class="btn btn--primary btn--block" href={DEMO_URL}>Open the demo</a>
+        </div>
+        <div class="standee__foot" aria-hidden="true"></div>
+        <div class="counter" aria-hidden="true"></div>
+        <div class="stamps" aria-hidden="true">
+          <span class="stamp stamp--paid">Paid</span>
+          <span class="stamp stamp--hi" lang="hi">चुकता</span>
+          <span class="stamp stamp--settled">Settled</span>
+        </div>
+      </div>
+    </figure>
+  </div>
+</section>

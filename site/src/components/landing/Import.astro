@@ -1,0 +1,37 @@
+---
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+---
+
+<section class="sec" id="import" aria-labelledby="import-title">
+  <div class="wrap split">
+    <div class="sec__copy">
+      <p class="label"><span class="no">No. 08</span> Moving house</p>
+      <h2 id="import-title" class="h2">Bring your history.</h2>
+      <p class="lede">
+        Already keeping a ledger somewhere else? Import a Splitwise CSV or a Splid XLS file and the old expenses come with you. Start the trip's tally where you left off.
+      </p>
+      <p><a class="link" href={`${base}/guide/usage`}>How importing works, in the guide</a></p>
+    </div>
+
+    <div class="tagwrap">
+      <div class="tag-luggage" role="group" aria-label="A luggage tag: from Splitwise or Splid, to a tally ledger">
+        <svg class="tag-luggage__string" viewBox="0 0 120 100" aria-hidden="true" focusable="false">
+          <path d="M60 96C22 90 8 52 34 24c9-10 43-10 52 0 26 28 12 66-26 72" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round"></path>
+        </svg>
+        <div class="tag-luggage__body">
+          <svg class="tag-luggage__shape" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <polygon points="0,15 14,0 86,0 100,15 100,100 0,100" vector-effect="non-scaling-stroke"></polygon>
+          </svg>
+          <span class="tag-luggage__hole" aria-hidden="true"></span>
+          <p class="cond tag-luggage__head">Transfer tag</p>
+          <dl>
+            <div><dt class="cond">From</dt><dd>Splitwise <small>CSV</small></dd></div>
+            <div><dt class="cond">Or</dt><dd>Splid <small>XLS</small></dd></div>
+            <div class="to"><dt class="cond">To</dt><dd>A tally ledger</dd></div>
+          </dl>
+          <p class="tag-luggage__fine cond">Handle with care · Fragile history</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,40 @@
+---
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { DEMO_URL } from "./data";
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const has = (file: string) => existsSync(resolve(process.cwd(), "public/video", file));
+const mp4 = has("tally-launch.mp4");
+const webm = has("tally-launch.webm");
+const poster = has("tally-launch-poster.jpg");
+const playable = mp4 || webm;
+---
+
+<section class="sec sec--sunk" id="film" aria-labelledby="film-title">
+  <div class="wrap">
+    <div class="sec__head">
+      <p class="label"><span class="no">No. 05</span> The film</p>
+      <h2 id="film-title" class="h2">Forty seconds, start to settled.</h2>
+      <p class="lede">A short walk through the app: logging an expense, reading the plan, opening a trail, settling up.</p>
+    </div>
+
+    <div class="film">
+      <div class="film__frame">
+        {playable ? (
+          <video controls playsinline preload="none" poster={poster ? `${base}/video/tally-launch-poster.jpg` : undefined} aria-label="tally in forty seconds">
+            {webm && <source src={`${base}/video/tally-launch.webm`} type="video/webm" />}
+            {mp4 && <source src={`${base}/video/tally-launch.mp4`} type="video/mp4" />}
+            <p>Your browser can't play this video. <a href={DEMO_URL}>Try the live demo instead.</a></p>
+          </video>
+        ) : (
+          <div class="film__empty">
+            <p class="cond">Reel in the can</p>
+            <p>The film isn't on this page yet. The live demo shows the same thing.</p>
+            <a class="btn btn--primary" href={DEMO_URL}>Try the demo</a>
+          </div>
+        )}
+      </div>
+    </div>
+  </div>
+</section>

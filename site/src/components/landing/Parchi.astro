@@ -1,0 +1,79 @@
+---
+import { bill, ledgerName, money, oddPaise, paiseText, signed } from "./data";
+
+const weights = bill.lines.map((l) => l.weight).join(" : ");
+const names = bill.lines.map((l) => l.who).join(", ");
+const sumText = bill.lines.map((l) => new Intl.NumberFormat("en-IN").format(l.share)).join(" + ");
+const grouped = (n: number) => new Intl.NumberFormat("en-IN").format(n);
+---
+
+<section class="sec" id="bill" aria-labelledby="bill-title">
+  <div class="wrap split">
+    <div class="sec__copy">
+      <p class="label"><span class="no">No. 02</span> The bill</p>
+      <h2 id="bill-title" class="h2">Every share is written down, in paise.</h2>
+      <p class="lede">
+        Say the scooter was split by shares, two for Sam and one each for Asha and Ravi. tally resolves that to exact paise and stores the result. It never recomputes it from the weights later, so an old expense can't drift.
+      </p>
+      <ul class="points">
+        <li><b>Four ways to split.</b> Equal, exact amounts, shares or percent.</li>
+        <li><b>Whole paise only.</b> No floats anywhere, so the shares always add up to the total.</li>
+        <li><b>Odd paise have a home.</b> They go to the payer, or to the first member in order if the payer isn't in the split.</li>
+      </ul>
+    </div>
+
+    <figure class="parchi" aria-label={`A bill for ${bill.title}, split by shares`}>
+      <div class="parchi__stack">
+      <div class="parchi__under" aria-hidden="true"></div>
+      <div class="parchi__sheet">
+        <div class="parchi__tear" aria-hidden="true"></div>
+        <div class="parchi__pad">
+          <div class="parchi__line parchi__head">
+            <span class="cond">tally · bill</span>
+            <span class="parchi__ledger">{ledgerName}, {bill.date}</span>
+          </div>
+
+          <p class="parchi__line parchi__item">
+            <b>{bill.title}</b>
+            <span class="amt">{money(bill.total)}</span>
+          </p>
+          <p class="parchi__line parchi__meta"><span class="cond">Paid by</span> <b>{bill.paidBy}</b> <span class="parchi__paise">{paiseText(bill.total)}</span></p>
+          <p class="parchi__line parchi__meta"><span class="cond">Split</span> <b>By shares, {weights}</b> <span class="parchi__paise">{names}</span></p>
+
+          <ul class="parchi__rows">
+            {bill.lines.map((l) => {
+              const position = l.payer ? bill.total - l.share : -l.share;
+              return (
+                <li class="parchi__line parchi__row">
+                  <span class="who">{l.who} <small>{l.weight} {l.weight === 1 ? "share" : "shares"}</small></span>
+                  <span class="paise">{paiseText(l.share)}</span>
+                  <span class="pos">
+                    <span class={`tag ${position < 0 ? "tag--owes" : "tag--owed"}`}>{position < 0 ? "owes" : "owed"}</span>
+                    <span class="amt">{signed(position)}</span>
+                    <span class="pos__note">{l.payer ? `paid ${money(bill.total)}, own share ${money(l.share)}` : `to ${bill.paidBy}`}</span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+
+          <p class="parchi__line parchi__sum"><span class="cond">Check</span> <span class="amt">{sumText} = {grouped(bill.total)} paise</span></p>
+
+          <div class="parchi__line parchi__odd">
+            <p class="cond parchi__oddlabel">When it doesn't divide</p>
+            <p class="parchi__oddline"><b>{oddPaise.title}</b> <span class="amt">{money(oddPaise.total)}</span> split equally by {oddPaise.who.length}, paid by {oddPaise.paidBy}</p>
+            <p class="parchi__oddline amt">{oddPaise.who.length} × {grouped(oddPaise.base)} = {grouped(oddPaise.base * oddPaise.who.length)} paise, {oddPaise.left} paise left over</p>
+            <p class="parchi__oddline">
+              {oddPaise.who.map((w, i) => (
+                <span class="odd__part">{w} <span class="amt">{grouped(oddPaise.parts[i]!)}</span>{w === oddPaise.paidBy && <em> payer takes the odd paise</em>}</span>
+              ))}
+            </p>
+            <p class="parchi__fine">Worked example, same rule. The seed ledger divides cleanly.</p>
+          </div>
+        </div>
+      </div>
+      </div>
+      <figcaption class="parchi__cap">Scooter rental is from the Goa trip demo ledger. Shares stored: {bill.lines.map((l) => grouped(l.share)).join(", ")} paise.</figcaption>
+    </figure>
+  </div>
+</section>

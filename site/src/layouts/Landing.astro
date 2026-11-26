@@ -1,7 +1,11 @@
 ---
-// Bare shell for the bespoke landing page: head, meta, skip link, <main>. No
-// header, footer, fonts or global CSS: the page brings its own identity.
-// Add <style is:global> and font imports in the page itself.
+// Shell for the bespoke landing page and the 404: head, meta, skip link, <main>.
+// Fonts and landing CSS are imported by the page itself, so the 404 stays light.
+// The inline script sets the theme before first paint and flags that JS is on.
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
+import { cfg } from "../lib/source";
+
 interface Props {
   title: string;
   description: string;
@@ -9,6 +13,8 @@ interface Props {
 const { title, description } = Astro.props;
 const base = import.meta.env.BASE_URL.replace(/\/$/, "");
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const og = `${cfg.site}${base}/og.png`;
+const touchIcon = existsSync(resolve(process.cwd(), "public/apple-touch-icon.png"));
 ---
 
 <!doctype html>
@@ -19,23 +25,52 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#F3EEE2" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#10142A" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
     <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+    {touchIcon && <link rel="apple-touch-icon" href={`${base}/apple-touch-icon.png`} />}
+    <meta property="og:site_name" content={cfg.name} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={og} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="tally: a ledger ticket for a Goa trip, settled." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={og} />
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        d.classList.add("js");
+        try {
+          var t = localStorage.getItem("tally-theme");
+          if (t === "light" || t === "dark") d.setAttribute("data-theme", t);
+        } catch (e) {}
+        // If the page script never starts, show everything rather than leave content hidden.
+        setTimeout(function () {
+          if (!d.hasAttribute("data-live")) d.classList.remove("js");
+        }, 4000);
+      })();
+    </script>
     <slot name="head" />
   </head>
   <body>
     <a href="#main" class="skip-link">Skip to content</a>
+    <slot name="header" />
     <main id="main" tabindex="-1">
       <slot />
     </main>
+    <slot name="footer" />
   </body>
 </html>
 
 <style>
   .skip-link { position: absolute; left: -999px; }
-  .skip-link:focus { left: 0.5rem; top: 0.5rem; z-index: 1000; background: #fff; color: #000; padding: 0.5rem 0.75rem; }
+  .skip-link:focus { left: 0.5rem; top: 0.5rem; z-index: 1000; background: #fff; color: #000; padding: 0.75rem 1rem; }
   main:focus { outline: none; }
 </style>

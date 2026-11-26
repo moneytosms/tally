@@ -1,0 +1,48 @@
+---
+import { Image } from "astro:assets";
+import type { ImageMetadata } from "astro";
+
+// Phone screenshots land in src/assets/screens/. Whatever exists is shown; if
+// none exist yet this section renders nothing.
+const found = import.meta.glob<ImageMetadata>("../../assets/screens/*.png", { eager: true, import: "default" });
+const order = ["ledger", "expense", "settle-plan", "why-trail", "insights", "themes"];
+const info: Record<string, { cap: string; alt: string }> = {
+  ledger: { cap: "The ledger", alt: "A ledger in tally listing expenses, with the viewer's net position at the top." },
+  expense: { cap: "Add an expense", alt: "The add-expense form with an amount, a payer and a split mode." },
+  "settle-plan": { cap: "The transfer plan", alt: "The suggested transfers that clear the ledger, each with a settle button." },
+  "why-trail": { cap: "Why this transfer", alt: "A transfer's trail: paid, share and net per expense, adding up to the amount." },
+  insights: { cap: "Insights", alt: "Spend by category and month for a ledger." },
+  themes: { cap: "Themes", alt: "tally's theme picker with six themes." },
+};
+const shots = Object.entries(found)
+  .map(([path, img]) => ({ key: path.split("/").pop()!.replace(/\.png$/, ""), img }))
+  .sort((a, b) => (order.indexOf(a.key) + 1 || 99) - (order.indexOf(b.key) + 1 || 99) || a.key.localeCompare(b.key));
+---
+
+{
+  shots.length > 0 && (
+    <section class="sec sec--sunk" id="screens" aria-labelledby="screens-title">
+      <div class="wrap">
+        <div class="sec__head">
+          <p class="label"><span class="no">No. 07</span> The real thing</p>
+          <h2 id="screens-title" class="h2">Straight from the app.</h2>
+          <p class="lede">Real screens from the demo ledgers, not mock-ups.</p>
+        </div>
+      </div>
+      <div class="screens" tabindex="0" role="region" aria-label="App screenshots, scroll sideways">
+        <ul class="screens__row">
+          {shots.map(({ key, img }) => (
+            <li class="phone">
+              <figure>
+                <div class="phone__frame">
+                  <Image src={img} alt={info[key]?.alt ?? key.replace(/-/g, " ")} widths={[220, 330, 440]} sizes="(min-width: 1200px) 176px, 220px" loading="lazy" decoding="async" />
+                </div>
+                <figcaption class="cond">{info[key]?.cap ?? key.replace(/-/g, " ")}</figcaption>
+              </figure>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  )
+}
