@@ -104,7 +104,7 @@
   addCap(5.0, 9.9, 'Split it four ways. {Literally.}');
   addCap(10.4, 15.9, 'Exact paise. The odd paisa lands on a named member, the payer. | No rounding fights.');
   addCap(17.0, 23.9, 'Untangled into the fewest sensible transfers. | Every one explains itself.');
-  addCap(24.6, 29.9, 'Settle over UPI. tally never touches your money.');
+  addCap(24.6, 29.9, 'Settle up your way. tally never touches your money.');
   addCap(30.2, 35.8, 'Plus the small things that make a ledger last.');
 
   /* =========================================================
@@ -542,7 +542,7 @@
         <div style="font-size:72px;font-weight:800;font-stretch:112%;letter-spacing:-.01em;line-height:1.1;margin-top:2px">${inr(s.amt)}</div>
         <div style="font-size:22px;font-weight:500;color:#4E4A42;margin-top:2px">${s.up}</div>`, root);
       e.style.cssText += `;position:absolute;left:850px;top:${s.y}px;width:920px;height:270px;background:#FBF8F0;border:3px solid #191817;box-shadow:5px 5px 0 #191817;padding:26px 34px;border-radius:6px`;
-      const stp = el('stamp', `<span class="deva" style="font-weight:800;font-stretch:90%">\u091A\u0941\u0915\u0924\u093E</span> \u00B7 Settled<small>Settled over UPI</small>`, e);
+      const stp = el('stamp', `<span class="deva" style="font-weight:800;font-stretch:90%">\u091A\u0941\u0915\u0924\u093E</span> \u00B7 Settled<small>Recorded in the ledger</small>`, e);
       stp.style.cssText += ';font-size:54px;right:30px;top:92px;padding:10px 22px 4px';
       return { e, stp, s, i };
     });
