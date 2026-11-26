@@ -47,8 +47,8 @@
   <!-- main column -->
   <text x="120" y="130" font-family="'Anek Latin Variable', Arial, sans-serif" font-size="18" letter-spacing="4" fill="#4E4A42">A LEDGER, NOT A BANK</text>
   <text x="112" y="300" font-family="'Anek Latin Variable', Georgia, serif" font-size="196" font-weight="700" fill="#191817" style="font-variation-settings: 'wdth' 118, 'wght' 700">tally</text>
-  <text x="120" y="378" font-family="'Anek Latin Variable', Arial, sans-serif" font-size="46" font-weight="500" fill="#191817" style="font-variation-settings: 'wdth' 100, 'wght' 500">Split the trip. Settle over UPI.</text>
-  <text x="120" y="440" font-family="'Anek Latin Variable', Arial, sans-serif" font-size="26" fill="#4E4A42" style="font-variant-numeric: tabular-nums">₹0/month · self-hosted · MIT</text>
+  <text x="120" y="378" font-family="'Anek Latin Variable', Arial, sans-serif" font-size="46" font-weight="500" fill="#191817" style="font-variation-settings: 'wdth' 100, 'wght' 500">Every rupee, explained.</text>
+  <text x="120" y="440" font-family="'Anek Latin Variable', Arial, sans-serif" font-size="26" fill="#4E4A42" style="font-variant-numeric: tabular-nums">Split the trip · ₹0/month · self-hosted · MIT</text>
   <line x1="120" y1="478" x2="800" y2="478" stroke="#D6CCB6" stroke-width="2"/>
   <text x="120" y="526" font-family="'Anek Latin Variable', Arial, sans-serif" font-size="26" font-weight="600" fill="#23306B">moneytosms.github.io/tally</text>
 </svg>
