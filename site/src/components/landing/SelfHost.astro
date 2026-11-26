@@ -1,0 +1,47 @@
+---
+import { cfg } from "../../lib/source";
+const base = import.meta.env.BASE_URL.replace(/\/$/, "");
+const rows: Array<[string, string]> = [
+  ["Cost", "$0 a month on Cloudflare's free tier"],
+  ["Licence", "MIT. Fork it, run it, change it."],
+  ["Scale", "One instance, about 20 people"],
+  ["Access", "Invite only. No public signup, no ads, no tracking."],
+  ["Currency", "INR only. Amounts are integer paise."],
+  ["Network", "Online only. Offline, tally shows a plain notice and no numbers."],
+  ["Runs on", "One Cloudflare Worker with D1, serving the app and its API"],
+  ["Heads-up", "The Worker's name becomes your passkey ID for good. Pick it once."],
+  ["Not yet tested", "Push nudges are built but haven't been tried on a real device."],
+];
+---
+
+<section class="sec sec--sunk" id="self-host" aria-labelledby="host-title">
+  <div class="wrap split split--flip">
+    <div class="sec__copy">
+      <p class="label"><span class="no">No. 09</span> Run your own</p>
+      <h2 id="host-title" class="h2">Your friends, your instance.</h2>
+      <p class="lede">
+        tally is built for one group of friends, not for the world. Deploy it to your own Cloudflare account, invite the people you split with, and that's the whole service. A setup script walks the first deploy.
+      </p>
+      <div class="actions">
+        <a class="btn btn--primary" href={`${base}/guide/deployment`}>Read the deployment guide</a>
+        <a class="btn btn--ghost" href={`${base}/guide/`}>Open the guide</a>
+        <a class="btn btn--ghost" href={cfg.repoUrl}>Source on GitHub</a>
+      </div>
+    </div>
+
+    <div class="spec" role="group" aria-label="Specifications">
+      <div class="spec__bar"><span class="cond">Specification</span><span class="cond">Self-host edition</span></div>
+      <table>
+        <caption class="sr-only">What running tally involves, and its limits</caption>
+        <tbody>
+          {rows.map(([k, v]) => (
+            <tr>
+              <th scope="row" class="cond">{k}</th>
+              <td>{v}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

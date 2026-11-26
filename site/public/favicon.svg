@@ -1,1 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#5c7355" stroke-width="2" stroke-linecap="round"><path d="M6 5.5v13M10 5v13.5M14 5.5v13M18 5v13.5"/><path d="M3.5 15.5 20.5 8"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <style>
+    .tile { fill: #D9412A; }
+    .mark { fill: none; stroke: #F3EEE2; stroke-width: 2.2; stroke-linecap: round; }
+    @media (prefers-color-scheme: dark) {
+      .tile { fill: #FF6B4E; }
+      .mark { stroke: #10142A; }
+    }
+  </style>
+  <rect class="tile" x="1" y="1" width="22" height="22" rx="3"/>
+  <path class="mark" d="M6 6v11M10 5.5v12M14 6v11M18 5.5v12"/>
+  <path class="mark" d="M3.5 15.5 20.5 8.5"/>
+</svg>

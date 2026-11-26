@@ -1,0 +1,106 @@
+---
+import Mark from "./Mark.astro";
+import { DEMO_URL, dateRange, ledgerName, members, money, net, signed, label, total, transfers } from "./data";
+
+// Barcode bars come from the ledger's own digits, so the stub is deterministic.
+const digits = `${total}${members.length}${transfers.length}`.split("").map(Number);
+let x = 0;
+const bars: Array<{ x: number; w: number }> = [];
+for (let i = 0; i < 34; i++) {
+  const w = 1 + ((digits[i % digits.length]! + i * 3) % 4);
+  bars.push({ x, w });
+  x += w + 1 + ((i * 5 + digits[(i + 2) % digits.length]!) % 3);
+}
+const barW = x;
+---
+
+<section class="hero" aria-labelledby="hero-title" id="top">
+  <div class="wrap hero__grid">
+    <div class="hero__copy">
+      <p class="label"><span lang="hi">हिसाब</span> · hisaab, the accounts</p>
+      <h1 id="hero-title" class="hero__title">
+        <span>Every transfer</span>
+        <span>shows its</span>
+        <span>working.</span>
+      </h1>
+      <p class="hero__lede">
+        tally splits trips, flats and one-to-ones on a shared ledger. Exact to the paisa, so no rounding fights. Every suggested transfer can show why it exists, every edit is recorded and undoable, and the whole thing is yours: self-hosted, free, no ads, no tracking.
+      </p>
+      <div class="hero__cta">
+        <a class="btn btn--primary btn--lg" href={DEMO_URL}>Try the demo</a>
+        <a class="btn btn--ghost btn--lg" href="#film">Watch the 40-second film</a>
+      </div>
+      <p class="hero__note">No sign-up. Demo data is fictional and starts over when you refresh.</p>
+    </div>
+
+    <article class="ticket" aria-label={`Sample ticket: the ${ledgerName} ledger, from Goa to settled`}>
+      <div class="ticket__main">
+        <header class="ticket__bar">
+          <span class="ticket__brand"><Mark size={18} /> tally</span>
+          <span class="cond">Ledger ticket · <span lang="hi">हिसाब</span></span>
+        </header>
+
+        <div class="ticket__route">
+          <div class="stn">
+            <span class="cond">From</span>
+            <b class="stn__name">Goa</b>
+            <span class="stn__sub">{ledgerName}, {dateRange}</span>
+          </div>
+          <svg class="ticket__arrow" viewBox="0 0 56 24" width="56" height="24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12h48M40 3l11 9-11 9"></path>
+          </svg>
+          <div class="stn stn--to">
+            <span class="cond">To</span>
+            <b class="stn__name stn__name--hi" lang="hi">चुकता</b>
+            <span class="stn__sub"><b class="cond">Settled</b>, net ₹0.00 across {members.length}</span>
+          </div>
+        </div>
+
+        <dl class="ticket__meta">
+          <div><dt class="cond">Class</dt><dd>Self-hosted</dd></div>
+          <div><dt class="cond">Quota</dt><dd>Invite only</dd></div>
+          <div><dt class="cond">Split total</dt><dd class="amt">{money(total)}</dd></div>
+          <div><dt class="cond">Transfers</dt><dd class="amt">{transfers.length}, each with a trail</dd></div>
+        </dl>
+
+        <table class="pax">
+          <caption class="cond">Passengers: net position per member</caption>
+          <thead class="sr-only"><tr><th scope="col">No.</th><th scope="col">Passenger</th><th scope="col">Net position</th></tr></thead>
+          <tbody>
+            {members.map((m, i) => (
+              <tr>
+                <td class="pax__no">{String(i + 1).padStart(2, "0")}</td>
+                <th scope="row" class="pax__name">{m}</th>
+                <td class="pax__net">
+                  <span class={`tag ${net[m]! < 0 ? "tag--owes" : "tag--owed"}`}>{label(net[m]!)}</span>
+                  <span class="amt">{signed(net[m]!)}</span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ticket__stub">
+        <span class="ticket__hole ticket__hole--a" aria-hidden="true"></span>
+        <span class="ticket__hole ticket__hole--b" aria-hidden="true"></span>
+        <div class="fare">
+          <span class="cond">Fare</span>
+          <b class="fare__amt">₹0<small>/mo</small></b>
+          <span class="fare__sub">Cloudflare free tier</span>
+        </div>
+        <svg class="barcode" viewBox={`0 0 ${barW} 40`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+          {bars.map((b) => <rect x={b.x} y="0" width={b.w} height="40"></rect>)}
+        </svg>
+        <div class="punchbox" aria-hidden="true">
+          <span class="cond">Punch</span>
+          <svg class="punch" viewBox="0 0 64 64" width="64" height="64">
+            <circle class="punch__ring" cx="32" cy="32" r="27"></circle>
+            <path class="punch__hole" d="M32 13.5l5.1 12.6 13.5.9-10.4 8.7 3.3 13.2-11.5-7.3-11.5 7.3 3.3-13.2-10.4-8.7 13.5-.9z"></path>
+            <circle class="punch__chad" cx="32" cy="32" r="6"></circle>
+          </svg>
+        </div>
+      </div>
+    </article>
+  </div>
+</section>

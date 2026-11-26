@@ -1,0 +1,117 @@
+---
+import { GRID, expenses, kolamNodes, ledgerName, members, money, net, owingPairs, plan, signed, tangle, transfers } from "./data";
+
+const words = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"];
+const cap = (s: string) => s[0]!.toUpperCase() + s.slice(1);
+const hub = transfers[0]!.to;
+const pulliDots = Array.from({ length: GRID.n * GRID.n }, (_, k) => ({
+  x: GRID.origin + (k % GRID.n) * GRID.gap,
+  y: GRID.origin + Math.floor(k / GRID.n) * GRID.gap,
+}));
+const memberAt = new Set(kolamNodes.map((n) => `${n.x},${n.y}`));
+const labelPos: Record<string, { x: number; y: number }> = {};
+for (const n of kolamNodes) {
+  const isHub = n.name === hub;
+  const up = n.y < 300;
+  labelPos[n.name] = { x: n.x, y: isHub ? n.y + n.r + 30 : up ? n.y - n.r - 16 : n.y + n.r + 32 };
+}
+const grouped = (n: number) => new Intl.NumberFormat("en-IN").format(n);
+---
+
+<section class="sec sec--sunk" id="kolam" aria-labelledby="kolam-title">
+  <div class="wrap">
+    <div class="sec__head">
+      <p class="label"><span class="no">No. 03</span> The line</p>
+      <h2 id="kolam-title" class="h2">Follow the line from tangle to plan.</h2>
+    </div>
+
+    <div class="kolam__grid">
+      <figure class="kolam__fig">
+        <svg class="kolam" viewBox="0 0 600 600" role="img" aria-labelledby="kolam-t kolam-d">
+          <title id="kolam-t">A kolam of the {ledgerName} ledger</title>
+          <desc id="kolam-d">
+            Five dots stand for {members.join(", ")}. One continuous line loops through all of them, showing {words[owingPairs]} pairs that owe each other something. As you scroll, the line is erased and {words[transfers.length]} short arrows to {hub} take its place: the transfer plan.
+          </desc>
+          <g class="kolam__pulli" aria-hidden="true">
+            {pulliDots.filter((p) => !memberAt.has(`${p.x},${p.y}`)).map((p) => <circle cx={p.x} cy={p.y} r="3"></circle>)}
+          </g>
+          <path class="kolam__tangle" d={tangle} pathLength="1000"></path>
+          <g class="kolam__plan">
+            {plan.map((leg) => (
+              <g class="leg" data-from={leg.from}>
+                <path class="leg__line" d={leg.d} pathLength="100"></path>
+                <path class="leg__head" d={leg.head}></path>
+              </g>
+            ))}
+          </g>
+          <g class="kolam__dots">
+            {kolamNodes.map((n) => (
+              <g class={`kn ${n.net < 0 ? "kn--owes" : "kn--owed"}`} data-name={n.name} data-r={n.r}>
+                <circle class="kn__dot" cx={n.x} cy={n.y} r={n.r}></circle>
+                <text class="kn__sign" x={n.x} y={n.y + 6} text-anchor="middle" aria-hidden="true">{n.net < 0 ? "−" : "+"}</text>
+                <text class="kn__name" x={labelPos[n.name]!.x} y={labelPos[n.name]!.y} text-anchor="middle">{n.name}</text>
+              </g>
+            ))}
+          </g>
+        </svg>
+        <figcaption class="kolam__cap" aria-hidden="true">
+          <span class="kcap kcap--a"><b>{words[owingPairs]}</b> pairs owe each other something</span>
+          <span class="kcap kcap--b"><b>{words[transfers.length]}</b> transfers clear the ledger</span>
+        </figcaption>
+      </figure>
+
+      <div class="kolam__steps">
+        <div class="kstep" data-step="1">
+          <p class="label">1 · The tangle</p>
+          <h3 class="h3">Who owes whom, pair by pair.</h3>
+          <p>
+            Each dot is a member of the {ledgerName} ledger. Each expense makes the people in it owe the one who paid. Follow the line and it visits every pair: {words[owingPairs]} of them, all with something owing. Tracing that by hand is how trips end in arguments.
+          </p>
+        </div>
+        <div class="kstep" data-step="2">
+          <p class="label">2 · The plan</p>
+          <h3 class="h3">{cap(words[transfers.length]!)} transfers clear it.</h3>
+          <p>
+            {hub} paid for most of the trip, so everyone else pays {hub}. tally gets there greedily: the member owed the most is matched with the one who owes the most, and it repeats. The plan stays small, at most one transfer fewer than the number of members. It is not guaranteed to be the fewest possible, and every transfer can show why it exists.
+          </p>
+          <ul class="legs">
+            {plan.map((leg) => (
+              <li class="legs__item">
+                <details class="why">
+                  <summary>
+                    <span class="why__who">{leg.from} <span aria-hidden="true">→</span><span class="sr-only">pays</span> {leg.to}</span>
+                    <span class="why__amt"><b class="tag tag--owes">pays</b> <span class="amt">{money(leg.amountPaise)}</span></span>
+                    <span class="why__chip">why?</span>
+                  </summary>
+                  <div class="trail">
+                    <p class="trail__lead">{leg.from}'s trail through the {ledgerName} ledger</p>
+                    <table>
+                      <thead><tr><th scope="col">Expense</th><th scope="col">Paid</th><th scope="col">Share</th></tr></thead>
+                      <tbody>
+                        {leg.trail.map((r) => (
+                          <tr>
+                            <th scope="row">{r.title}</th>
+                            <td class="amt">{r.paid ? signed(r.paid) : "none"}</td>
+                            <td class="amt">{r.share ? signed(-r.share) : "none"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <th scope="row">Net position</th>
+                          <td colspan="2" class="amt"><b class="tag tag--owes">owes</b> {signed(net[leg.from]!)}</td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                    <p class="trail__fine">Paid minus share, over {expenses.length} expenses. Settling {money(leg.amountPaise)} to {leg.to} brings it to ₹0.00.</p>
+                  </div>
+                </details>
+              </li>
+            ))}
+          </ul>
+          <p class="fine">Net positions across the ledger sum to ₹0.00:{" "}{members.map((m, i) => (<><span class="nw">{m} {signed(net[m]!)}</span>{i < members.length - 1 ? ", " : "."}</>))}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
